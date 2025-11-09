@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect
 from feedback.models import AssessmentTemplate
+from feedback.utils import calculate_grade_bands
 
 def home(request):
     return render(request, "feedback/home.html", {"page_title": "Feedback"})
@@ -86,8 +87,6 @@ def template_new(request):
     return render(request, "feedback/template_new.html")
 
 def template_summary(request, pk):
-    from feedback.models import calculate_grade_bands
-    
     tpl = AssessmentTemplate.objects.get(pk=pk)
     
     # Calculate grade bands for each category

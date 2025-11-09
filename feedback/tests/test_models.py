@@ -133,7 +133,7 @@ class AssessmentTemplateModelTests(TestCase):
 
     def test_calculate_grade_bands_no_subdivision(self):
         """Test grade band calculation with no subdivision (basic 5 bands)."""
-        from feedback.models import calculate_grade_bands
+        from feedback.utils import calculate_grade_bands
         
         # For 30 marks: 1st=26 (85% rounded), 2:1=20 (65%), 2:2=17 (55%), 3rd=14 (45%), Fail=6 (20%)
         bands = calculate_grade_bands(30, "none")
@@ -147,7 +147,7 @@ class AssessmentTemplateModelTests(TestCase):
 
     def test_calculate_grade_bands_high_low_subdivision(self):
         """Test grade band calculation with high/low subdivision."""
-        from feedback.models import calculate_grade_bands
+        from feedback.utils import calculate_grade_bands
         
         # For 20 marks with high/low: each grade split in half
         # High 1st: 85% of 20 = 17, Low 1st: 75% = 15
@@ -163,7 +163,7 @@ class AssessmentTemplateModelTests(TestCase):
 
     def test_calculate_grade_bands_high_mid_low_subdivision(self):
         """Test grade band calculation with high/mid/low subdivision."""
-        from feedback.models import calculate_grade_bands
+        from feedback.utils import calculate_grade_bands
         
         # For 30 marks with high/mid/low: each grade split in thirds
         # High 1st: 90% = 27, Mid 1st: 80% = 24, Low 1st: 70% = 21
