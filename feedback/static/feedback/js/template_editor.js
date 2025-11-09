@@ -337,55 +337,25 @@ function updateGradeBandsPreview(row) {
         return;
     }
     
-    // Fetch grade bands from server
+    // Fetch grade bands HTML from server
     fetch(`/feedback/grade-bands-preview/?max_marks=${maxMarks}&subdivision=${subdivision}`)
         .then(response => response.json())
         .then(data => {
-            if (data.bands && data.bands.length > 0) {
-                // Get existing descriptions from category data if available
+            if (data.html) {
+                previewEl.innerHTML = data.html;
+                
+                // Get existing descriptions from category data and fill textareas
                 const categoryData = getCategoryDataForRow(row);
                 const descriptions = categoryData && categoryData.grade_band_descriptions ? categoryData.grade_band_descriptions : {};
                 
-                // Group bands by main grade (1st, 2:1, 2:2, 3rd, Fail)
-                const grouped = groupBandsByMainGrade(data.bands);
-                
-                // Create grid layout with cards for each main grade
-                let gridHTML = '<div class="row g-2 mt-2">';
-                
-                for (const [mainGrade, bandList] of Object.entries(grouped)) {
-                    const desc = descriptions[mainGrade] || '';
-                    
-                    gridHTML += `
-                        <div class="col">
-                            <div class="card h-100">
-                                <div class="card-header bg-light py-1 px-2">
-                                    <small class="fw-bold">${mainGrade}</small>
-                                </div>
-                                <div class="card-body p-2">
-                                    <div class="d-flex flex-wrap gap-1 mb-2">`;
-                    
-                    // Add badges for each subdivision
-                    bandList.forEach(band => {
-                        gridHTML += `<span class="badge bg-secondary">${band.grade}: ${band.marks}</span>`;
-                    });
-                    
-                    gridHTML += `
-                                    </div>
-                                    <textarea class="form-control form-control-sm grade-description" 
-                                              data-grade="${mainGrade}" 
-                                              placeholder="Description for ${mainGrade}..." 
-                                              rows="3">${desc}</textarea>
-                                </div>
-                            </div>
-                        </div>`;
-                }
-                
-                gridHTML += '</div>';
-                
-                previewEl.innerHTML = gridHTML;
-                
-                // Attach event listeners to new textareas
+                // Fill in existing descriptions
                 previewEl.querySelectorAll('.grade-description').forEach(textarea => {
+                    const grade = textarea.getAttribute('data-grade');
+                    if (descriptions[grade]) {
+                        textarea.value = descriptions[grade];
+                    }
+                    
+                    // Attach event listeners
                     textarea.addEventListener('input', debouncedSave);
                     textarea.addEventListener('blur', saveNow);
                 });
@@ -397,32 +367,6 @@ function updateGradeBandsPreview(row) {
             console.error('Error fetching grade bands:', error);
             previewEl.innerHTML = '';
         });
-}
-
-function groupBandsByMainGrade(bands) {
-    // Extract main grade from band names like "High 1st" -> "1st", "Maximum 1st" -> "1st"
-    const mainGrades = ["1st", "2:1", "2:2", "3rd", "Fail"];
-    const grouped = {};
-    
-    bands.forEach(band => {
-        // Find which main grade this band belongs to
-        let mainGrade = null;
-        for (const grade of mainGrades) {
-            if (band.grade.includes(grade)) {
-                mainGrade = grade;
-                break;
-            }
-        }
-        
-        if (mainGrade) {
-            if (!grouped[mainGrade]) {
-                grouped[mainGrade] = [];
-            }
-            grouped[mainGrade].push(band);
-        }
-    });
-    
-    return grouped;
 }
 
 function getCategoryDataForRow(row) {

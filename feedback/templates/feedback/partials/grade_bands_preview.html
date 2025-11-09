@@ -1,0 +1,23 @@
+{% load feedback_filters %}
+<div class="row g-2 mt-2">
+    {% for main_grade, band_list in grouped_bands.items %}
+    <div class="col">
+        <div class="card h-100">
+            <div class="card-header bg-light py-1 px-2">
+                <small class="fw-bold">{{ main_grade }}</small>
+            </div>
+            <div class="card-body p-2">
+                <div class="d-flex flex-wrap gap-1 mb-2">
+                    {% for band in band_list %}
+                    <span class="badge bg-secondary">{{ band.grade }}: {{ band.marks }}</span>
+                    {% endfor %}
+                </div>
+                <textarea class="form-control form-control-sm grade-description" 
+                          data-grade="{{ main_grade }}" 
+                          placeholder="Description for {{ main_grade }}..." 
+                          rows="3">{{ descriptions|get_item:main_grade|default:'' }}</textarea>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>

@@ -141,18 +141,26 @@ def template_update(request, pk):
 
 def grade_bands_preview(request):
     """AJAX endpoint to calculate grade bands for preview."""
-    import json
     from django.http import JsonResponse
+    from django.template.loader import render_to_string
     
     try:
         max_marks = int(request.GET.get('max_marks', 0))
         subdivision = request.GET.get('subdivision', '')
         
         if max_marks < 1 or not subdivision:
-            return JsonResponse({"bands": []})
+            return JsonResponse({"html": ""})
         
         bands = calculate_grade_bands(max_marks, subdivision)
-        return JsonResponse({"bands": bands})
+        grouped_bands = _group_bands_by_main_grade(bands)
+        
+        # Render HTML template
+        html = render_to_string('feedback/partials/grade_bands_preview.html', {
+            'grouped_bands': grouped_bands,
+            'descriptions': {}  # Empty for preview, will be filled by JS from existing data
+        })
+        
+        return JsonResponse({"html": html})
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=400)
 

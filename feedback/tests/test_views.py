@@ -168,8 +168,8 @@ class TemplateBuilderViewTests(TestCase):
         self.assertEqual(AssessmentTemplate.objects.count(), 0)
 
 class GradeBandsPreviewTests(TestCase):
-    def test_grade_bands_preview_returns_json_for_valid_params(self):
-        """GET /feedback/grade-bands-preview/ returns grade bands as JSON."""
+    def test_grade_bands_preview_returns_html_for_valid_params(self):
+        """GET /feedback/grade-bands-preview/ returns rendered HTML."""
         url = reverse("grade_bands_preview")
         res = self.client.get(url, {"max_marks": "30", "subdivision": "high_low"})
         self.assertEqual(res.status_code, 200)
@@ -177,45 +177,45 @@ class GradeBandsPreviewTests(TestCase):
         
         import json
         data = json.loads(res.content)
-        self.assertIn("bands", data)
-        self.assertIsInstance(data["bands"], list)
-        self.assertGreater(len(data["bands"]), 0)
+        self.assertIn("html", data)
+        self.assertIsInstance(data["html"], str)
+        self.assertGreater(len(data["html"]), 0)
         
-        # Check structure of first band
-        first_band = data["bands"][0]
-        self.assertIn("grade", first_band)
-        self.assertIn("marks", first_band)
+        # Check that HTML contains expected grade information
+        html = data["html"]
+        self.assertIn("1st", html)
+        self.assertIn("card", html)
+        self.assertIn("grade-description", html)
     
-    def test_grade_bands_preview_returns_correct_bands_for_none_subdivision(self):
-        """Preview endpoint returns 11 bands for 'none' subdivision."""
+    def test_grade_bands_preview_returns_correct_grades_for_none_subdivision(self):
+        """Preview endpoint returns HTML with correct grades for 'none' subdivision."""
         url = reverse("grade_bands_preview")
         res = self.client.get(url, {"max_marks": "10", "subdivision": "none"})
         
         import json
         data = json.loads(res.content)
-        self.assertEqual(len(data["bands"]), 11)
+        html = data["html"]
         
-        # Check some expected bands
-        grades = [b["grade"] for b in data["bands"]]
-        self.assertIn("Maximum 1st", grades)
-        self.assertIn("High 1st", grades)
-        self.assertIn("2:1", grades)
-        self.assertIn("Zero Fail", grades)
+        # Check for expected grade names in HTML
+        self.assertIn("Maximum 1st", html)
+        self.assertIn("High 1st", html)
+        self.assertIn("2:1", html)
+        self.assertIn("Zero Fail", html)
     
     def test_grade_bands_preview_returns_empty_for_invalid_marks(self):
-        """Preview endpoint returns empty bands for invalid marks."""
+        """Preview endpoint returns empty HTML for invalid marks."""
         url = reverse("grade_bands_preview")
         res = self.client.get(url, {"max_marks": "0", "subdivision": "none"})
         
         import json
         data = json.loads(res.content)
-        self.assertEqual(data["bands"], [])
+        self.assertEqual(data["html"], "")
     
     def test_grade_bands_preview_returns_empty_for_missing_params(self):
-        """Preview endpoint returns empty bands when params are missing."""
+        """Preview endpoint returns empty HTML when params are missing."""
         url = reverse("grade_bands_preview")
         res = self.client.get(url)
         
         import json
         data = json.loads(res.content)
-        self.assertEqual(data["bands"], [])
+        self.assertEqual(data["html"], "")
