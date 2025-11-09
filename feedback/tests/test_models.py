@@ -153,28 +153,33 @@ class AssessmentTemplateModelTests(TestCase):
         from feedback.utils import calculate_grade_bands
         
         # For 20 marks with high/low: each grade split within its band
-        # High 1st: 85% of 20 = 17, Low 1st: 72% = 14
-        # High 2:1: 65% = 13, Low 2:1: 62% = 12
+        # Now includes expanded extremes: Maximum + Close/Poor/Zero Fail
         bands = calculate_grade_bands(20, "high_low")
-        self.assertEqual(len(bands), 9)  # 4 grades * 2 + Fail
-        self.assertEqual(bands[0]["grade"], "High 1st")
-        self.assertEqual(bands[0]["marks"], 17)
-        self.assertEqual(bands[1]["grade"], "Low 1st")
-        self.assertEqual(bands[1]["marks"], 14)
-        self.assertEqual(bands[-1]["grade"], "Fail")
-        self.assertEqual(bands[-1]["marks"], 4)
+        self.assertEqual(len(bands), 13)  # Maximum + 4 grades * 2 + 4 fail bands
+        self.assertEqual(bands[0]["grade"], "Maximum")
+        self.assertEqual(bands[0]["marks"], 20)  # 100%
+        self.assertEqual(bands[1]["grade"], "High 1st")
+        self.assertEqual(bands[1]["marks"], 17)  # 85%
+        self.assertEqual(bands[2]["grade"], "Low 1st")
+        self.assertEqual(bands[2]["marks"], 14)  # 72%
+        self.assertEqual(bands[-1]["grade"], "Zero Fail")
+        self.assertEqual(bands[-1]["marks"], 0)  # 0%
 
     def test_calculate_grade_bands_high_mid_low_subdivision(self):
         """Test grade band calculation with high/mid/low subdivision."""
         from feedback.utils import calculate_grade_bands
         
         # For 30 marks with high/mid/low: each grade split in thirds
-        # High 1st: 90% = 27, Mid 1st: 80% = 24, Low 1st: 70% = 21
+        # Now includes expanded extremes: Maximum + Close/Poor/Zero Fail
         bands = calculate_grade_bands(30, "high_mid_low")
-        self.assertEqual(len(bands), 13)  # 4 grades * 3 + Fail
-        self.assertEqual(bands[0]["grade"], "High 1st")
-        self.assertEqual(bands[0]["marks"], 27)
-        self.assertEqual(bands[1]["grade"], "Mid 1st")
-        self.assertEqual(bands[1]["marks"], 24)
-        self.assertEqual(bands[2]["grade"], "Low 1st")
-        self.assertEqual(bands[2]["marks"], 21)
+        self.assertEqual(len(bands), 17)  # Maximum + 4 grades * 3 + 4 fail bands
+        self.assertEqual(bands[0]["grade"], "Maximum")
+        self.assertEqual(bands[0]["marks"], 30)  # 100%
+        self.assertEqual(bands[1]["grade"], "High 1st")
+        self.assertEqual(bands[1]["marks"], 27)  # 90%
+        self.assertEqual(bands[2]["grade"], "Mid 1st")
+        self.assertEqual(bands[2]["marks"], 24)  # 80%
+        self.assertEqual(bands[3]["grade"], "Low 1st")
+        self.assertEqual(bands[3]["marks"], 21)  # 70%
+        self.assertEqual(bands[-1]["grade"], "Zero Fail")
+        self.assertEqual(bands[-1]["marks"], 0)  # 0%

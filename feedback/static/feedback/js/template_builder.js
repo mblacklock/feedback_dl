@@ -65,6 +65,7 @@ function setupRowEventHandlers(row) {
     const subdivisionControls = row.querySelector('.subdivision-controls');
     const subdivisionButtons = row.querySelectorAll('.subdivision-btn');
     const subdivisionInput = row.querySelector('.subdivision-value');
+    const maxMarksInput = row.querySelector('.cat-max');
     
     typeRadios.forEach(radio => {
         radio.addEventListener('change', function() {
@@ -75,12 +76,24 @@ function setupRowEventHandlers(row) {
                     subdivisionInput.value = 'none';
                     subdivisionButtons[0].classList.add('active');
                 }
+                // Validate immediately when switching to grade
+                validateRow(row);
             } else {
                 subdivisionControls.style.display = 'none';
                 subdivisionInput.value = '';
                 subdivisionButtons.forEach(btn => btn.classList.remove('active'));
+                // Remove any validation errors when switching to numeric
+                removeRowValidationError(row);
             }
         });
+    });
+    
+    // Validate when max marks changes
+    maxMarksInput.addEventListener('input', function() {
+        const typeRadio = row.querySelector('input[type="radio"]:checked');
+        if (typeRadio && typeRadio.value === 'grade') {
+            validateRow(row);
+        }
     });
     
     // Handle subdivision button clicks
@@ -92,13 +105,21 @@ function setupRowEventHandlers(row) {
             this.classList.add('active');
             // Set hidden input value
             subdivisionInput.value = this.dataset.subdivision;
+            // Validate after subdivision change
+            validateRow(row);
         });
     });
     
     // Add hidden input for category_type that submits with the form
     const form = document.getElementById('template-form');
-    form.addEventListener('submit', function() {
-        // For each row, add a hidden input with the selected type
+    form.addEventListener('submit', function(e) {
+        // First, validate grade bands
+        if (!validateGradeBands()) {
+            e.preventDefault();
+            return false;
+        }
+        
+        // Then add hidden inputs for each row
         document.querySelectorAll('.category-row').forEach((r, idx) => {
             const checkedRadio = r.querySelector('input[type="radio"]:checked');
             if (checkedRadio) {
@@ -110,4 +131,69 @@ function setupRowEventHandlers(row) {
             }
         });
     });
+}
+
+function validateRow(row) {
+    // Remove existing error for this row
+    removeRowValidationError(row);
+    
+    const typeRadio = row.querySelector('input[type="radio"]:checked');
+    
+    // Only validate if grade type is selected
+    if (typeRadio && typeRadio.value === 'grade') {
+        const maxMarks = parseInt(row.querySelector('.cat-max').value);
+        const label = row.querySelector('.cat-label').value || 'This category';
+        const subdivision = row.querySelector('.subdivision-value').value;
+        
+        // Check if marks are too low for grade bands
+        if (maxMarks < 10) {
+            showValidationError(row, `${label}: ${maxMarks} marks is too low for grade bands. Use 10+ marks or switch to numeric scoring.`);
+        }
+    }
+}
+
+function removeRowValidationError(row) {
+    const existingError = row.querySelector('.grade-validation-error');
+    if (existingError) {
+        existingError.remove();
+    }
+}
+
+function validateGradeBands() {
+    // Remove any existing validation errors
+    document.querySelectorAll('.grade-validation-error').forEach(el => el.remove());
+    
+    let hasErrors = false;
+    
+    document.querySelectorAll('.category-row').forEach(row => {
+        const typeRadio = row.querySelector('input[type="radio"]:checked');
+        
+        // Only validate if grade type is selected
+        if (typeRadio && typeRadio.value === 'grade') {
+            const maxMarks = parseInt(row.querySelector('.cat-max').value);
+            const label = row.querySelector('.cat-label').value || 'Category';
+            const subdivision = row.querySelector('.subdivision-value').value;
+            
+            // Check if marks are too low for grade bands
+            if (maxMarks < 10) {
+                hasErrors = true;
+                showValidationError(row, `${label}: ${maxMarks} marks is too low for grade bands. Use 10+ marks or switch to numeric scoring.`);
+            }
+        }
+    });
+    
+    return !hasErrors;
+}
+
+function showValidationError(row, message) {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'alert alert-danger alert-dismissible fade show mt-2 grade-validation-error';
+    errorDiv.innerHTML = `
+        <strong>Validation Error:</strong> ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    row.appendChild(errorDiv);
+    
+    // Scroll to the error
+    errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
