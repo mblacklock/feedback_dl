@@ -11,8 +11,96 @@ class HomeViewTest(TestCase):
     def test_home_renders_template_with_title(self):
         resp = self.client.get("/feedback/")
         assert resp.status_code == 200
-        assert b"Welcome to the Feedback Portal" in resp.content
+        assert b"Feedback Templates" in resp.content
         assert b"<title>Feedback</title>" in resp.content
+    
+    def test_home_shows_empty_state_when_no_templates(self):
+        """Home page shows empty state when no templates exist"""
+        resp = self.client.get("/feedback/")
+        assert resp.status_code == 200
+        assert b"No templates yet" in resp.content
+        assert b"Create your first feedback template" in resp.content
+    
+    def test_home_lists_all_templates(self):
+        """Home page lists all templates in a list group"""
+        # Create test templates
+        template1 = AssessmentTemplate.objects.create(
+            title="Template 1",
+            module_code="CS101",
+            assessment_title="Assignment 1",
+            categories=[{"label": "Content", "max": 10}]
+        )
+        template2 = AssessmentTemplate.objects.create(
+            title="Template 2",
+            module_code="CS202",
+            assessment_title="Exam",
+            categories=[{"label": "Quality", "max": 20}, {"label": "Style", "max": 10}]
+        )
+        
+        resp = self.client.get("/feedback/")
+        assert resp.status_code == 200
+        
+        # Check for template titles
+        assert b"Template 1" in resp.content
+        assert b"Template 2" in resp.content
+        
+        # Check for module codes and assessments
+        assert b"CS101" in resp.content
+        assert b"Assignment 1" in resp.content
+        assert b"CS202" in resp.content
+        assert b"Exam" in resp.content
+        
+        # Check for category counts
+        assert b"1 category" in resp.content
+        assert b"2 categories" in resp.content
+        
+        # Check for View and Edit buttons
+        assert f'/feedback/template/{template1.pk}/'.encode() in resp.content
+        assert f'/feedback/template/{template1.pk}/edit/'.encode() in resp.content
+        assert f'/feedback/template/{template2.pk}/'.encode() in resp.content
+        assert f'/feedback/template/{template2.pk}/edit/'.encode() in resp.content
+        
+        # Check for Delete buttons with data-template-id attributes
+        assert f'data-template-id="{template1.pk}"'.encode() in resp.content
+        assert f'data-template-id="{template2.pk}"'.encode() in resp.content
+        assert b'delete-template' in resp.content  # Check for delete button class
+
+class TemplateDeleteViewTests(TestCase):
+    def test_post_delete_removes_template_and_returns_json(self):
+        """POST /feedback/template/<pk>/delete/ removes the template and returns JSON."""
+        import json
+        template = AssessmentTemplate.objects.create(
+            title="To Delete",
+            module_code="DEL101",
+            assessment_title="Delete Test",
+            categories=[{"label": "Test", "max": 10}]
+        )
+        
+        url = reverse("template_delete", args=[template.pk])
+        resp = self.client.post(url)
+        
+        # Should return 200 with JSON
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.content)
+        self.assertEqual(data["status"], "deleted")
+        
+        # Template should be deleted
+        self.assertEqual(AssessmentTemplate.objects.filter(pk=template.pk).count(), 0)
+    
+    def test_get_delete_not_allowed(self):
+        """GET /feedback/template/<pk>/delete/ is not allowed (only POST)."""
+        template = AssessmentTemplate.objects.create(
+            title="To Delete",
+            module_code="DEL101",
+            assessment_title="Delete Test",
+            categories=[{"label": "Test", "max": 10}]
+        )
+        
+        url = reverse("template_delete", args=[template.pk])
+        resp = self.client.get(url)
+        
+        # Should return 405 Method Not Allowed
+        self.assertEqual(resp.status_code, 405)
 
 class TemplateBuilderViewTests(TestCase):
     def test_get_new_template_creates_template_and_redirects_to_edit(self):

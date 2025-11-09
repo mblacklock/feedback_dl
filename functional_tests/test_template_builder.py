@@ -59,7 +59,10 @@ class TemplateBuilderFT(FunctionalTestBase):
         cat_rows[1].find_element(By.CSS_SELECTOR, "input.cat-label").send_keys("Method")
         cat_rows[1].find_element(By.CSS_SELECTOR, "input.cat-max").clear()
         cat_rows[1].find_element(By.CSS_SELECTOR, "input.cat-max").send_keys("20")
-        # Numeric is default, no need to click
+        # Click Numeric radio button (Grade is now default)
+        numeric_label = cat_rows[1].find_element(By.XPATH, ".//label[contains(text(), 'Numeric')]")
+        self.browser.execute_script("arguments[0].scrollIntoView(true);", numeric_label)
+        self.browser.execute_script("arguments[0].click();", numeric_label)
 
         # Third category: Design (grade type with no subdivision)
         cat_rows[2].find_element(By.CSS_SELECTOR, "input.cat-label").send_keys("Design")

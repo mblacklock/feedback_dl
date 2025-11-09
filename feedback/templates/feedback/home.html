@@ -4,10 +4,102 @@
 
 {% block content %}
 <div class="row">
-    <div class="col-md-8 mx-auto text-center">
-        <h1 class="display-4 mb-4">Welcome to the Feedback Portal</h1>
-        <p class="lead">Create and manage assessment feedback templates</p>
-        <a href="{% url 'template_new' %}" class="btn btn-primary btn-lg mt-3">Create New Template</a>
+    <div class="col-md-10 mx-auto">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Feedback Templates</h1>
+            <a href="{% url 'template_new' %}" class="btn btn-primary">Create New Template</a>
+        </div>
+
+        {% if templates %}
+        <div class="list-group">
+            {% for template in templates %}
+            <div class="list-group-item">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <h5 class="mb-1">{{ template.title }}</h5>
+                        <p class="mb-1 text-muted small">
+                            <strong>Module:</strong> {{ template.module_code }} | 
+                            <strong>Assessment:</strong> {{ template.assessment_title }}
+                        </p>
+                        <small class="text-muted">
+                            {{ template.categories|length }} categor{{ template.categories|length|pluralize:"y,ies" }}
+                        </small>
+                    </div>
+                    <div class="btn-group" role="group">
+                        <a href="{% url 'template_summary' template.pk %}" class="btn btn-sm btn-outline-primary">View</a>
+                        <a href="{% url 'template_edit' template.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                        <button type="button" class="btn btn-sm btn-outline-danger delete-template" data-template-id="{{ template.pk }}" data-template-title="{{ template.title }}">Delete</button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <p class="lead text-muted">No templates yet</p>
+            <p>Create your first feedback template to get started</p>
+            <a href="{% url 'template_new' %}" class="btn btn-primary">Create New Template</a>
+        </div>
+        {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get CSRF token from Django template
+    const csrftoken = '{{ csrf_token }}';
+
+    // Handle delete button clicks
+    document.querySelectorAll('.delete-template').forEach(button => {
+        button.addEventListener('click', function() {
+            const templateId = this.dataset.templateId;
+            const templateTitle = this.dataset.templateTitle;
+            
+            if (confirm(`Are you sure you want to delete "${templateTitle}"?`)) {
+                // Send DELETE request via AJAX
+                fetch(`/feedback/template/${templateId}/delete/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrftoken,
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        // Remove the template from the DOM
+                        const listItem = this.closest('.list-group-item');
+                        listItem.remove();
+                        
+                        // Check if there are no more templates
+                        const listGroup = document.querySelector('.list-group');
+                        if (listGroup && listGroup.children.length === 0) {
+                            // Show empty state
+                            const container = document.querySelector('.col-md-10');
+                            container.innerHTML = `
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <h1>Feedback Templates</h1>
+                                    <a href="{% url 'template_new' %}" class="btn btn-primary">Create New Template</a>
+                                </div>
+                                <div class="text-center py-5">
+                                    <p class="lead text-muted">No templates yet</p>
+                                    <p>Create your first feedback template to get started</p>
+                                    <a href="{% url 'template_new' %}" class="btn btn-primary">Create New Template</a>
+                                </div>
+                            `;
+                        }
+                    } else {
+                        alert('Failed to delete template. Please try again.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred. Please try again.');
+                });
+            }
+        });
+    });
+});
+</script>
 {% endblock %}

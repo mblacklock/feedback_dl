@@ -1,9 +1,14 @@
 from django.shortcuts import render, redirect
+from django.http import JsonResponse
 from feedback.models import AssessmentTemplate
 from feedback.utils import calculate_grade_bands, validate_subdivision
 
 def home(request):
-    return render(request, "feedback/home.html", {"page_title": "Feedback"})
+    templates = AssessmentTemplate.objects.all().order_by('-id')
+    return render(request, "feedback/home.html", {
+        "page_title": "Feedback",
+        "templates": templates
+    })
 
 def template_new(request):
     # If GET request, create minimal template and redirect to edit page  
@@ -190,6 +195,20 @@ def template_summary(request, pk):
         "template": tpl,
         "categories_with_bands": categories_with_bands
     })
+
+def template_delete(request, pk):
+    """AJAX endpoint to delete a template."""
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=405)
+    
+    try:
+        tpl = AssessmentTemplate.objects.get(pk=pk)
+        tpl.delete()
+        return JsonResponse({"status": "deleted"})
+    except AssessmentTemplate.DoesNotExist:
+        return JsonResponse({"error": "Template not found"}, status=404)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=400)
 
 def _group_bands_by_main_grade(bands):
     """Group bands by main grade (1st, 2:1, 2:2, 3rd, Fail).

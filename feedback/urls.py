@@ -7,5 +7,6 @@ urlpatterns = [
     path("template/<int:pk>/", views.template_summary, name="template_summary"),
     path("template/<int:pk>/edit/", views.template_edit, name="template_edit"),
     path("template/<int:pk>/update/", views.template_update, name="template_update"),
+    path("template/<int:pk>/delete/", views.template_delete, name="template_delete"),
     path("grade-bands-preview/", views.grade_bands_preview, name="grade_bands_preview"),
 ]
