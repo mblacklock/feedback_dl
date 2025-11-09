@@ -75,10 +75,16 @@ function addCategoryRow(categoryData = null) {
                     <button type="button" class="btn btn-outline-secondary subdivision-btn ${subdivision === 'high_mid_low' ? 'active' : ''}" data-subdivision="high_mid_low">High/Mid/Low</button>
                 </div>
                 <input type="hidden" class="subdivision-value" value="${subdivision}">
+                <div class="grade-bands-preview mt-2 small text-muted"></div>
             </div>
         </div>
     `;
     container.appendChild(row);
+    
+    // Update grade bands preview if grade type is selected
+    if (type === 'grade' && subdivision) {
+        updateGradeBandsPreview(row);
+    }
     
     // Set up event handlers for this row
     setupRowEventHandlers(row);
@@ -109,6 +115,7 @@ function setupRowEventHandlers(row) {
                     subdivisionButtons[0].classList.add('active');
                 }
                 validateRow(row);
+                updateGradeBandsPreview(row);
             } else {
                 subdivisionControls.style.display = 'none';
                 subdivisionInput.value = '';
@@ -124,6 +131,7 @@ function setupRowEventHandlers(row) {
         const typeRadio = row.querySelector('input[type="radio"]:checked');
         if (typeRadio && typeRadio.value === 'grade') {
             validateRow(row);
+            updateGradeBandsPreview(row);
         }
     });
     
@@ -134,6 +142,7 @@ function setupRowEventHandlers(row) {
             this.classList.add('active');
             subdivisionInput.value = this.dataset.subdivision;
             validateRow(row);
+            updateGradeBandsPreview(row);
             debouncedSave();
         });
     });
@@ -301,6 +310,36 @@ function getCookie(name) {
         }
     }
     return cookieValue;
+}
+
+function updateGradeBandsPreview(row) {
+    const previewEl = row.querySelector('.grade-bands-preview');
+    if (!previewEl) return;
+    
+    const maxMarks = parseInt(row.querySelector('.cat-max').value);
+    const subdivision = row.querySelector('.subdivision-value').value;
+    
+    if (!maxMarks || maxMarks < 1 || !subdivision) {
+        previewEl.innerHTML = '';
+        return;
+    }
+    
+    // Fetch grade bands from server
+    fetch(`/feedback/grade-bands-preview/?max_marks=${maxMarks}&subdivision=${subdivision}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.bands && data.bands.length > 0) {
+                // Format as compact inline list
+                const bandsText = data.bands.map(b => `${b.grade}: ${b.marks}`).join(' • ');
+                previewEl.innerHTML = `<em>Grade bands: ${bandsText}</em>`;
+            } else {
+                previewEl.innerHTML = '';
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching grade bands:', error);
+            previewEl.innerHTML = '';
+        });
 }
 
 // Add spinning animation for save icon

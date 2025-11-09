@@ -65,3 +65,43 @@ class TemplateAutoSaveFT(StaticLiveServerTestCase):
         self.wait.until(EC.url_matches(r'/feedback/template/\d+/$'))
         h1 = self.wait.until(EC.presence_of_element_located((By.TAG_NAME, "h1")))
         assert "KB5031 – FEA Coursework" in h1.text
+    
+    def test_grade_bands_preview_appears_when_selecting_grade_type(self):
+        # GIVEN a staff member is on the edit page
+        self.browser.get(self.live_server_url + "/feedback/")
+        create_btn = self.wait.until(EC.presence_of_element_located((By.LINK_TEXT, "Create New Template")))
+        create_btn.click()
+        self.wait.until(EC.url_matches(r'/feedback/template/\d+/edit/'))
+        
+        # WHEN they add a category
+        add_btn = self.browser.find_element(By.ID, "add-category")
+        add_btn.click()
+        
+        # AND they see at least one category row
+        cat_rows = self.browser.find_elements(By.CSS_SELECTOR, ".category-row")
+        assert len(cat_rows) >= 1
+        
+        # AND they enter a category with 30 marks
+        cat_rows[0].find_element(By.CSS_SELECTOR, "input.cat-label").send_keys("Comprehension")
+        max_input = cat_rows[0].find_element(By.CSS_SELECTOR, "input.cat-max")
+        max_input.clear()
+        max_input.send_keys("30")
+        
+        # WHEN they select grade type
+        grade_label = cat_rows[0].find_element(By.XPATH, ".//label[contains(text(), 'Grade')]")
+        self.browser.execute_script("arguments[0].click();", grade_label)
+        
+        # AND select a subdivision
+        subdivision_btn = cat_rows[0].find_element(By.CSS_SELECTOR, "button[data-subdivision='high_low']")
+        self.browser.execute_script("arguments[0].click();", subdivision_btn)
+        
+        # THEN they see the grade bands preview
+        time.sleep(0.5)  # Wait for AJAX call
+        preview = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".grade-bands-preview")))
+        
+        # AND it contains grade information
+        preview_text = preview.text
+        self.assertIn("Grade bands:", preview_text)
+        self.assertIn("Maximum:", preview_text)
+        self.assertIn("1st:", preview_text)
+        self.assertIn("Fail:", preview_text)

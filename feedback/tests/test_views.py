@@ -166,3 +166,56 @@ class TemplateBuilderViewTests(TestCase):
         self.assertEqual(res.status_code, 200)  # stays on form
         self.assertContains(res, "5 marks is too low for subdivision")
         self.assertEqual(AssessmentTemplate.objects.count(), 0)
+
+class GradeBandsPreviewTests(TestCase):
+    def test_grade_bands_preview_returns_json_for_valid_params(self):
+        """GET /feedback/grade-bands-preview/ returns grade bands as JSON."""
+        url = reverse("grade_bands_preview")
+        res = self.client.get(url, {"max_marks": "30", "subdivision": "high_low"})
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res["Content-Type"], "application/json")
+        
+        import json
+        data = json.loads(res.content)
+        self.assertIn("bands", data)
+        self.assertIsInstance(data["bands"], list)
+        self.assertGreater(len(data["bands"]), 0)
+        
+        # Check structure of first band
+        first_band = data["bands"][0]
+        self.assertIn("grade", first_band)
+        self.assertIn("marks", first_band)
+    
+    def test_grade_bands_preview_returns_correct_bands_for_none_subdivision(self):
+        """Preview endpoint returns 11 bands for 'none' subdivision."""
+        url = reverse("grade_bands_preview")
+        res = self.client.get(url, {"max_marks": "10", "subdivision": "none"})
+        
+        import json
+        data = json.loads(res.content)
+        self.assertEqual(len(data["bands"]), 11)
+        
+        # Check some expected bands
+        grades = [b["grade"] for b in data["bands"]]
+        self.assertIn("Maximum", grades)
+        self.assertIn("High 1st", grades)
+        self.assertIn("2:1", grades)
+        self.assertIn("Zero Fail", grades)
+    
+    def test_grade_bands_preview_returns_empty_for_invalid_marks(self):
+        """Preview endpoint returns empty bands for invalid marks."""
+        url = reverse("grade_bands_preview")
+        res = self.client.get(url, {"max_marks": "0", "subdivision": "none"})
+        
+        import json
+        data = json.loads(res.content)
+        self.assertEqual(data["bands"], [])
+    
+    def test_grade_bands_preview_returns_empty_for_missing_params(self):
+        """Preview endpoint returns empty bands when params are missing."""
+        url = reverse("grade_bands_preview")
+        res = self.client.get(url)
+        
+        import json
+        data = json.loads(res.content)
+        self.assertEqual(data["bands"], [])

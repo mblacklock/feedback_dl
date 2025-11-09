@@ -139,6 +139,23 @@ def template_update(request, pk):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=400)
 
+def grade_bands_preview(request):
+    """AJAX endpoint to calculate grade bands for preview."""
+    import json
+    from django.http import JsonResponse
+    
+    try:
+        max_marks = int(request.GET.get('max_marks', 0))
+        subdivision = request.GET.get('subdivision', '')
+        
+        if max_marks < 1 or not subdivision:
+            return JsonResponse({"bands": []})
+        
+        bands = calculate_grade_bands(max_marks, subdivision)
+        return JsonResponse({"bands": bands})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=400)
+
 def template_summary(request, pk):
     tpl = AssessmentTemplate.objects.get(pk=pk)
     
