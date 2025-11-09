@@ -12,6 +12,8 @@ def template_new(request):
         assessment_title = request.POST.get("assessment_title", "").strip()
         category_labels = request.POST.getlist("category_label")
         category_maxes = request.POST.getlist("category_max")
+        category_types = request.POST.getlist("category_type")
+        category_subdivisions = request.POST.getlist("category_subdivision")
         
         errors = []
         categories = []
@@ -45,10 +47,23 @@ def template_new(request):
                 errors.append("Max marks must be a number between 1 and 1000")
                 continue
             
-            categories.append({
+            # Build category dict
+            cat = {
                 "label": label,
                 "max": max_int
-            })
+            }
+            
+            # Add type and subdivision if provided
+            cat_type = category_types[idx] if idx < len(category_types) else "numeric"
+            cat["type"] = cat_type
+            
+            # Only add subdivision for grade types
+            if cat_type == "grade":
+                subdivision = category_subdivisions[idx] if idx < len(category_subdivisions) else ""
+                if subdivision:
+                    cat["subdivision"] = subdivision
+            
+            categories.append(cat)
         
         # Check we have at least one category
         if not categories:

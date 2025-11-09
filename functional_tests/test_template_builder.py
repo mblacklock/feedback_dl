@@ -29,7 +29,7 @@ class TemplateBuilderFT(StaticLiveServerTestCase):
         cls.browser.quit()
         super().tearDownClass()
 
-    def test_staff_creates_template_and_sees_summary(self):
+    def test_staff_creates_template_with_grade_bands_and_sees_summary(self):
         # GIVEN a staff member visits the feedback portal home page
         self.browser.get(self.live_server_url + "/feedback/")
         
@@ -55,16 +55,37 @@ class TemplateBuilderFT(StaticLiveServerTestCase):
         add_btn.click()
         add_btn.click()
 
-        # Fill the three visible category rows (inputs with classes .cat-label and .cat-max)
+        # Fill the three visible category rows
         cat_rows = self.browser.find_elements(By.CSS_SELECTOR, "#categories .category-row")
         assert len(cat_rows) >= 3, "Expected at least 3 category rows"
 
-        labels = ["Introduction", "Method", "Design"]
-        maxes = ["10", "20", "10"]
-        for row, lab, mx in zip(cat_rows[:3], labels, maxes):
-            row.find_element(By.CSS_SELECTOR, "input.cat-label").send_keys(lab)
-            row.find_element(By.CSS_SELECTOR, "input.cat-max").clear()
-            row.find_element(By.CSS_SELECTOR, "input.cat-max").send_keys(mx)
+        # First category: Comprehension (grade type with high/low subdivision)
+        cat_rows[0].find_element(By.CSS_SELECTOR, "input.cat-label").send_keys("Comprehension")
+        cat_rows[0].find_element(By.CSS_SELECTOR, "input.cat-max").clear()
+        cat_rows[0].find_element(By.CSS_SELECTOR, "input.cat-max").send_keys("30")
+        # Select grade type by clicking the label (like a real user would)
+        grade_label = cat_rows[0].find_element(By.XPATH, ".//label[contains(text(), 'Grade')]")
+        self.browser.execute_script("arguments[0].scrollIntoView(true);", grade_label)
+        self.browser.execute_script("arguments[0].click();", grade_label)
+        # Select high_low subdivision button
+        subdivision_btn = cat_rows[0].find_element(By.CSS_SELECTOR, "button[data-subdivision='high_low']")
+        self.browser.execute_script("arguments[0].click();", subdivision_btn)
+
+        # Second category: Method (numeric type)
+        cat_rows[1].find_element(By.CSS_SELECTOR, "input.cat-label").send_keys("Method")
+        cat_rows[1].find_element(By.CSS_SELECTOR, "input.cat-max").clear()
+        cat_rows[1].find_element(By.CSS_SELECTOR, "input.cat-max").send_keys("20")
+        # Numeric is default, no need to click
+
+        # Third category: Design (grade type with no subdivision)
+        cat_rows[2].find_element(By.CSS_SELECTOR, "input.cat-label").send_keys("Design")
+        cat_rows[2].find_element(By.CSS_SELECTOR, "input.cat-max").clear()
+        cat_rows[2].find_element(By.CSS_SELECTOR, "input.cat-max").send_keys("10")
+        grade_label2 = cat_rows[2].find_element(By.XPATH, ".//label[contains(text(), 'Grade')]")
+        self.browser.execute_script("arguments[0].scrollIntoView(true);", grade_label2)
+        self.browser.execute_script("arguments[0].click();", grade_label2)
+        subdivision_btn2 = cat_rows[2].find_element(By.CSS_SELECTOR, "button[data-subdivision='none']")
+        self.browser.execute_script("arguments[0].click();", subdivision_btn2)
 
         # AND they submit the form
         submit_btn = form.find_element(By.CSS_SELECTOR, "button[type=submit]")
@@ -79,6 +100,13 @@ class TemplateBuilderFT(StaticLiveServerTestCase):
         # AND the rubric categories appear in order
         cats_list = self.wait.until(EC.presence_of_element_located((By.ID, "cat-list")))
         items = cats_list.find_elements(By.TAG_NAME, "li")
-        # Check that each label appears in the corresponding list item
-        for idx, label in enumerate(labels):
-            assert label in items[idx].text, f"Expected '{label}' in '{items[idx].text}'"
+        
+        # AND all three categories are displayed
+        assert "Comprehension" in items[0].text
+        assert "30 marks" in items[0].text
+        
+        assert "Method" in items[1].text
+        assert "20 marks" in items[1].text
+        
+        assert "Design" in items[2].text
+        assert "10 marks" in items[2].text

@@ -52,9 +52,9 @@ class TemplateBuilderViewTests(TestCase):
         self.assertEqual(
             tpl.categories,
             [
-                {"label": "Introduction", "max": 10},
-                {"label": "Method", "max": 20},
-                {"label": "Design", "max": 10},
+                {"label": "Introduction", "max": 10, "type": "numeric"},
+                {"label": "Method", "max": 20, "type": "numeric"},
+                {"label": "Design", "max": 10, "type": "numeric"},
             ],
         )
 
@@ -114,3 +114,33 @@ class TemplateBuilderViewTests(TestCase):
         self.assertContains(res, "Module code is required")
         self.assertContains(res, "Assessment title is required")
         self.assertEqual(AssessmentTemplate.objects.count(), 0)
+
+    def test_post_creates_category_with_grade_bands(self):
+        """POST with grade type and subdivision creates category with those fields."""
+        url = reverse("template_new")
+        payload = {
+            "title": "Grade Bands Template",
+            "module_code": "KB5031",
+            "assessment_title": "Test",
+            "category_label": ["Comprehension", "Method"],
+            "category_max": ["30", "20"],
+            "category_type": ["grade", "numeric"],
+            "category_subdivision": ["high_low", ""],  # only grade types have subdivision
+        }
+        res = self.client.post(url, data=payload, follow=False)
+        self.assertEqual(res.status_code, 302)
+        
+        tpl = AssessmentTemplate.objects.first()
+        self.assertEqual(len(tpl.categories), 2)
+        
+        # First category has grade bands
+        self.assertEqual(tpl.categories[0]["label"], "Comprehension")
+        self.assertEqual(tpl.categories[0]["max"], 30)
+        self.assertEqual(tpl.categories[0]["type"], "grade")
+        self.assertEqual(tpl.categories[0]["subdivision"], "high_low")
+        
+        # Second category is numeric (no subdivision)
+        self.assertEqual(tpl.categories[1]["label"], "Method")
+        self.assertEqual(tpl.categories[1]["max"], 20)
+        self.assertEqual(tpl.categories[1]["type"], "numeric")
+        self.assertNotIn("subdivision", tpl.categories[1])
