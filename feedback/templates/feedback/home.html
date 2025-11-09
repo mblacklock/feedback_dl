@@ -1,9 +1,13 @@
-<!doctype html>
-<html>
-  <head>
-    <title>{{ page_title }}</title>
-  </head>
-  <body>
-    <h1>Welcome to the Feedback Portal</h1>
-  </body>
-</html>
+{% extends "feedback/base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto text-center">
+        <h1 class="display-4 mb-4">Welcome to the Feedback Portal</h1>
+        <p class="lead">Create and manage assessment feedback templates</p>
+        <a href="{% url 'template_new' %}" class="btn btn-primary btn-lg mt-3">Create New Template</a>
+    </div>
+</div>
+{% endblock %}

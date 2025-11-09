@@ -1,0 +1,46 @@
+{% extends "feedback/base.html" %}
+
+{% block title %}{{ template.title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-10 mx-auto">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>{{ template.title }}</h1>
+            <a href="{% url 'home' %}" class="btn btn-secondary">Back to Home</a>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Template Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Module Code:</strong> {{ template.module_code }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Assessment:</strong> {{ template.assessment_title }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Rubric Categories</h5>
+            </div>
+            <div class="card-body">
+                <ul id="cat-list" class="list-group list-group-flush">
+                    {% for cat in template.categories %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>{{ cat.label }}</span>
+                        <span class="badge bg-primary rounded-pill">{{ cat.max }} marks</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

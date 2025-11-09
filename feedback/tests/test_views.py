@@ -1,6 +1,7 @@
 from django.test import TestCase
-from django.urls import resolve
+from django.urls import resolve, reverse
 from feedback.views import home
+from feedback.models import AssessmentTemplate
 
 class HomeViewTest(TestCase):
     def test_root_url_resolves_to_home_view(self):
@@ -12,3 +13,104 @@ class HomeViewTest(TestCase):
         assert resp.status_code == 200
         assert b"Welcome to the Feedback Portal" in resp.content
         assert b"<title>Feedback</title>" in resp.content
+
+class TemplateBuilderViewTests(TestCase):
+    def test_get_new_template_renders_form(self):
+        """GET /feedback/template/new/ renders the builder with expected fields and scaffolding."""
+        url = reverse("template_new")
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, 200)
+        # Form container
+        self.assertContains(res, 'id="template-form"')
+        # Summary fields
+        self.assertContains(res, 'name="title"')
+        self.assertContains(res, 'name="module_code"')
+        self.assertContains(res, 'name="assessment_title"')
+        # Categories UI scaffold
+        self.assertContains(res, 'id="categories"')
+        self.assertContains(res, 'id="add-category"')
+
+    def test_post_valid_creates_template_and_redirects_to_summary(self):
+        """POST valid data creates a template with categories (in order) and redirects to summary."""
+        url = reverse("template_new")
+        payload = {
+            "title": "KB5031 – FEA Coursework",
+            "module_code": "KB5031",
+            "assessment_title": "Coursework 1: Truss Analysis",
+            # dynamic rows submitted as parallel arrays
+            "category_label": ["Introduction", "Method", "Design"],
+            "category_max": ["10", "20", "10"],
+        }
+        res = self.client.post(url, data=payload, follow=False)
+        self.assertEqual(res.status_code, 302)
+        self.assertEqual(AssessmentTemplate.objects.count(), 1)
+
+        tpl = AssessmentTemplate.objects.first()
+        self.assertEqual(tpl.title, payload["title"])
+        self.assertEqual(tpl.module_code, "KB5031")
+        self.assertEqual(tpl.assessment_title, "Coursework 1: Truss Analysis")
+        self.assertEqual(
+            tpl.categories,
+            [
+                {"label": "Introduction", "max": 10},
+                {"label": "Method", "max": 20},
+                {"label": "Design", "max": 10},
+            ],
+        )
+
+        # Follow to summary page
+        summary_url = reverse("template_summary", args=[tpl.id])
+        res2 = self.client.get(summary_url)
+        self.assertEqual(res2.status_code, 200)
+        self.assertContains(res2, "KB5031 – FEA Coursework")
+        # Category list shown in order
+        for lab in ["Introduction", "Method", "Design"]:
+            self.assertContains(res2, f">{lab}<")
+
+    def test_post_requires_at_least_one_category(self):
+        """Submitting without any non-empty categories returns form errors and does not save."""
+        url = reverse("template_new")
+        payload = {
+            "title": "Empty Cats",
+            "module_code": "KB0000",
+            "assessment_title": "Test",
+            "category_label": [""],  # empty
+            "category_max": [""],
+        }
+        res = self.client.post(url, data=payload)
+        self.assertEqual(res.status_code, 200)  # stays on form
+        self.assertContains(res, "At least one category is required")
+        self.assertEqual(AssessmentTemplate.objects.count(), 0)
+
+    def test_post_rejects_blank_labels_and_bad_max(self):
+        """Invalid category rows (blank label, non-numeric or out of range max) produce errors and no save."""
+        url = reverse("template_new")
+        payload = {
+            "title": "Invalid Cats",
+            "module_code": "KB9999",
+            "assessment_title": "Bad Data",
+            "category_label": ["", "Method", "Design"],
+            "category_max": ["10", "not-a-number", "-1"],
+        }
+        res = self.client.post(url, data=payload)
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, "Category labels cannot be blank")
+        self.assertContains(res, "Max marks must be a number between 1 and 1000")
+        self.assertEqual(AssessmentTemplate.objects.count(), 0)
+
+    def test_post_requires_title_module_code_and_assessment_title(self):
+        """Title, module_code, and assessment_title cannot be blank."""
+        url = reverse("template_new")
+        payload = {
+            "title": "",
+            "module_code": "",
+            "assessment_title": "",
+            "category_label": ["Introduction"],
+            "category_max": ["10"],
+        }
+        res = self.client.post(url, data=payload)
+        self.assertEqual(res.status_code, 200)  # stays on form
+        self.assertContains(res, "Title is required")
+        self.assertContains(res, "Module code is required")
+        self.assertContains(res, "Assessment title is required")
+        self.assertEqual(AssessmentTemplate.objects.count(), 0)

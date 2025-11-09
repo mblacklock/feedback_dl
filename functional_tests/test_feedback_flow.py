@@ -1,24 +1,40 @@
-import time
-import unittest
+# functional_tests/test_feedback_flow.py
+from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
 from webdriver_manager.chrome import ChromeDriverManager
 
-class FeedbackFT(unittest.TestCase):
-    def setUp(self):
-        self.browser = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
-        self.addCleanup(self.browser.quit)
+
+class FeedbackFT(StaticLiveServerTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        opts = Options()
+        # comment this out if you want to see the browser
+        opts.add_argument("--headless=new")
+        opts.add_argument("--window-size=1200,900")
+        cls.browser = webdriver.Chrome(
+            service=Service(ChromeDriverManager().install()),
+            options=opts,
+        )
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.browser.quit()
+        super().tearDownClass()
 
     def test_student_can_see_feedback_homepage(self):
-        # The student visits the portal
-        self.browser.get("http://localhost:8000/feedback/")
+        """A student visits the feedback portal and sees a welcome message."""
+        # GIVEN the student opens the feedback homepage
+        self.browser.get(self.live_server_url + "/feedback/")
 
-        # They see the site title or a welcome message
-        self.assertIn("Feedback", self.browser.title)
+        # WHEN the page loads
+        title = self.browser.title
+        body = self.browser.find_element(By.TAG_NAME, "body").text
 
-        # Optional: check visible text
-        body_text = self.browser.find_element("tag name", "body").text
-        self.assertIn("Welcome", body_text)
+        # THEN they see that they are on the Feedback site
+        self.assertIn("Feedback", title)
+        self.assertIn("Welcome", body)
 
-if __name__ == "__main__":
-    unittest.main(warnings="ignore")
