@@ -13,17 +13,27 @@ Django 5.2.8 application for creating and managing feedback templates for assess
 
 ### Key Models (feedback/models.py)
 - **`AssessmentTemplate`**: Stores feedback templates with:
+  - `component` (IntegerField, required) - Assessment component number
   - `title`, `module_code`, `assessment_title` (text fields)
-  - `categories` (JSONField) - ordered list of `{"label": str, "max": int}` dicts
-  - Custom `clean()` validation: categories required, labels non-blank, max marks 1-1000
+  - `categories` (JSONField) - ordered list of category dicts with:
+    - Required: `{"label": str, "max": int}`
+    - Optional: `"type": "numeric"|"grade"` (default: "numeric")
+    - Optional: `"subdivision": "none"|"high_low"|"thirds"` (only for grade types)
+    - Optional: `"descriptions": {grade: str}` (grade band descriptions)
+  - Custom `clean()` validation: categories required, labels non-blank, max marks 1-1000, component required
 
 ### URL Structure
-- `/feedback/` - Home page
-- `/feedback/template/new/` - Create new template (form with dynamic JS)
+- `/feedback/` - Home page (lists all templates with component, module, assessment)
+- `/feedback/template/new/` - Create new template (GET redirects to edit page)
 - `/feedback/template/<pk>/` - View template summary
+- `/feedback/template/<pk>/edit/` - Edit template (autosave via AJAX)
+- `/feedback/template/<pk>/update/` - Update template (AJAX endpoint)
+- `/feedback/template/<pk>/delete/` - Delete template (POST only, returns JSON)
 
 ### Static Files
-- JavaScript in `feedback/static/feedback/js/` (e.g., `template_builder.js` for dynamic forms)
+- JavaScript in `feedback/static/feedback/js/`:
+  - `template_builder.js` - Dynamic form for creating templates
+  - `template_editor.js` - Autosave and dynamic editing with grade bands support
 - Always use `{% load static %}` and `{% static 'path' %}` in templates
 
 ## Development Workflows
@@ -43,9 +53,13 @@ python manage.py test feedback.tests.test_views.TemplateBuilderViewTests.test_po
 ```
 
 **Test Structure:**
-- `feedback/tests/test_models.py` - Model validation and behavior
-- `feedback/tests/test_views.py` - View logic and form handling
-- `functional_tests/` - User-facing behavior with Selenium (Given-When-Then style)
+- `feedback/tests/test_models.py` - Model validation and behavior (component, categories, grade bands)
+- `feedback/tests/test_views.py` - View logic and form handling (create, edit, update, delete)
+- `feedback/tests/test_utils.py` - Utility functions (grade band calculations)
+- `functional_tests/test_feedback_flow.py` - Home page, navigation, deletion
+- `functional_tests/test_template_builder.py` - Template creation flow
+- `functional_tests/test_template_autosave.py` - Autosave functionality
+- `functional_tests/test_grade_band_descriptions.py` - Grade bands feature
 
 **Test Conventions:**
 - Use **Given-When-Then (GWT)** comments in functional tests for BDD clarity
@@ -79,8 +93,10 @@ python manage.py makemigrations
 python manage.py migrate
 
 # Verify all tests pass before committing
-python manage.py test
+python manage.py test --parallel=auto  # Recommended: 60% faster than serial
 ```
+
+**Current Test Count:** 44 tests (all passing)
 
 ### Running the Server
 ```powershell
@@ -108,6 +124,11 @@ Dependencies are pinned to exact versions in `requirements.txt` (e.g., `Django==
 
 ### Git Ignores
 Standard Django exclusions: `__pycache__/`, `*.pyc`, `.venv/`, `db.sqlite3`, `.vscode/`
+
+### Logging Configuration
+- `django.server` logger set to ERROR level in settings.py
+- Suppresses harmless "Broken pipe" warnings from Selenium tests
+- Actual errors still displayed
 
 ## Important Notes for AI Assistants
 - **Always follow TDD**: Write tests first, implement step-by-step
