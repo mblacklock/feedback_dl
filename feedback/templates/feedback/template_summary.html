@@ -42,30 +42,30 @@
                         
                         {% if cat.bands %}
                         <div class="mt-3">
-                            <div class="table-responsive">
-                                <table class="table table-sm table-bordered grade-bands-table">
-                                    <thead>
-                                        <tr>
-                                            {% for band in cat.bands %}
-                                            <th class="text-center small">
-                                                {{ band.grade }}<br>
-                                                <span class="badge bg-secondary">{{ band.marks }}</span>
-                                            </th>
-                                            {% endfor %}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            {% for main_grade, band_list in cat.grouped_bands.items %}
-                                            <td colspan="{{ band_list|length }}" class="small">
-                                                {% if main_grade in cat.grade_descriptions %}
-                                                    {{ cat.grade_descriptions|get_item:main_grade }}
-                                                {% endif %}
-                                            </td>
-                                            {% endfor %}
-                                        </tr>
-                                    </tbody>
-                                </table>
+                            <div class="row g-2">
+                                {% for main_grade, band_list in cat.grouped_bands.items %}
+                                <div class="col">
+                                    <div class="card h-100">
+                                        <div class="card-header bg-light py-1 px-2">
+                                            <small class="fw-bold">{{ main_grade }}</small>
+                                        </div>
+                                        <div class="card-body p-2">
+                                            <div class="d-flex flex-wrap gap-1 mb-2">
+                                                {% for band in band_list %}
+                                                <span class="badge bg-secondary">
+                                                    {{ band.grade }}: {{ band.marks }}
+                                                </span>
+                                                {% endfor %}
+                                            </div>
+                                            {% if main_grade in cat.grade_descriptions %}
+                                            <p class="small mb-0 text-muted">
+                                                {{ cat.grade_descriptions|get_item:main_grade }}
+                                            </p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
                             </div>
                         </div>
                         {% else %}

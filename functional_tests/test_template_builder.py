@@ -94,9 +94,9 @@ class TemplateBuilderFT(FunctionalTestBase):
         assert "30 marks" in items[0].text
         assert "High 1st" in items[0].text
         assert "Low 1st" in items[0].text
-        # Check for table structure
-        first_cat_table = items[0].find_element(By.CSS_SELECTOR, ".grade-bands-table")
-        assert first_cat_table is not None
+        # Check for card grid structure
+        first_cat_grid = items[0].find_element(By.CSS_SELECTOR, ".row.g-2")
+        assert first_cat_grid is not None
         
         # AND the second category shows as numeric (no grade bands)
         assert "Method" in items[1].text
@@ -109,5 +109,5 @@ class TemplateBuilderFT(FunctionalTestBase):
         assert "1st" in items[2].text
         assert "2:1" in items[2].text
         assert "Fail" in items[2].text
-        third_cat_table = items[2].find_element(By.CSS_SELECTOR, ".grade-bands-table")
-        assert third_cat_table is not None
+        third_cat_grid = items[2].find_element(By.CSS_SELECTOR, ".row.g-2")
+        assert third_cat_grid is not None

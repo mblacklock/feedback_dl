@@ -349,27 +349,40 @@ function updateGradeBandsPreview(row) {
                 // Group bands by main grade (1st, 2:1, 2:2, 3rd, Fail)
                 const grouped = groupBandsByMainGrade(data.bands);
                 
-                // Create table with grade bands grouped by main grade
-                let tableHTML = '<div class="table-responsive mt-2"><table class="table table-sm table-bordered grade-bands-table"><thead><tr>';
+                // Create grid layout with cards for each main grade
+                let gridHTML = '<div class="row g-2 mt-2">';
                 
-                // Add headers for each subdivision within each grade
-                data.bands.forEach(band => {
-                    tableHTML += `<th class="text-center small">${band.grade}<br><span class="badge bg-secondary">${band.marks}</span></th>`;
-                });
-                tableHTML += '</tr></thead><tbody><tr>';
-                
-                // Add description textareas - one per main grade, spanning its subdivisions
                 for (const [mainGrade, bandList] of Object.entries(grouped)) {
-                    const colspan = bandList.length;
                     const desc = descriptions[mainGrade] || '';
-                    tableHTML += `<td colspan="${colspan}"><textarea class="form-control form-control-sm grade-description" 
-                                    data-grade="${mainGrade}" 
-                                    placeholder="Description for ${mainGrade}..." 
-                                    rows="3">${desc}</textarea></td>`;
+                    
+                    gridHTML += `
+                        <div class="col">
+                            <div class="card h-100">
+                                <div class="card-header bg-light py-1 px-2">
+                                    <small class="fw-bold">${mainGrade}</small>
+                                </div>
+                                <div class="card-body p-2">
+                                    <div class="d-flex flex-wrap gap-1 mb-2">`;
+                    
+                    // Add badges for each subdivision
+                    bandList.forEach(band => {
+                        gridHTML += `<span class="badge bg-secondary">${band.grade}: ${band.marks}</span>`;
+                    });
+                    
+                    gridHTML += `
+                                    </div>
+                                    <textarea class="form-control form-control-sm grade-description" 
+                                              data-grade="${mainGrade}" 
+                                              placeholder="Description for ${mainGrade}..." 
+                                              rows="3">${desc}</textarea>
+                                </div>
+                            </div>
+                        </div>`;
                 }
-                tableHTML += '</tr></tbody></table></div>';
                 
-                previewEl.innerHTML = tableHTML;
+                gridHTML += '</div>';
+                
+                previewEl.innerHTML = gridHTML;
                 
                 // Attach event listeners to new textareas
                 previewEl.querySelectorAll('.grade-description').forEach(textarea => {

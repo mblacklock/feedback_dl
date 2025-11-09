@@ -76,11 +76,11 @@ class TemplateAutoSaveFT(FunctionalTestBase):
         subdivision_btn = cat_rows[0].find_element(By.CSS_SELECTOR, "button[data-subdivision='high_low']")
         self.browser.execute_script("arguments[0].click();", subdivision_btn)
         
-        # THEN they see the grade bands table
+        # THEN they see the grade bands grid
         time.sleep(0.5)  # Wait for AJAX call
-        preview = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".grade-bands-table")))
+        preview = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".row.g-2")))
         
-        # AND it contains grade information in a table
+        # AND it contains grade information in cards
         preview_text = preview.text
         self.assertIn("Maximum", preview_text)
         self.assertIn("1st", preview_text)

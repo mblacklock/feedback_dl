@@ -39,19 +39,19 @@ class GradeBandDescriptionsFT(FunctionalTestBase):
         # Wait for grade bands table to appear
         time.sleep(0.5)
         
-        # THEN they see a table with grade bands (subdivisions) and description fields (for main grades)
-        grade_table = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".grade-bands-table")))
+        # THEN they see a grid with grade band cards (one card per main grade)
+        grade_grid = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".row.g-2")))
         
-        # AND the table has columns for different subdivisions
-        headers = grade_table.find_elements(By.TAG_NAME, "th")
-        header_text = " ".join([h.text for h in headers])
-        # Should have subdivisions in headers
-        self.assertIn("1st", header_text)
-        self.assertIn("2:1", header_text)
-        self.assertIn("Fail", header_text)
+        # AND the grid has cards for different main grades
+        cards = grade_grid.find_elements(By.CSS_SELECTOR, ".card")
+        card_text = " ".join([c.text for c in cards])
+        # Should have main grades in cards
+        self.assertIn("1st", card_text)
+        self.assertIn("2:1", card_text)
+        self.assertIn("Fail", card_text)
         
         # AND they can enter descriptions for each MAIN grade (not each subdivision)
-        description_inputs = grade_table.find_elements(By.TAG_NAME, "textarea")
+        description_inputs = grade_grid.find_elements(By.TAG_NAME, "textarea")
         # Should have 5 textareas: one for each main grade (1st, 2:1, 2:2, 3rd, Fail)
         self.assertEqual(len(description_inputs), 5, "Should have 5 description fields for 5 main grades")
         
@@ -76,14 +76,14 @@ class GradeBandDescriptionsFT(FunctionalTestBase):
         # THEN they see the summary page
         self.wait.until(EC.url_matches(r'/feedback/template/\d+/$'))
         
-        # AND the grade bands are displayed in a table format
-        summary_table = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".grade-bands-table")))
+        # AND the grade bands are displayed in a card grid format
+        summary_grid = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".row.g-2")))
         
         # AND the descriptions they entered are visible
-        table_text = summary_table.text
-        self.assertIn("Complex engineering principles are creatively and critically applied", table_text)
-        self.assertIn("Well-founded engineering principles are soundly applied", table_text)
+        grid_text = summary_grid.text
+        self.assertIn("Complex engineering principles are creatively and critically applied", grid_text)
+        self.assertIn("Well-founded engineering principles are soundly applied", grid_text)
         
         # AND the marks for each grade band are shown
-        self.assertIn("30", table_text)  # Maximum mark
-        self.assertIn("27", table_text)  # High 1st for 30 marks
+        self.assertIn("30", grid_text)  # Maximum mark
+        self.assertIn("27", grid_text)  # High 1st for 30 marks
