@@ -184,6 +184,49 @@ class AssessmentTemplateModelTests(TestCase):
         self.assertEqual(bands[-1]["grade"], "Zero Fail")
         self.assertEqual(bands[-1]["marks"], 0)  # 0%
     
+    def test_calculate_grade_bands_finds_closest_valid_mark(self):
+        """
+        Test that grade band calculation finds the closest valid mark in the correct grade band.
+        
+        For 12 marks with 'none' subdivision:
+        - Low 1st target: 70% × 12 = 8.4 rounds to 8
+        - But 8/12 = 66.7% which is 2:1, not 1st
+        - Should find 9/12 = 75% (valid 1st class) instead of going to 0
+        """
+        from feedback.utils import calculate_grade_bands
+        
+        bands = calculate_grade_bands(12, "none")
+        self.assertEqual(len(bands), 11)
+        
+        # Extract marks for each band
+        band_dict = {b["grade"]: b["marks"] for b in bands}
+        
+        # Maximum 1st should be 12 (100%)
+        self.assertEqual(band_dict["Maximum 1st"], 12)
+        
+        # High 1st should be 11 (91.7% - valid 1st class)
+        self.assertEqual(band_dict["High 1st"], 11)
+        
+        # Mid 1st should be 10 (83.3% - valid 1st class)
+        self.assertEqual(band_dict["Mid 1st"], 10)
+        
+        # Low 1st should be 9 (75% - valid 1st class), NOT 0
+        # This is the key test: 8.4 rounds to 8, but 8/12=66.7% is 2:1
+        # So algorithm should find 9 as closest valid 1st class mark
+        self.assertEqual(band_dict["Low 1st"], 9)
+        
+        # 2:1 should be 8 (66.7% - valid 2:1)
+        self.assertEqual(band_dict["2:1"], 8)
+        
+        # All marks should be >= 0
+        for band in bands:
+            self.assertGreaterEqual(band["marks"], 0)
+        
+        # No duplicate marks except Zero Fail = 0
+        non_zero_marks = [b["marks"] for b in bands if b["marks"] > 0]
+        self.assertEqual(len(non_zero_marks), len(set(non_zero_marks)), 
+                        "Found duplicate non-zero marks")
+    
     def test_category_can_store_grade_band_descriptions(self):
         """Categories with grade bands can store descriptions for main grades (1st, 2:1, 2:2, 3rd, Fail).
         Maximum is included in 1st class, not separate."""

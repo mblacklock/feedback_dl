@@ -34,9 +34,9 @@ def _calculate_mark_for_grade(max_marks, target_percentage, expected_grade):
     """
     Calculate a mark value that actually falls within the expected grade band.
     
-    Starts with the target percentage, rounds to integer, then validates
-    the resulting mark is actually in the expected grade band. If not,
-    reduces by 1 until it is.
+    Finds the closest integer mark to the target percentage that falls within
+    the expected grade band. Checks the rounded value first, then searches
+    nearby marks if needed.
     
     Args:
         max_marks: Maximum marks for the category
@@ -47,19 +47,36 @@ def _calculate_mark_for_grade(max_marks, target_percentage, expected_grade):
         int: A mark value that falls within the expected grade band
     """
     # Start with the rounded target
-    mark = _round_marks(max_marks * target_percentage)
+    target_mark = _round_marks(max_marks * target_percentage)
     
-    # Check if this mark is in the correct grade band
-    actual_percentage = (mark / max_marks) * 100
+    # Check if the rounded target is already in the correct grade band
+    actual_percentage = (target_mark / max_marks) * 100
     actual_grade = _get_grade_band_for_percentage(actual_percentage)
     
-    # If it's in the wrong band, reduce by 1 until it's correct
-    while actual_grade != expected_grade and mark > 0:
-        mark -= 1
-        actual_percentage = (mark / max_marks) * 100
-        actual_grade = _get_grade_band_for_percentage(actual_percentage)
+    if actual_grade == expected_grade:
+        return target_mark
     
-    return mark
+    # Search for the closest valid mark by checking nearby marks
+    # Try marks in order of distance from target: target±1, target±2, etc.
+    for distance in range(1, max_marks + 1):
+        # Try mark above target first (closer to original percentage)
+        mark_above = target_mark + distance
+        if mark_above <= max_marks:
+            percentage_above = (mark_above / max_marks) * 100
+            grade_above = _get_grade_band_for_percentage(percentage_above)
+            if grade_above == expected_grade:
+                return mark_above
+        
+        # Then try mark below target
+        mark_below = target_mark - distance
+        if mark_below >= 0:
+            percentage_below = (mark_below / max_marks) * 100
+            grade_below = _get_grade_band_for_percentage(percentage_below)
+            if grade_below == expected_grade:
+                return mark_below
+    
+    # Fallback (shouldn't happen in practice)
+    return 0
 
 
 def validate_subdivision(max_marks, subdivision):

@@ -261,7 +261,7 @@ function saveNow() {
     // Get CSRF token
     const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
                      getCookie('csrftoken');
-    
+        
     // Send to server
     fetch(`/feedback/template/${window.templateData.id}/update/`, {
         method: 'POST',

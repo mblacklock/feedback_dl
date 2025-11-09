@@ -11,12 +11,19 @@ class GradeBandUtilsTests(TestCase):
         self.assertTrue(validate_subdivision(20, "none"))
         self.assertTrue(validate_subdivision(30, "none"))
     
-    def test_validate_subdivision_none_invalid_for_marks_under_10(self):
-        """Test that 'none' subdivision is invalid for marks under 10."""
-        # Categories under 10 marks should use numeric type, not grade bands
+    def test_validate_subdivision_none_invalid_for_very_low_marks(self):
+        """Test that 'none' subdivision is invalid for marks under 9.
+        
+        The improved algorithm can handle 9+ marks by finding the closest valid
+        mark in each grade band, even if it produces some duplicate marks within
+        a grade (e.g., Mid 1st = Low 1st = 7 for 9 marks).
+        """
+        # Very low marks still invalid
         self.assertFalse(validate_subdivision(5, "none"))
         self.assertFalse(validate_subdivision(7, "none"))
-        self.assertFalse(validate_subdivision(9, "none"))
+        
+        # 9 marks now valid with improved algorithm (allows duplicates within grade)
+        self.assertTrue(validate_subdivision(9, "none"))
     
     def test_validate_subdivision_high_low_valid_for_sufficient_marks(self):
         """Test that 'high_low' subdivision is valid for 20+ marks."""
