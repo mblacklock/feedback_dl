@@ -55,6 +55,7 @@ class FeedbackFT(FunctionalTestBase):
         first_item = list_items[0]
         self.assertIn("Database Systems", first_item.text)  # Most recent first (order by -id)
         self.assertIn("CS202", first_item.text)
+        self.assertIn("Component:", first_item.text)
         self.assertIn("Final Exam", first_item.text)
         self.assertIn("1 category", first_item.text)
         
@@ -62,6 +63,7 @@ class FeedbackFT(FunctionalTestBase):
         second_item = list_items[1]
         self.assertIn("Introduction to Programming", second_item.text)
         self.assertIn("CS101", second_item.text)
+        self.assertIn("Component:", second_item.text)
         self.assertIn("Assignment 1", second_item.text)
         self.assertIn("2 categories", second_item.text)
         

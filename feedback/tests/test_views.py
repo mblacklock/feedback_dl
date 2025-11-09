@@ -46,11 +46,15 @@ class HomeViewTest(TestCase):
         assert b"Template 1" in resp.content
         assert b"Template 2" in resp.content
         
-        # Check for module codes and assessments
+        # Check for module codes, components, and assessments
         assert b"CS101" in resp.content
         assert b"Assignment 1" in resp.content
         assert b"CS202" in resp.content
         assert b"Exam" in resp.content
+        
+        # Check for component display
+        assert b"Component:" in resp.content
+        assert b"1" in resp.content  # Component value
         
         # Check for category counts
         assert b"1 category" in resp.content
@@ -107,6 +111,26 @@ class TemplateDeleteViewTests(TestCase):
         self.assertEqual(resp.status_code, 405)
 
 class TemplateUpdateViewTests(TestCase):
+    def test_get_edit_page_shows_home_button(self):
+        """GET /feedback/template/<pk>/edit/ shows Back to Home button."""
+        template = AssessmentTemplate.objects.create(
+            component=1,
+            title="Test Template",
+            module_code="KB5031",
+            assessment_title="Test",
+            categories=[{"label": "Test", "max": 10}]
+        )
+        
+        url = reverse("template_edit", args=[template.pk])
+        resp = self.client.get(url)
+        
+        self.assertEqual(resp.status_code, 200)
+        # Check for Back to Home button
+        self.assertContains(resp, 'Back to Home')
+        self.assertContains(resp, 'href="/feedback/"')
+        # Check for View Template button
+        self.assertContains(resp, 'View Template')
+    
     def test_post_update_saves_component_field(self):
         """POST /feedback/template/<pk>/update/ saves the component field."""
         import json
