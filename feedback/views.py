@@ -155,9 +155,10 @@ def grade_bands_preview(request):
         grouped_bands = _group_bands_by_main_grade(bands)
         
         # Render HTML template
-        html = render_to_string('feedback/partials/grade_bands_preview.html', {
+        html = render_to_string('feedback/partials/grade_bands_grid.html', {
             'grouped_bands': grouped_bands,
-            'descriptions': {}  # Empty for preview, will be filled by JS from existing data
+            'descriptions': {},  # Empty for preview, will be filled by JS from existing data
+            'show_textarea': True
         })
         
         return JsonResponse({"html": html})

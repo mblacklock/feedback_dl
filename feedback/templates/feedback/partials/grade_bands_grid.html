@@ -1,0 +1,31 @@
+{% load feedback_filters %}
+<div class="row g-2">
+    {% for main_grade, band_list in grouped_bands.items %}
+    <div class="col">
+        <div class="card h-100 d-flex flex-column">
+            <div class="card-header {% if main_grade == '1st' %}{{ header_bg_1st|default:'bg-success-subtle bg-gradient' }}{% elif main_grade == 'Fail' %}{{ header_bg_fail|default:'bg-danger-subtle bg-gradient' }}{% else %}bg-light{% endif %} py-1 px-2">
+                <small class="fw-bold">{{ main_grade }}</small>
+            </div>
+            <div class="card-body p-2 d-flex flex-column">
+                <div class="d-flex flex-wrap gap-1 mb-2" style="min-height: 3.5rem;">
+                    {% for band in band_list %}
+                    <span class="badge {{ badge_class|default:'bg-secondary-subtle text-black' }} align-self-start">{{ band.grade }}: {{ band.marks }}</span>
+                    {% endfor %}
+                </div>
+                {% if show_textarea %}
+                <textarea class="form-control form-control-sm grade-description mt-auto" 
+                          data-grade="{{ main_grade }}" 
+                          placeholder="Description for {{ main_grade }}..." 
+                          rows="3">{{ descriptions|get_item:main_grade|default:'' }}</textarea>
+                {% else %}
+                    {% if main_grade in descriptions %}
+                    <p class="small mb-0 text-muted mt-auto">
+                        {{ descriptions|get_item:main_grade }}
+                    </p>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>

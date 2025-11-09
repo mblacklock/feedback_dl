@@ -143,7 +143,7 @@ def calculate_grade_bands(max_marks, subdivision):
         # Provides more granularity at extremes (excellence and poor performance)
         # while keeping middle grades simple
         bands = [
-            {"grade": "Maximum 1st", "marks": _calculate_mark_for_grade(max_marks, 1.00, "1st")},
+            {"grade": "Max 1st", "marks": _calculate_mark_for_grade(max_marks, 1.00, "1st")},
             {"grade": "High 1st", "marks": _calculate_mark_for_grade(max_marks, 0.90, "1st")},
             {"grade": "Mid 1st", "marks": _calculate_mark_for_grade(max_marks, 0.80, "1st")},
             {"grade": "Low 1st", "marks": _calculate_mark_for_grade(max_marks, 0.70, "1st")},
@@ -158,7 +158,7 @@ def calculate_grade_bands(max_marks, subdivision):
     
     elif subdivision == "high_low":
         # High/Low subdivision - split each grade band, validated to stay in correct band
-        # Maximum 1st: target 100%
+        # Max 1st: target 100%
         # High 1st: target 85%, Low 1st: target 72%
         # High 2:1: target 65%, Low 2:1: target 62%
         # High 2:2: target 55%, Low 2:2: target 52%
@@ -167,7 +167,7 @@ def calculate_grade_bands(max_marks, subdivision):
         # Fail: target 20%
         # Poor Fail: target 10%
         bands = [
-            {"grade": "Maximum 1st", "marks": _calculate_mark_for_grade(max_marks, 1.00, "1st")},
+            {"grade": "Max 1st", "marks": _calculate_mark_for_grade(max_marks, 1.00, "1st")},
             {"grade": "High 1st", "marks": _calculate_mark_for_grade(max_marks, 0.85, "1st")},
             {"grade": "Low 1st", "marks": _calculate_mark_for_grade(max_marks, 0.72, "1st")},
             {"grade": "High 2:1", "marks": _calculate_mark_for_grade(max_marks, 0.65, "2:1")},
@@ -184,7 +184,7 @@ def calculate_grade_bands(max_marks, subdivision):
     
     elif subdivision == "high_mid_low":
         # High/Mid/Low subdivision - split each grade band in thirds, validated to stay in correct band
-        # Maximum 1st: target 100%
+        # Max 1st: target 100%
         # High 1st: target 90%, Mid 1st: target 80%, Low 1st: target 70%
         # High 2:1: target 67%, Mid 2:1: target 63%, Low 2:1: target 60%
         # High 2:2: target 57%, Mid 2:2: target 53%, Low 2:2: target 50%
@@ -193,7 +193,7 @@ def calculate_grade_bands(max_marks, subdivision):
         # Fail: target 20%
         # Poor Fail: target 10%
         bands = [
-            {"grade": "Maximum 1st", "marks": _calculate_mark_for_grade(max_marks, 1.00, "1st")},
+            {"grade": "Max 1st", "marks": _calculate_mark_for_grade(max_marks, 1.00, "1st")},
             {"grade": "High 1st", "marks": _calculate_mark_for_grade(max_marks, 0.90, "1st")},
             {"grade": "Mid 1st", "marks": _calculate_mark_for_grade(max_marks, 0.80, "1st")},
             {"grade": "Low 1st", "marks": _calculate_mark_for_grade(max_marks, 0.70, "1st")},

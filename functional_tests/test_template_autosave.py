@@ -82,7 +82,7 @@ class TemplateAutoSaveFT(FunctionalTestBase):
         
         # AND it contains grade information in cards
         preview_text = preview.text
-        self.assertIn("Maximum", preview_text)
+        self.assertIn("Max", preview_text)
         self.assertIn("1st", preview_text)
         self.assertIn("Fail", preview_text)
         self.assertIn("30", preview_text)  # Maximum marks

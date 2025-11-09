@@ -197,7 +197,7 @@ class GradeBandsPreviewTests(TestCase):
         html = data["html"]
         
         # Check for expected grade names in HTML
-        self.assertIn("Maximum 1st", html)
+        self.assertIn("Max 1st", html)
         self.assertIn("High 1st", html)
         self.assertIn("2:1", html)
         self.assertIn("Zero Fail", html)

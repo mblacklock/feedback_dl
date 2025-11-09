@@ -139,7 +139,7 @@ class AssessmentTemplateModelTests(TestCase):
         bands = calculate_grade_bands(30, "none")
         self.assertEqual(len(bands), 11)  # 11 bands total
         # Check key bands
-        self.assertEqual(bands[0]["grade"], "Maximum 1st")
+        self.assertEqual(bands[0]["grade"], "Max 1st")
         self.assertEqual(bands[0]["marks"], 30)  # 100%
         self.assertEqual(bands[1]["grade"], "High 1st")
         self.assertEqual(bands[1]["marks"], 27)  # 90%
@@ -153,10 +153,10 @@ class AssessmentTemplateModelTests(TestCase):
         from feedback.utils import calculate_grade_bands
         
         # For 20 marks with high/low: each grade split within its band
-        # Now includes expanded extremes: Maximum 1st + Close/Poor/Zero Fail
+        # Now includes expanded extremes: Max 1st + Close/Poor/Zero Fail
         bands = calculate_grade_bands(20, "high_low")
-        self.assertEqual(len(bands), 13)  # Maximum 1st + 4 grades * 2 + 4 fail bands
-        self.assertEqual(bands[0]["grade"], "Maximum 1st")
+        self.assertEqual(len(bands), 13)  # Max 1st + 4 grades * 2 + 4 fail bands
+        self.assertEqual(bands[0]["grade"], "Max 1st")
         self.assertEqual(bands[0]["marks"], 20)  # 100%
         self.assertEqual(bands[1]["grade"], "High 1st")
         self.assertEqual(bands[1]["marks"], 17)  # 85%
@@ -170,10 +170,10 @@ class AssessmentTemplateModelTests(TestCase):
         from feedback.utils import calculate_grade_bands
         
         # For 30 marks with high/mid/low: each grade split in thirds
-        # Now includes expanded extremes: Maximum 1st + Close/Poor/Zero Fail
+        # Now includes expanded extremes: Max 1st + Close/Poor/Zero Fail
         bands = calculate_grade_bands(30, "high_mid_low")
-        self.assertEqual(len(bands), 17)  # Maximum 1st + 4 grades * 3 + 4 fail bands
-        self.assertEqual(bands[0]["grade"], "Maximum 1st")
+        self.assertEqual(len(bands), 17)  # Max 1st + 4 grades * 3 + 4 fail bands
+        self.assertEqual(bands[0]["grade"], "Max 1st")
         self.assertEqual(bands[0]["marks"], 30)  # 100%
         self.assertEqual(bands[1]["grade"], "High 1st")
         self.assertEqual(bands[1]["marks"], 27)  # 90%
@@ -201,8 +201,8 @@ class AssessmentTemplateModelTests(TestCase):
         # Extract marks for each band
         band_dict = {b["grade"]: b["marks"] for b in bands}
         
-        # Maximum 1st should be 12 (100%)
-        self.assertEqual(band_dict["Maximum 1st"], 12)
+        # Max 1st should be 12 (100%)
+        self.assertEqual(band_dict["Max 1st"], 12)
         
         # High 1st should be 11 (91.7% - valid 1st class)
         self.assertEqual(band_dict["High 1st"], 11)
