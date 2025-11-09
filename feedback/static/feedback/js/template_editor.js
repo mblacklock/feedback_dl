@@ -163,8 +163,8 @@ function validateRow(row) {
         const maxMarks = parseInt(row.querySelector('.cat-max').value);
         const label = row.querySelector('.cat-label').value || 'This category';
         
-        if (maxMarks < 10) {
-            showValidationError(row, `${label}: ${maxMarks} marks is too low for grade bands. Use 10+ marks or switch to numeric scoring.`);
+        if (maxMarks < 9) {
+            showValidationError(row, `${label}: ${maxMarks} marks is too low for grade bands. Use 9+ marks or switch to numeric scoring.`);
         }
     }
 }
