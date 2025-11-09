@@ -7,10 +7,15 @@
                 <small class="fw-bold">{{ main_grade }}</small>
             </div>
             <div class="card-body p-2 d-flex flex-column">
-                <div class="d-flex flex-wrap gap-1 mb-2" style="min-height: 3.5rem;">
-                    {% for band in band_list %}
-                    <span class="badge {{ badge_class|default:'bg-secondary-subtle text-black' }} align-self-start">{{ band.grade }}: {{ band.marks }}</span>
-                    {% endfor %}
+                <div class="mb-2">
+                    <div class="row g-1 text-center small">
+                        {% for band in band_list %}
+                        <div class="col d-flex flex-column">
+                            <div class="fw-semibold text-muted" style="min-height: 2.5rem;">{{ band.grade }}</div>
+                            <div class="badge {{ badge_class|default:'bg-secondary-subtle text-black' }} w-100">{{ band.marks }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
                 </div>
                 {% if show_textarea %}
                 <textarea class="form-control form-control-sm grade-description mt-auto" 
