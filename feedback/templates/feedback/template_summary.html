@@ -46,7 +46,7 @@
                                 {% for main_grade, band_list in cat.grouped_bands.items %}
                                 <div class="col">
                                     <div class="card h-100">
-                                        <div class="card-header bg-light py-1 px-2">
+                                        <div class="card-header {% if main_grade == '1st' %}bg-success{% elif main_grade == 'Fail' %}bg-danger{% else %}bg-light{% endif %} py-1 px-2">
                                             <small class="fw-bold">{{ main_grade }}</small>
                                         </div>
                                         <div class="card-body p-2">
