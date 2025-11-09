@@ -1,11 +1,16 @@
 from django.db import models
 from django.core.exceptions import ValidationError
-import math
+from math import floor
+
+
+def _round_marks(value):
+    """Traditional rounding (always round 0.5 up) for grade marks."""
+    return int(floor(value + 0.5))
 
 
 def calculate_grade_bands(max_marks, subdivision):
     """
-    Calculate grade band thresholds based on UK grading percentages.
+    Calculate grade band mark values based on UK grading percentages.
     
     UK Grade thresholds:
     - 1st: 70-100%
@@ -14,92 +19,73 @@ def calculate_grade_bands(max_marks, subdivision):
     - 3rd: 40-49%
     - Fail: 0-39%
     
+    Returns a single representative mark value for each grade band.
+    
     Args:
         max_marks: Maximum marks for this category
         subdivision: "none", "high_low", or "high_mid_low"
     
     Returns:
-        List of dicts with grade, min, and max values
+        List of dicts with grade and marks (single integer value)
     """
-    # Calculate base thresholds
-    first_min = math.ceil(max_marks * 0.7)
-    two_one_min = math.ceil(max_marks * 0.6)
-    two_two_min = math.ceil(max_marks * 0.5)
-    third_min = math.ceil(max_marks * 0.4)
-    
     bands = []
     
     if subdivision == "none":
-        # No subdivision - just 5 bands
+        # No subdivision - use midpoint of each band
+        # 1st: 85% (midpoint of 70-100%)
+        # 2:1: 65% (midpoint of 60-69%)
+        # 2:2: 55% (midpoint of 50-59%)
+        # 3rd: 45% (midpoint of 40-49%)
+        # Fail: 20% (midpoint of 0-39%)
         bands = [
-            {"grade": "1st", "min": first_min, "max": max_marks},
-            {"grade": "2:1", "min": two_one_min, "max": first_min - 1},
-            {"grade": "2:2", "min": two_two_min, "max": two_one_min - 1},
-            {"grade": "3rd", "min": third_min, "max": two_two_min - 1},
-            {"grade": "Fail", "min": 0, "max": third_min - 1},
+            {"grade": "1st", "marks": _round_marks(max_marks * 0.85)},
+            {"grade": "2:1", "marks": _round_marks(max_marks * 0.65)},
+            {"grade": "2:2", "marks": _round_marks(max_marks * 0.55)},
+            {"grade": "3rd", "marks": _round_marks(max_marks * 0.45)},
+            {"grade": "Fail", "marks": _round_marks(max_marks * 0.20)},
         ]
     
     elif subdivision == "high_low":
-        # Split each grade band in half
-        # 1st
-        first_range = max_marks - first_min + 1
-        first_mid = first_min + first_range // 2
-        bands.append({"grade": "High 1st", "min": first_mid, "max": max_marks})
-        bands.append({"grade": "Low 1st", "min": first_min, "max": first_mid - 1})
-        
-        # 2:1
-        two_one_range = first_min - 1 - two_one_min + 1
-        two_one_mid = two_one_min + two_one_range // 2
-        bands.append({"grade": "High 2:1", "min": two_one_mid, "max": first_min - 1})
-        bands.append({"grade": "Low 2:1", "min": two_one_min, "max": two_one_mid - 1})
-        
-        # 2:2
-        two_two_range = two_one_min - 1 - two_two_min + 1
-        two_two_mid = two_two_min + two_two_range // 2
-        bands.append({"grade": "High 2:2", "min": two_two_mid, "max": two_one_min - 1})
-        bands.append({"grade": "Low 2:2", "min": two_two_min, "max": two_two_mid - 1})
-        
-        # 3rd
-        third_range = two_two_min - 1 - third_min + 1
-        third_mid = third_min + third_range // 2
-        bands.append({"grade": "High 3rd", "min": third_mid, "max": two_two_min - 1})
-        bands.append({"grade": "Low 3rd", "min": third_min, "max": third_mid - 1})
-        
-        # Fail
-        bands.append({"grade": "Fail", "min": 0, "max": third_min - 1})
+        # High/Low subdivision - use 85% and 75% for High/Low of each band
+        # High 1st: 85%, Low 1st: 75%
+        # High 2:1: 65%, Low 2:1: 55%
+        # High 2:2: 55%, Low 2:2: 45%
+        # High 3rd: 45%, Low 3rd: 35%
+        # Fail: 20%
+        bands = [
+            {"grade": "High 1st", "marks": _round_marks(max_marks * 0.85)},
+            {"grade": "Low 1st", "marks": _round_marks(max_marks * 0.75)},
+            {"grade": "High 2:1", "marks": _round_marks(max_marks * 0.65)},
+            {"grade": "Low 2:1", "marks": _round_marks(max_marks * 0.55)},
+            {"grade": "High 2:2", "marks": _round_marks(max_marks * 0.55)},
+            {"grade": "Low 2:2", "marks": _round_marks(max_marks * 0.45)},
+            {"grade": "High 3rd", "marks": _round_marks(max_marks * 0.45)},
+            {"grade": "Low 3rd", "marks": _round_marks(max_marks * 0.35)},
+            {"grade": "Fail", "marks": _round_marks(max_marks * 0.20)},
+        ]
     
     elif subdivision == "high_mid_low":
-        # Split each grade band in thirds
-        # 1st
-        first_range = max_marks - first_min + 1
-        first_third = first_range // 3
-        bands.append({"grade": "High 1st", "min": max_marks - first_third + 1, "max": max_marks})
-        bands.append({"grade": "Mid 1st", "min": max_marks - 2 * first_third + 1, "max": max_marks - first_third})
-        bands.append({"grade": "Low 1st", "min": first_min, "max": max_marks - 2 * first_third})
-        
-        # 2:1
-        two_one_range = first_min - 1 - two_one_min + 1
-        two_one_third = two_one_range // 3
-        bands.append({"grade": "High 2:1", "min": first_min - 1 - two_one_third + 1, "max": first_min - 1})
-        bands.append({"grade": "Mid 2:1", "min": first_min - 1 - 2 * two_one_third + 1, "max": first_min - 1 - two_one_third})
-        bands.append({"grade": "Low 2:1", "min": two_one_min, "max": first_min - 1 - 2 * two_one_third})
-        
-        # 2:2
-        two_two_range = two_one_min - 1 - two_two_min + 1
-        two_two_third = two_two_range // 3
-        bands.append({"grade": "High 2:2", "min": two_one_min - 1 - two_two_third + 1, "max": two_one_min - 1})
-        bands.append({"grade": "Mid 2:2", "min": two_one_min - 1 - 2 * two_two_third + 1, "max": two_one_min - 1 - two_two_third})
-        bands.append({"grade": "Low 2:2", "min": two_two_min, "max": two_one_min - 1 - 2 * two_two_third})
-        
-        # 3rd
-        third_range = two_two_min - 1 - third_min + 1
-        third_third = third_range // 3
-        bands.append({"grade": "High 3rd", "min": two_two_min - 1 - third_third + 1, "max": two_two_min - 1})
-        bands.append({"grade": "Mid 3rd", "min": two_two_min - 1 - 2 * third_third + 1, "max": two_two_min - 1 - third_third})
-        bands.append({"grade": "Low 3rd", "min": third_min, "max": two_two_min - 1 - 2 * third_third})
-        
-        # Fail
-        bands.append({"grade": "Fail", "min": 0, "max": third_min - 1})
+        # High/Mid/Low subdivision - use 90%, 80%, 70% etc for High/Mid/Low of each band
+        # High 1st: 90%, Mid 1st: 80%, Low 1st: 70%
+        # High 2:1: 67%, Mid 2:1: 63%, Low 2:1: 60%
+        # High 2:2: 57%, Mid 2:2: 53%, Low 2:2: 50%
+        # High 3rd: 47%, Mid 3rd: 43%, Low 3rd: 40%
+        # Fail: 20%
+        bands = [
+            {"grade": "High 1st", "marks": _round_marks(max_marks * 0.90)},
+            {"grade": "Mid 1st", "marks": _round_marks(max_marks * 0.80)},
+            {"grade": "Low 1st", "marks": _round_marks(max_marks * 0.70)},
+            {"grade": "High 2:1", "marks": _round_marks(max_marks * 0.67)},
+            {"grade": "Mid 2:1", "marks": _round_marks(max_marks * 0.63)},
+            {"grade": "Low 2:1", "marks": _round_marks(max_marks * 0.60)},
+            {"grade": "High 2:2", "marks": _round_marks(max_marks * 0.57)},
+            {"grade": "Mid 2:2", "marks": _round_marks(max_marks * 0.53)},
+            {"grade": "Low 2:2", "marks": _round_marks(max_marks * 0.50)},
+            {"grade": "High 3rd", "marks": _round_marks(max_marks * 0.47)},
+            {"grade": "Mid 3rd", "marks": _round_marks(max_marks * 0.43)},
+            {"grade": "Low 3rd", "marks": _round_marks(max_marks * 0.40)},
+            {"grade": "Fail", "marks": _round_marks(max_marks * 0.20)},
+        ]
     
     return bands
 

@@ -104,8 +104,8 @@ class TemplateBuilderFT(StaticLiveServerTestCase):
         # AND the first category shows grade bands with high/low subdivision
         assert "Comprehension" in items[0].text
         assert "30 marks" in items[0].text
-        assert "High 1st" in items[0].text
-        assert "Low 1st" in items[0].text
+        assert "High 1st:" in items[0].text
+        assert "Low 1st:" in items[0].text
         
         # AND the second category shows as numeric (no grade bands)
         assert "Method" in items[1].text
@@ -115,6 +115,6 @@ class TemplateBuilderFT(StaticLiveServerTestCase):
         # AND the third category shows grade bands with no subdivision
         assert "Design" in items[2].text
         assert "10 marks" in items[2].text
-        assert "1st:" in items[2].text  # Should show basic grades
+        assert "1st:" in items[2].text
         assert "2:1:" in items[2].text
         assert "Fail:" in items[2].text

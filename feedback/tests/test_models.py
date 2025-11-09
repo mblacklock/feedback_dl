@@ -135,41 +135,43 @@ class AssessmentTemplateModelTests(TestCase):
         """Test grade band calculation with no subdivision (basic 5 bands)."""
         from feedback.models import calculate_grade_bands
         
-        # For 30 marks: 1st>=21, 2:1>=18, 2:2>=15, 3rd>=12, Fail<12
+        # For 30 marks: 1st=26 (85% rounded), 2:1=20 (65%), 2:2=17 (55%), 3rd=14 (45%), Fail=6 (20%)
         bands = calculate_grade_bands(30, "none")
         self.assertEqual(bands, [
-            {"grade": "1st", "min": 21, "max": 30},
-            {"grade": "2:1", "min": 18, "max": 20},
-            {"grade": "2:2", "min": 15, "max": 17},
-            {"grade": "3rd", "min": 12, "max": 14},
-            {"grade": "Fail", "min": 0, "max": 11},
+            {"grade": "1st", "marks": 26},
+            {"grade": "2:1", "marks": 20},
+            {"grade": "2:2", "marks": 17},
+            {"grade": "3rd", "marks": 14},
+            {"grade": "Fail", "marks": 6},
         ])
 
     def test_calculate_grade_bands_high_low_subdivision(self):
         """Test grade band calculation with high/low subdivision."""
         from feedback.models import calculate_grade_bands
         
-        # For 20 marks with high/low: each grade gets split in half
+        # For 20 marks with high/low: each grade split in half
+        # High 1st: 85% of 20 = 17, Low 1st: 75% = 15
+        # High 2:1: 65% = 13, Low 2:1: 55% = 11
         bands = calculate_grade_bands(20, "high_low")
-        # 1st: 14-20 (70-100%) -> High 1st: 17-20, Low 1st: 14-16
-        # 2:1: 12-13 (60-69%) -> High 2:1: 13, Low 2:1: 12
-        # 2:2: 10-11 (50-59%) -> High 2:2: 11, Low 2:2: 10
-        # 3rd: 8-9 (40-49%) -> High 3rd: 9, Low 3rd: 8
-        # Fail: 0-7 (<40%)
         self.assertEqual(len(bands), 9)  # 4 grades * 2 + Fail
         self.assertEqual(bands[0]["grade"], "High 1st")
-        self.assertEqual(bands[0]["min"], 17)
-        self.assertEqual(bands[0]["max"], 20)
+        self.assertEqual(bands[0]["marks"], 17)
+        self.assertEqual(bands[1]["grade"], "Low 1st")
+        self.assertEqual(bands[1]["marks"], 15)
         self.assertEqual(bands[-1]["grade"], "Fail")
+        self.assertEqual(bands[-1]["marks"], 4)
 
     def test_calculate_grade_bands_high_mid_low_subdivision(self):
         """Test grade band calculation with high/mid/low subdivision."""
         from feedback.models import calculate_grade_bands
         
-        # For 30 marks with high/mid/low: each grade gets split in thirds
+        # For 30 marks with high/mid/low: each grade split in thirds
+        # High 1st: 90% = 27, Mid 1st: 80% = 24, Low 1st: 70% = 21
         bands = calculate_grade_bands(30, "high_mid_low")
-        # 1st: 21-30 (10 marks) -> High: 27-30, Mid: 24-26, Low: 21-23
         self.assertEqual(len(bands), 13)  # 4 grades * 3 + Fail
         self.assertEqual(bands[0]["grade"], "High 1st")
+        self.assertEqual(bands[0]["marks"], 27)
         self.assertEqual(bands[1]["grade"], "Mid 1st")
+        self.assertEqual(bands[1]["marks"], 24)
         self.assertEqual(bands[2]["grade"], "Low 1st")
+        self.assertEqual(bands[2]["marks"], 21)
