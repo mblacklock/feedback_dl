@@ -7,6 +7,29 @@ def _round_marks(value):
     return int(floor(value + 0.5))
 
 
+def validate_subdivision(max_marks, subdivision):
+    """
+    Check if a subdivision produces valid (strictly decreasing) grade bands.
+    
+    Returns True if valid, False if bands would overlap/violate grade hierarchy.
+    
+    Args:
+        max_marks: Maximum marks for the category
+        subdivision: "none", "high_low", or "high_mid_low"
+    
+    Returns:
+        bool: True if subdivision produces strictly decreasing marks
+    """
+    bands = calculate_grade_bands(max_marks, subdivision)
+    
+    # Check that marks are strictly decreasing
+    for i in range(1, len(bands)):
+        if bands[i]["marks"] >= bands[i-1]["marks"]:
+            return False
+    
+    return True
+
+
 def calculate_grade_bands(max_marks, subdivision):
     """
     Calculate grade band mark values based on UK grading percentages.
