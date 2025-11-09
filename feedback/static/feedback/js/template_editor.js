@@ -36,18 +36,14 @@ function addCategoryRow(categoryData = null) {
     
     const label = categoryData ? categoryData.label : '';
     const max = categoryData ? categoryData.max : 10;
-    const type = categoryData ? categoryData.type : 'numeric';
-    const subdivision = categoryData && categoryData.subdivision ? categoryData.subdivision : '';
+    const type = categoryData ? categoryData.type : 'grade';
+    const subdivision = categoryData && categoryData.subdivision ? categoryData.subdivision : 'none';
     
     row.innerHTML = `
         <div class="row mb-2">
-            <div class="col-md-6">
+            <div class="col-md-10">
                 <label class="form-label">Category Label</label>
                 <input type="text" class="form-control cat-label" placeholder="e.g., Introduction" value="${label}">
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">Maximum Marks</label>
-                <input type="number" class="form-control cat-max" placeholder="Max Marks" value="${max}" min="1" max="1000">
             </div>
             <div class="col-md-2">
                 <label class="form-label">&nbsp;</label>
@@ -55,19 +51,21 @@ function addCategoryRow(categoryData = null) {
             </div>
         </div>
         <div class="row mb-2">
-            <div class="col-md-12">
+            <div class="col-md-2">
+                <label class="form-label">Max Marks</label>
+                <input type="number" class="form-control cat-max" placeholder="Max" value="${max}" min="1" max="1000">
+            </div>
+            <div class="col-md-3">
                 <label class="form-label">Type</label>
                 <div class="btn-group w-100" role="group">
-                    <input type="radio" class="btn-check cat-type-numeric" name="category_type_${uniqueId}" id="numeric_${uniqueId}" value="numeric" ${type === 'numeric' ? 'checked' : ''}>
-                    <label class="btn btn-outline-primary" for="numeric_${uniqueId}">Numeric</label>
-                    
                     <input type="radio" class="btn-check cat-type-grade" name="category_type_${uniqueId}" id="grade_${uniqueId}" value="grade" ${type === 'grade' ? 'checked' : ''}>
                     <label class="btn btn-outline-primary" for="grade_${uniqueId}">Grade</label>
+                    
+                    <input type="radio" class="btn-check cat-type-numeric" name="category_type_${uniqueId}" id="numeric_${uniqueId}" value="numeric" ${type === 'numeric' ? 'checked' : ''}>
+                    <label class="btn btn-outline-primary" for="numeric_${uniqueId}">Numeric</label>
                 </div>
             </div>
-        </div>
-        <div class="row subdivision-controls" style="display: ${type === 'grade' ? 'block' : 'none'};">
-            <div class="col-md-12">
+            <div class="col-md-7 subdivision-controls" style="display: ${type === 'grade' ? 'block' : 'none'};">
                 <label class="form-label">Subdivision</label>
                 <div class="btn-group w-100" role="group">
                     <button type="button" class="btn btn-outline-secondary subdivision-btn ${subdivision === 'none' ? 'active' : ''}" data-subdivision="none">None</button>
@@ -75,6 +73,10 @@ function addCategoryRow(categoryData = null) {
                     <button type="button" class="btn btn-outline-secondary subdivision-btn ${subdivision === 'high_mid_low' ? 'active' : ''}" data-subdivision="high_mid_low">High/Mid/Low</button>
                 </div>
                 <input type="hidden" class="subdivision-value" value="${subdivision}">
+            </div>
+        </div>
+        <div class="row subdivision-controls" style="display: ${type === 'grade' ? 'block' : 'none'};">
+            <div class="col-md-12">
                 <div class="grade-bands-preview mt-2 small text-muted"></div>
             </div>
         </div>
