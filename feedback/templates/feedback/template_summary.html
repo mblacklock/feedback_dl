@@ -1,4 +1,5 @@
 {% extends "feedback/base.html" %}
+{% load feedback_filters %}
 
 {% block title %}{{ template.title }}{% endblock %}
 
@@ -40,12 +41,31 @@
                         </div>
                         
                         {% if cat.bands %}
-                        <div class="mt-2">
-                            <small class="text-muted">Grade Bands:</small>
-                            <div class="mt-1">
-                                {% for band in cat.bands %}
-                                <span class="badge bg-secondary me-1">{{ band.grade }}: {{ band.marks }}</span>
-                                {% endfor %}
+                        <div class="mt-3">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered grade-bands-table">
+                                    <thead>
+                                        <tr>
+                                            {% for band in cat.bands %}
+                                            <th class="text-center small">
+                                                {{ band.grade }}<br>
+                                                <span class="badge bg-secondary">{{ band.marks }}</span>
+                                            </th>
+                                            {% endfor %}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            {% for main_grade, band_list in cat.grouped_bands.items %}
+                                            <td colspan="{{ band_list|length }}" class="small">
+                                                {% if main_grade in cat.grade_descriptions %}
+                                                    {{ cat.grade_descriptions|get_item:main_grade }}
+                                                {% endif %}
+                                            </td>
+                                            {% endfor %}
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                         {% else %}

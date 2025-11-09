@@ -240,6 +240,19 @@ function saveNow() {
             if (subdivision) {
                 category.subdivision = subdivision;
             }
+            
+            // Collect grade band descriptions (one per main grade: 1st, 2:1, 2:2, 3rd, Fail)
+            const descriptions = {};
+            row.querySelectorAll('.grade-description').forEach(textarea => {
+                const grade = textarea.getAttribute('data-grade');
+                const desc = textarea.value.trim();
+                if (desc) {
+                    descriptions[grade] = desc;
+                }
+            });
+            if (Object.keys(descriptions).length > 0) {
+                category.grade_band_descriptions = descriptions;
+            }
         }
         
         data.categories.push(category);
@@ -329,9 +342,40 @@ function updateGradeBandsPreview(row) {
         .then(response => response.json())
         .then(data => {
             if (data.bands && data.bands.length > 0) {
-                // Format as compact inline list
-                const bandsText = data.bands.map(b => `${b.grade}: ${b.marks}`).join(' • ');
-                previewEl.innerHTML = `<em>Grade bands: ${bandsText}</em>`;
+                // Get existing descriptions from category data if available
+                const categoryData = getCategoryDataForRow(row);
+                const descriptions = categoryData && categoryData.grade_band_descriptions ? categoryData.grade_band_descriptions : {};
+                
+                // Group bands by main grade (1st, 2:1, 2:2, 3rd, Fail)
+                const grouped = groupBandsByMainGrade(data.bands);
+                
+                // Create table with grade bands grouped by main grade
+                let tableHTML = '<div class="table-responsive mt-2"><table class="table table-sm table-bordered grade-bands-table"><thead><tr>';
+                
+                // Add headers for each subdivision within each grade
+                data.bands.forEach(band => {
+                    tableHTML += `<th class="text-center small">${band.grade}<br><span class="badge bg-secondary">${band.marks}</span></th>`;
+                });
+                tableHTML += '</tr></thead><tbody><tr>';
+                
+                // Add description textareas - one per main grade, spanning its subdivisions
+                for (const [mainGrade, bandList] of Object.entries(grouped)) {
+                    const colspan = bandList.length;
+                    const desc = descriptions[mainGrade] || '';
+                    tableHTML += `<td colspan="${colspan}"><textarea class="form-control form-control-sm grade-description" 
+                                    data-grade="${mainGrade}" 
+                                    placeholder="Description for ${mainGrade}..." 
+                                    rows="3">${desc}</textarea></td>`;
+                }
+                tableHTML += '</tr></tbody></table></div>';
+                
+                previewEl.innerHTML = tableHTML;
+                
+                // Attach event listeners to new textareas
+                previewEl.querySelectorAll('.grade-description').forEach(textarea => {
+                    textarea.addEventListener('input', debouncedSave);
+                    textarea.addEventListener('blur', saveNow);
+                });
             } else {
                 previewEl.innerHTML = '';
             }
@@ -340,6 +384,44 @@ function updateGradeBandsPreview(row) {
             console.error('Error fetching grade bands:', error);
             previewEl.innerHTML = '';
         });
+}
+
+function groupBandsByMainGrade(bands) {
+    // Extract main grade from band names like "High 1st" -> "1st", "Maximum 1st" -> "1st"
+    const mainGrades = ["1st", "2:1", "2:2", "3rd", "Fail"];
+    const grouped = {};
+    
+    bands.forEach(band => {
+        // Find which main grade this band belongs to
+        let mainGrade = null;
+        for (const grade of mainGrades) {
+            if (band.grade.includes(grade)) {
+                mainGrade = grade;
+                break;
+            }
+        }
+        
+        if (mainGrade) {
+            if (!grouped[mainGrade]) {
+                grouped[mainGrade] = [];
+            }
+            grouped[mainGrade].push(band);
+        }
+    });
+    
+    return grouped;
+}
+
+function getCategoryDataForRow(row) {
+    // Find the index of this row
+    const allRows = document.querySelectorAll('.category-row');
+    const rowIndex = Array.from(allRows).indexOf(row);
+    
+    // Get category data from window.templateData if available
+    if (window.templateData && window.templateData.categories && window.templateData.categories[rowIndex]) {
+        return window.templateData.categories[rowIndex];
+    }
+    return null;
 }
 
 // Add spinning animation for save icon

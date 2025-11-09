@@ -197,7 +197,7 @@ class GradeBandsPreviewTests(TestCase):
         
         # Check some expected bands
         grades = [b["grade"] for b in data["bands"]]
-        self.assertIn("Maximum", grades)
+        self.assertIn("Maximum 1st", grades)
         self.assertIn("High 1st", grades)
         self.assertIn("2:1", grades)
         self.assertIn("Zero Fail", grades)

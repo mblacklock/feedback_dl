@@ -1,34 +1,15 @@
 # functional_tests/test_template_autosave.py
-from django.contrib.staticfiles.testing import StaticLiveServerTestCase
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.chrome import ChromeDriverManager
+from .base import FunctionalTestBase
 import time
 
 
-class TemplateAutoSaveFT(StaticLiveServerTestCase):
+class TemplateAutoSaveFT(FunctionalTestBase):
     """
     US-T2: As a staff member, I can create a template that auto-saves as I build it,
     so I don't lose my work.
     """
-
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        opts = Options()
-        opts.add_argument("--headless=new")
-        opts.add_argument("--window-size=1280,900")
-        cls.browser = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=opts)
-        cls.wait = WebDriverWait(cls.browser, 10)
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.browser.quit()
-        super().tearDownClass()
 
     def test_template_autosaves_as_user_types(self):
         # GIVEN a staff member clicks "Create New Template"
@@ -95,13 +76,13 @@ class TemplateAutoSaveFT(StaticLiveServerTestCase):
         subdivision_btn = cat_rows[0].find_element(By.CSS_SELECTOR, "button[data-subdivision='high_low']")
         self.browser.execute_script("arguments[0].click();", subdivision_btn)
         
-        # THEN they see the grade bands preview
+        # THEN they see the grade bands table
         time.sleep(0.5)  # Wait for AJAX call
-        preview = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".grade-bands-preview")))
+        preview = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".grade-bands-table")))
         
-        # AND it contains grade information
+        # AND it contains grade information in a table
         preview_text = preview.text
-        self.assertIn("Grade bands:", preview_text)
-        self.assertIn("Maximum:", preview_text)
-        self.assertIn("1st:", preview_text)
-        self.assertIn("Fail:", preview_text)
+        self.assertIn("Maximum", preview_text)
+        self.assertIn("1st", preview_text)
+        self.assertIn("Fail", preview_text)
+        self.assertIn("30", preview_text)  # Maximum marks

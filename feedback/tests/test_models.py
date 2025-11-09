@@ -139,7 +139,7 @@ class AssessmentTemplateModelTests(TestCase):
         bands = calculate_grade_bands(30, "none")
         self.assertEqual(len(bands), 11)  # 11 bands total
         # Check key bands
-        self.assertEqual(bands[0]["grade"], "Maximum")
+        self.assertEqual(bands[0]["grade"], "Maximum 1st")
         self.assertEqual(bands[0]["marks"], 30)  # 100%
         self.assertEqual(bands[1]["grade"], "High 1st")
         self.assertEqual(bands[1]["marks"], 27)  # 90%
@@ -153,10 +153,10 @@ class AssessmentTemplateModelTests(TestCase):
         from feedback.utils import calculate_grade_bands
         
         # For 20 marks with high/low: each grade split within its band
-        # Now includes expanded extremes: Maximum + Close/Poor/Zero Fail
+        # Now includes expanded extremes: Maximum 1st + Close/Poor/Zero Fail
         bands = calculate_grade_bands(20, "high_low")
-        self.assertEqual(len(bands), 13)  # Maximum + 4 grades * 2 + 4 fail bands
-        self.assertEqual(bands[0]["grade"], "Maximum")
+        self.assertEqual(len(bands), 13)  # Maximum 1st + 4 grades * 2 + 4 fail bands
+        self.assertEqual(bands[0]["grade"], "Maximum 1st")
         self.assertEqual(bands[0]["marks"], 20)  # 100%
         self.assertEqual(bands[1]["grade"], "High 1st")
         self.assertEqual(bands[1]["marks"], 17)  # 85%
@@ -170,10 +170,10 @@ class AssessmentTemplateModelTests(TestCase):
         from feedback.utils import calculate_grade_bands
         
         # For 30 marks with high/mid/low: each grade split in thirds
-        # Now includes expanded extremes: Maximum + Close/Poor/Zero Fail
+        # Now includes expanded extremes: Maximum 1st + Close/Poor/Zero Fail
         bands = calculate_grade_bands(30, "high_mid_low")
-        self.assertEqual(len(bands), 17)  # Maximum + 4 grades * 3 + 4 fail bands
-        self.assertEqual(bands[0]["grade"], "Maximum")
+        self.assertEqual(len(bands), 17)  # Maximum 1st + 4 grades * 3 + 4 fail bands
+        self.assertEqual(bands[0]["grade"], "Maximum 1st")
         self.assertEqual(bands[0]["marks"], 30)  # 100%
         self.assertEqual(bands[1]["grade"], "High 1st")
         self.assertEqual(bands[1]["marks"], 27)  # 90%
@@ -183,3 +183,34 @@ class AssessmentTemplateModelTests(TestCase):
         self.assertEqual(bands[3]["marks"], 21)  # 70%
         self.assertEqual(bands[-1]["grade"], "Zero Fail")
         self.assertEqual(bands[-1]["marks"], 0)  # 0%
+    
+    def test_category_can_store_grade_band_descriptions(self):
+        """Categories with grade bands can store descriptions for main grades (1st, 2:1, 2:2, 3rd, Fail).
+        Maximum is included in 1st class, not separate."""
+        tpl = AssessmentTemplate.objects.create(
+            title="Test Template",
+            module_code="KB5031",
+            assessment_title="Test",
+            categories=[
+                {
+                    "label": "Comprehension",
+                    "max": 30,
+                    "type": "grade",
+                    "subdivision": "none",
+                    "grade_band_descriptions": {
+                        "1st": "Complex engineering principles are creatively and critically applied",
+                        "2:1": "Well-founded engineering principles are soundly applied",
+                        "2:2": "Basic application of engineering principles with limited understanding",
+                        "3rd": "Basic engineering principles with minimal critical insight",
+                        "Fail": "Basic engineering principles are inappropriately applied"
+                    }
+                }
+            ]
+        )
+        tpl.full_clean()  # Should not raise
+        self.assertIn("grade_band_descriptions", tpl.categories[0])
+        self.assertEqual(len(tpl.categories[0]["grade_band_descriptions"]), 5)  # 5 main grades
+        self.assertEqual(
+            tpl.categories[0]["grade_band_descriptions"]["1st"],
+            "Complex engineering principles are creatively and critically applied"
+        )

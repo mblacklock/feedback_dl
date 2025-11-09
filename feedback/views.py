@@ -164,10 +164,41 @@ def template_summary(request, pk):
     for cat in tpl.categories:
         cat_data = cat.copy()
         if cat.get("type") == "grade" and cat.get("subdivision"):
-            cat_data["bands"] = calculate_grade_bands(cat["max"], cat["subdivision"])
+            bands = calculate_grade_bands(cat["max"], cat["subdivision"])
+            cat_data["bands"] = bands
+            
+            # Group bands by main grade for display
+            grouped_bands = _group_bands_by_main_grade(bands)
+            cat_data["grouped_bands"] = grouped_bands
+            
+            # Attach descriptions (one per main grade)
+            descriptions = cat.get("grade_band_descriptions", {})
+            cat_data["grade_descriptions"] = descriptions
+            
         categories_with_bands.append(cat_data)
     
     return render(request, "feedback/template_summary.html", {
         "template": tpl,
         "categories_with_bands": categories_with_bands
     })
+
+def _group_bands_by_main_grade(bands):
+    """Group bands by main grade (1st, 2:1, 2:2, 3rd, Fail).
+    'Maximum 1st' is grouped with other '1st' bands."""
+    main_grades = ["1st", "2:1", "2:2", "3rd", "Fail"]
+    grouped = {}
+    
+    for band in bands:
+        # Find which main grade this band belongs to
+        main_grade = None
+        for grade in main_grades:
+            if grade in band["grade"]:
+                main_grade = grade
+                break
+        
+        if main_grade:
+            if main_grade not in grouped:
+                grouped[main_grade] = []
+            grouped[main_grade].append(band)
+    
+    return grouped
