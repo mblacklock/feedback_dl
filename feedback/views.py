@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from feedback.models import AssessmentTemplate
-from feedback.utils import calculate_grade_bands
+from feedback.utils import calculate_grade_bands, validate_subdivision
 
 def home(request):
     return render(request, "feedback/home.html", {"page_title": "Feedback"})
@@ -62,6 +62,14 @@ def template_new(request):
             if cat_type == "grade":
                 subdivision = category_subdivisions[idx] if idx < len(category_subdivisions) else ""
                 if subdivision:
+                    # Validate that this subdivision doesn't create overlapping bands
+                    if not validate_subdivision(max_int, subdivision):
+                        errors.append(
+                            f"Category '{label}': {max_int} marks is too low for subdivision. "
+                            f"This would result in impossible grade bands, e.g. for 5 marks, a 2:2 is not possible. "
+                            f"Use 10+ marks or switch to numeric scoring."
+                        )
+                        continue
                     cat["subdivision"] = subdivision
             
             categories.append(cat)

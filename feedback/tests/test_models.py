@@ -132,32 +132,35 @@ class AssessmentTemplateModelTests(TestCase):
             tpl.full_clean()
 
     def test_calculate_grade_bands_no_subdivision(self):
-        """Test grade band calculation with no subdivision (basic 5 bands)."""
+        """Test grade band calculation with no subdivision (expanded to maximize mark coverage)."""
         from feedback.utils import calculate_grade_bands
         
-        # For 30 marks: 1st=26 (85% rounded), 2:1=20 (65%), 2:2=17 (55%), 3rd=14 (45%), Fail=6 (20%)
+        # For 30 marks: now includes expanded 1st and Fail bands (11 total)
         bands = calculate_grade_bands(30, "none")
-        self.assertEqual(bands, [
-            {"grade": "1st", "marks": 26},
-            {"grade": "2:1", "marks": 20},
-            {"grade": "2:2", "marks": 17},
-            {"grade": "3rd", "marks": 14},
-            {"grade": "Fail", "marks": 6},
-        ])
+        self.assertEqual(len(bands), 11)  # 11 bands total
+        # Check key bands
+        self.assertEqual(bands[0]["grade"], "Maximum")
+        self.assertEqual(bands[0]["marks"], 30)  # 100%
+        self.assertEqual(bands[1]["grade"], "High 1st")
+        self.assertEqual(bands[1]["marks"], 27)  # 90%
+        self.assertEqual(bands[2]["grade"], "Mid 1st")
+        self.assertEqual(bands[2]["marks"], 24)  # 80%
+        self.assertEqual(bands[-1]["grade"], "Zero Fail")
+        self.assertEqual(bands[-1]["marks"], 0)  # 0%
 
     def test_calculate_grade_bands_high_low_subdivision(self):
         """Test grade band calculation with high/low subdivision."""
         from feedback.utils import calculate_grade_bands
         
-        # For 20 marks with high/low: each grade split in half
-        # High 1st: 85% of 20 = 17, Low 1st: 75% = 15
-        # High 2:1: 65% = 13, Low 2:1: 55% = 11
+        # For 20 marks with high/low: each grade split within its band
+        # High 1st: 85% of 20 = 17, Low 1st: 72% = 14
+        # High 2:1: 65% = 13, Low 2:1: 62% = 12
         bands = calculate_grade_bands(20, "high_low")
         self.assertEqual(len(bands), 9)  # 4 grades * 2 + Fail
         self.assertEqual(bands[0]["grade"], "High 1st")
         self.assertEqual(bands[0]["marks"], 17)
         self.assertEqual(bands[1]["grade"], "Low 1st")
-        self.assertEqual(bands[1]["marks"], 15)
+        self.assertEqual(bands[1]["marks"], 14)
         self.assertEqual(bands[-1]["grade"], "Fail")
         self.assertEqual(bands[-1]["marks"], 4)
 

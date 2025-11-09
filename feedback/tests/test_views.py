@@ -144,3 +144,20 @@ class TemplateBuilderViewTests(TestCase):
         self.assertEqual(tpl.categories[1]["max"], 20)
         self.assertEqual(tpl.categories[1]["type"], "numeric")
         self.assertNotIn("subdivision", tpl.categories[1])
+    
+    def test_post_rejects_grade_subdivision_that_would_create_cross_band_violations(self):
+        """POST with grade type + subdivision that would create cross-band violations is rejected."""
+        url = reverse("template_new")
+        payload = {
+            "title": "Invalid Grade Bands",
+            "module_code": "KB5031",
+            "assessment_title": "Test",
+            "category_label": ["Very Low Marks"],
+            "category_max": ["5"],
+            "category_type": ["grade"],
+            "category_subdivision": ["none"],  # 5 marks can't represent all grade bands
+        }
+        res = self.client.post(url, data=payload)
+        self.assertEqual(res.status_code, 200)  # stays on form
+        self.assertContains(res, "5 marks is too low for subdivision")
+        self.assertEqual(AssessmentTemplate.objects.count(), 0)
