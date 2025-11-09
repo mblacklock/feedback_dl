@@ -348,17 +348,20 @@ function updateGradeBandsPreview(row) {
                 const categoryData = getCategoryDataForRow(row);
                 const descriptions = categoryData && categoryData.grade_band_descriptions ? categoryData.grade_band_descriptions : {};
                 
-                // Fill in existing descriptions
-                previewEl.querySelectorAll('.grade-description').forEach(textarea => {
-                    const grade = textarea.getAttribute('data-grade');
-                    if (descriptions[grade]) {
-                        textarea.value = descriptions[grade];
-                    }
-                    
-                    // Attach event listeners
-                    textarea.addEventListener('input', debouncedSave);
-                    textarea.addEventListener('blur', saveNow);
-                });
+                // Fill in existing descriptions and attach event listeners
+                // Use setTimeout to ensure DOM is ready
+                setTimeout(() => {
+                    previewEl.querySelectorAll('.grade-description').forEach(textarea => {
+                        const grade = textarea.getAttribute('data-grade');
+                        if (descriptions[grade]) {
+                            textarea.value = descriptions[grade];
+                        }
+                        
+                        // Attach event listeners
+                        textarea.addEventListener('input', debouncedSave);
+                        textarea.addEventListener('blur', saveNow);
+                    });
+                }, 0);
             } else {
                 previewEl.innerHTML = '';
             }
