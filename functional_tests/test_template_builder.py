@@ -95,7 +95,7 @@ class TemplateBuilderFT(FunctionalTestBase):
         assert "High 1st" in items[0].text
         assert "Low 1st" in items[0].text
         # Check for card grid structure
-        first_cat_grid = items[0].find_element(By.CSS_SELECTOR, ".row.g-2")
+        first_cat_grid = items[0].find_element(By.CSS_SELECTOR, ".grade-bands-grid")
         assert first_cat_grid is not None
         
         # AND the second category shows as numeric (no grade bands)
@@ -109,5 +109,5 @@ class TemplateBuilderFT(FunctionalTestBase):
         assert "1st" in items[2].text
         assert "2:1" in items[2].text
         assert "Fail" in items[2].text
-        third_cat_grid = items[2].find_element(By.CSS_SELECTOR, ".row.g-2")
+        third_cat_grid = items[2].find_element(By.CSS_SELECTOR, ".grade-bands-grid")
         assert third_cat_grid is not None

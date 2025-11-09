@@ -78,7 +78,7 @@ class TemplateAutoSaveFT(FunctionalTestBase):
         
         # THEN they see the grade bands grid
         time.sleep(0.5)  # Wait for AJAX call
-        preview = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".row.g-2")))
+        preview = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".grade-bands-grid")))
         
         # AND it contains grade information in cards
         preview_text = preview.text

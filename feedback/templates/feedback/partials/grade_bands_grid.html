@@ -1,9 +1,9 @@
 {% load feedback_filters %}
-<div class="row g-2">
+<div class="row g-0 grade-bands-grid">
     {% for main_grade, band_list in grouped_bands.items %}
     <div class="col">
-        <div class="card h-100 d-flex flex-column">
-            <div class="card-header {% if main_grade == '1st' %}{{ header_bg_1st|default:'bg-success-subtle bg-gradient' }}{% elif main_grade == 'Fail' %}{{ header_bg_fail|default:'bg-danger-subtle bg-gradient' }}{% else %}bg-light{% endif %} py-1 px-2">
+        <div class="card h-100 d-flex flex-column {% if not forloop.first %}border-start-0{% endif %} rounded-0 {% if forloop.first %}rounded-start{% endif %} {% if forloop.last %}rounded-end{% endif %}">
+            <div class="card-header {% if main_grade == '1st' %}{{ header_bg_1st|default:'bg-success-subtle bg-gradient' }}{% elif main_grade == 'Fail' %}{{ header_bg_fail|default:'bg-danger-subtle bg-gradient' }}{% else %}bg-light{% endif %} py-1 px-2 {% if not forloop.first %}border-start-0{% endif %}">
                 <small class="fw-bold">{{ main_grade }}</small>
             </div>
             <div class="card-body p-2 d-flex flex-column">

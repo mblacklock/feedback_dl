@@ -40,7 +40,7 @@ class GradeBandDescriptionsFT(FunctionalTestBase):
         time.sleep(0.5)
         
         # THEN they see a grid with grade band cards (one card per main grade)
-        grade_grid = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".row.g-2")))
+        grade_grid = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".grade-bands-grid")))
         
         # AND the grid has cards for different main grades
         cards = grade_grid.find_elements(By.CSS_SELECTOR, ".card")
@@ -77,7 +77,7 @@ class GradeBandDescriptionsFT(FunctionalTestBase):
         self.wait.until(EC.url_matches(r'/feedback/template/\d+/$'))
         
         # AND the grade bands are displayed in a card grid format
-        summary_grid = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".row.g-2")))
+        summary_grid = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".grade-bands-grid")))
         
         # AND the descriptions they entered are visible
         grid_text = summary_grid.text

@@ -42,7 +42,7 @@
                         
                         {% if cat.bands %}
                         <div class="mt-3">
-                            {% include 'feedback/partials/grade_bands_grid.html' with grouped_bands=cat.grouped_bands descriptions=cat.grade_descriptions show_textarea=False header_bg_1st='bg-success' header_bg_fail='bg-danger' badge_class='bg-secondary' %}
+                            {% include 'feedback/partials/grade_bands_grid.html' with grouped_bands=cat.grouped_bands descriptions=cat.grade_descriptions show_textarea=False %}
                         </div>
                         {% else %}
                         <small class="text-muted">Numeric scoring (0-{{ cat.max }})</small>
