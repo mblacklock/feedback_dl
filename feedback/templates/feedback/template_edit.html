@@ -1,0 +1,82 @@
+{% extends "feedback/base.html" %}
+{% load static %}
+
+{% block title %}Edit Template{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="row">
+    <div class="col-md-10 mx-auto">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Edit Template</h1>
+            <div class="d-flex align-items-center gap-3">
+                <span id="save-status" class="text-muted"></span>
+                <a href="{% url 'template_summary' template.id %}" id="view-template" class="btn btn-outline-primary">
+                    <i class="bi bi-eye"></i> View Template
+                </a>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Template Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="title" class="form-label">Title <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control auto-save" id="title" name="title" 
+                           value="{{ template.title }}" placeholder="e.g., KB5031 – FEA Coursework">
+                </div>
+                
+                <div class="mb-3">
+                    <label for="module_code" class="form-label">Module Code <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control auto-save" id="module_code" name="module_code" 
+                           value="{{ template.module_code }}" placeholder="e.g., KB5031">
+                </div>
+                
+                <div class="mb-3">
+                    <label for="assessment_title" class="form-label">Assessment Title <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control auto-save" id="assessment_title" name="assessment_title" 
+                           value="{{ template.assessment_title }}" placeholder="e.g., Coursework 1: Truss Analysis">
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Rubric Categories</h5>
+                <button type="button" class="btn btn-sm btn-success" id="add-category">
+                    <i class="bi bi-plus-circle"></i> Add Category
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="row mb-2">
+                    <div class="col-md-6">
+                        <strong>Category Label</strong>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Maximum Marks</strong>
+                    </div>
+                    <div class="col-md-3">
+                    </div>
+                </div>
+                <div id="categories">
+                    <!-- Category rows will be added here by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Pass template data to JavaScript
+window.templateData = {
+    id: {{ template.id }},
+    categories: {{ categories_json|safe }}
+};
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'feedback/js/template_editor.js' %}"></script>
+{% endblock %}

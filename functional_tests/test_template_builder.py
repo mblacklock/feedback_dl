@@ -37,19 +37,22 @@ class TemplateBuilderFT(StaticLiveServerTestCase):
         create_btn = self.wait.until(EC.presence_of_element_located((By.LINK_TEXT, "Create New Template")))
         create_btn.click()
         
-        # THEN they see a template form with summary fields
-        form = self.wait.until(EC.presence_of_element_located((By.ID, "template-form")))
-        title = form.find_element(By.NAME, "title")
-        module_code = form.find_element(By.NAME, "module_code")
-        assessment_title = form.find_element(By.NAME, "assessment_title")
+        # THEN they're redirected to the edit page
+        self.wait.until(EC.url_matches(r'/feedback/template/\d+/edit/'))
+        
+        # AND they see the edit page with summary fields
+        title = self.wait.until(EC.presence_of_element_located((By.NAME, "title")))
+        module_code = self.browser.find_element(By.NAME, "module_code")
+        assessment_title = self.browser.find_element(By.NAME, "assessment_title")
 
         # AND they enter summary info
+        title.clear()
         title.send_keys("KB5031 – FEA Coursework")
         module_code.send_keys("KB5031")
         assessment_title.send_keys("Coursework 1: Truss Analysis")
 
         # AND they add three rubric categories
-        add_btn = form.find_element(By.ID, "add-category")
+        add_btn = self.browser.find_element(By.ID, "add-category")
 
         # Click twice to add two more rows (assume one empty row is present by default)
         add_btn.click()
@@ -87,13 +90,17 @@ class TemplateBuilderFT(StaticLiveServerTestCase):
         subdivision_btn2 = cat_rows[2].find_element(By.CSS_SELECTOR, "button[data-subdivision='none']")
         self.browser.execute_script("arguments[0].click();", subdivision_btn2)
 
-        # AND they submit the form
-        submit_btn = form.find_element(By.CSS_SELECTOR, "button[type=submit]")
-        # Scroll button into view and click with JavaScript to avoid interception
-        self.browser.execute_script("arguments[0].scrollIntoView(true);", submit_btn)
-        self.browser.execute_script("arguments[0].click();", submit_btn)
+        # AND they wait for autosave
+        import time
+        time.sleep(2)
+        
+        # WHEN they click "View Template" button
+        view_btn = self.browser.find_element(By.ID, "view-template")
+        self.browser.execute_script("arguments[0].scrollIntoView(true);", view_btn)
+        self.browser.execute_script("arguments[0].click();", view_btn)
 
         # THEN they are taken to a summary page showing the new template title
+        self.wait.until(EC.url_matches(r'/feedback/template/\d+/$'))
         h1 = self.wait.until(EC.presence_of_element_located((By.TAG_NAME, "h1")))
         assert "KB5031 – FEA Coursework" in h1.text
 

@@ -6,6 +6,8 @@ def home(request):
     return render(request, "feedback/home.html", {"page_title": "Feedback"})
 
 def template_new(request):
+    # If GET request, create minimal template and redirect to edit page  
+    # If POST request, use legacy form submission (for backwards compatibility with tests)
     if request.method == "POST":
         # Extract form data
         title = request.POST.get("title", "").strip()
@@ -92,7 +94,50 @@ def template_new(request):
         
         return redirect("template_summary", pk=tpl.id)
     
-    return render(request, "feedback/template_new.html")
+    # GET request - create minimal template and redirect to edit page
+    tpl = AssessmentTemplate.objects.create(
+        title="Untitled Template",
+        module_code="",
+        assessment_title="",
+        categories=[]
+    )
+    return redirect("template_edit", pk=tpl.id)
+
+def template_edit(request, pk):
+    """Edit page with auto-save functionality."""
+    import json
+    tpl = AssessmentTemplate.objects.get(pk=pk)
+    return render(request, "feedback/template_edit.html", {
+        "template": tpl,
+        "categories_json": json.dumps(tpl.categories if tpl.categories else [])
+    })
+
+def template_update(request, pk):
+    """AJAX endpoint for auto-saving template updates."""
+    import json
+    from django.http import JsonResponse
+    
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=405)
+    
+    tpl = AssessmentTemplate.objects.get(pk=pk)
+    data = json.loads(request.body)
+    
+    # Update fields if provided
+    if "title" in data:
+        tpl.title = data["title"]
+    if "module_code" in data:
+        tpl.module_code = data["module_code"]
+    if "assessment_title" in data:
+        tpl.assessment_title = data["assessment_title"]
+    if "categories" in data:
+        tpl.categories = data["categories"]
+    
+    try:
+        tpl.save()
+        return JsonResponse({"status": "saved"})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=400)
 
 def template_summary(request, pk):
     tpl = AssessmentTemplate.objects.get(pk=pk)

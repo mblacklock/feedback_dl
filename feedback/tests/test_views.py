@@ -15,20 +15,25 @@ class HomeViewTest(TestCase):
         assert b"<title>Feedback</title>" in resp.content
 
 class TemplateBuilderViewTests(TestCase):
-    def test_get_new_template_renders_form(self):
-        """GET /feedback/template/new/ renders the builder with expected fields and scaffolding."""
+    def test_get_new_template_creates_template_and_redirects_to_edit(self):
+        """GET /feedback/template/new/ creates a template and redirects to edit page."""
         url = reverse("template_new")
-        res = self.client.get(url)
+        res = self.client.get(url, follow=False)
+        self.assertEqual(res.status_code, 302)
+        # Should redirect to edit page
+        self.assertTrue(res.url.endswith('/edit/'))
+        
+        # Follow the redirect
+        res = self.client.get(url, follow=True)
         self.assertEqual(res.status_code, 200)
-        # Form container
-        self.assertContains(res, 'id="template-form"')
-        # Summary fields
+        # Should show edit page with fields
         self.assertContains(res, 'name="title"')
         self.assertContains(res, 'name="module_code"')
         self.assertContains(res, 'name="assessment_title"')
-        # Categories UI scaffold
         self.assertContains(res, 'id="categories"')
         self.assertContains(res, 'id="add-category"')
+        self.assertContains(res, 'id="save-status"')
+        self.assertContains(res, 'id="view-template"')
 
     def test_post_valid_creates_template_and_redirects_to_summary(self):
         """POST valid data creates a template with categories (in order) and redirects to summary."""
