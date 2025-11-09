@@ -32,10 +32,25 @@
             </div>
             <div class="card-body">
                 <ul id="cat-list" class="list-group list-group-flush">
-                    {% for cat in template.categories %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <span>{{ cat.label }}</span>
-                        <span class="badge bg-primary rounded-pill">{{ cat.max }} marks</span>
+                    {% for cat in categories_with_bands %}
+                    <li class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <strong>{{ cat.label }}</strong>
+                            <span class="badge bg-primary rounded-pill">{{ cat.max }} marks</span>
+                        </div>
+                        
+                        {% if cat.bands %}
+                        <div class="mt-2">
+                            <small class="text-muted">Grade Bands:</small>
+                            <div class="mt-1">
+                                {% for band in cat.bands %}
+                                <span class="badge bg-secondary me-1">{{ band.grade }}: {{ band.min }}-{{ band.max }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% else %}
+                        <small class="text-muted">Numeric scoring (0-{{ cat.max }})</small>
+                        {% endif %}
                     </li>
                     {% endfor %}
                 </ul>

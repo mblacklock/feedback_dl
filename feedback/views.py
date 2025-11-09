@@ -86,5 +86,19 @@ def template_new(request):
     return render(request, "feedback/template_new.html")
 
 def template_summary(request, pk):
+    from feedback.models import calculate_grade_bands
+    
     tpl = AssessmentTemplate.objects.get(pk=pk)
-    return render(request, "feedback/template_summary.html", {"template": tpl})
+    
+    # Calculate grade bands for each category
+    categories_with_bands = []
+    for cat in tpl.categories:
+        cat_data = cat.copy()
+        if cat.get("type") == "grade" and cat.get("subdivision"):
+            cat_data["bands"] = calculate_grade_bands(cat["max"], cat["subdivision"])
+        categories_with_bands.append(cat_data)
+    
+    return render(request, "feedback/template_summary.html", {
+        "template": tpl,
+        "categories_with_bands": categories_with_bands
+    })
