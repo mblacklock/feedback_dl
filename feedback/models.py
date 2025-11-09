@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 
 
 class AssessmentTemplate(models.Model):
+    component = models.IntegerField()
     title = models.CharField(max_length=200)
     module_code = models.CharField(max_length=50)
     assessment_title = models.CharField(max_length=200)

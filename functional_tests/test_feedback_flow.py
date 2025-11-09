@@ -14,6 +14,7 @@ class FeedbackFT(FunctionalTestBase):
         """
         # GIVEN: Create some test templates
         template1 = AssessmentTemplate.objects.create(
+            component=1,
             title="Introduction to Programming",
             module_code="CS101",
             assessment_title="Assignment 1",
@@ -24,6 +25,7 @@ class FeedbackFT(FunctionalTestBase):
         )
         
         template2 = AssessmentTemplate.objects.create(
+            component=1,
             title="Database Systems",
             module_code="CS202",
             assessment_title="Final Exam",
@@ -130,6 +132,7 @@ class FeedbackFT(FunctionalTestBase):
         """
         # GIVEN: Create a test template
         template = AssessmentTemplate.objects.create(
+            component=1,
             title="Test Template",
             module_code="TEST101",
             assessment_title="Test Assessment",

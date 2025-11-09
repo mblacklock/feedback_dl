@@ -10,6 +10,53 @@ class TemplateBuilderFT(FunctionalTestBase):
     summary info and adding rubric categories, and then see a summary page.
     """
 
+    def test_staff_can_add_component_field_to_template(self):
+        """
+        GIVEN: A staff member creates a new template
+        WHEN: They enter a component number like '001'
+        THEN: The component is saved and displayed on the summary page
+        """
+        # GIVEN: Staff member visits the feedback portal and creates a new template
+        self.browser.get(self.live_server_url + "/feedback/")
+        create_btn = self.wait.until(EC.presence_of_element_located((By.LINK_TEXT, "Create New Template")))
+        create_btn.click()
+        
+        # WHEN: They see the edit page
+        self.wait.until(EC.url_matches(r'/feedback/template/\d+/edit/'))
+        
+        # AND: They enter summary info including component field
+        title = self.wait.until(EC.presence_of_element_located((By.NAME, "title")))
+        title.clear()
+        title.send_keys("Test Template")
+        
+        module_code = self.browser.find_element(By.NAME, "module_code")
+        module_code.send_keys("KB5031")
+        
+        assessment_title = self.browser.find_element(By.NAME, "assessment_title")
+        assessment_title.send_keys("Coursework 1")
+        
+        component = self.browser.find_element(By.NAME, "component")
+        component.send_keys("1")
+        
+        # AND: They add a simple category
+        cat_row = self.browser.find_element(By.CSS_SELECTOR, "#categories .category-row")
+        cat_row.find_element(By.CSS_SELECTOR, "input.cat-label").send_keys("Introduction")
+        cat_row.find_element(By.CSS_SELECTOR, "input.cat-max").clear()
+        cat_row.find_element(By.CSS_SELECTOR, "input.cat-max").send_keys("10")
+        
+        # AND: They wait for autosave
+        import time
+        time.sleep(2)
+        
+        # WHEN: They view the template
+        view_btn = self.browser.find_element(By.ID, "view-template")
+        self.browser.execute_script("arguments[0].click();", view_btn)
+        
+        # THEN: The summary page shows the component
+        self.wait.until(EC.url_matches(r'/feedback/template/\d+/$'))
+        page_text = self.browser.find_element(By.TAG_NAME, "body").text
+        self.assertIn("Component: 1", page_text)
+
     def test_staff_creates_template_with_grade_bands_and_sees_summary(self):
         # GIVEN a staff member visits the feedback portal home page
         self.browser.get(self.live_server_url + "/feedback/")

@@ -4,8 +4,43 @@ from feedback.models import AssessmentTemplate
 
 
 class AssessmentTemplateModelTests(TestCase):
+    def test_can_create_template_with_component_field(self):
+        """Component field stores assessment component numbers as integers and is required."""
+        tpl = AssessmentTemplate.objects.create(
+            component=1,
+            title="Test Template",
+            module_code="KB5031",
+            assessment_title="Coursework 1",
+            categories=[{"label": "Introduction", "max": 10}],
+        )
+        self.assertEqual(tpl.component, 1)
+        
+        # Component can be any integer
+        tpl2 = AssessmentTemplate.objects.create(
+            component=123,
+            title="Test Template 2",
+            module_code="KB5031",
+            assessment_title="Coursework 2",
+            categories=[{"label": "Design", "max": 10}],
+        )
+        self.assertEqual(tpl2.component, 123)
+    
+    def test_component_is_required(self):
+        """Component field is required - cannot be null or blank."""
+        # Component cannot be None
+        tpl = AssessmentTemplate(
+            title="Test Template",
+            module_code="KB5031",
+            assessment_title="Coursework 1",
+            component=None,
+            categories=[{"label": "Test", "max": 10}],
+        )
+        with self.assertRaises(ValidationError):
+            tpl.full_clean()
+
     def test_can_create_template_with_ordered_categories(self):
         tpl = AssessmentTemplate.objects.create(
+            component=1,
             title="KB5031 – FEA Coursework",
             module_code="KB5031",
             assessment_title="Coursework 1",
@@ -31,6 +66,7 @@ class AssessmentTemplateModelTests(TestCase):
     def test_can_create_category_with_grade_bands(self):
         """Categories can optionally use grade bands with auto-calculated thresholds."""
         tpl = AssessmentTemplate.objects.create(
+            component=1,
             title="Advanced Template",
             module_code="KB5031",
             assessment_title="Coursework 1",
@@ -67,6 +103,7 @@ class AssessmentTemplateModelTests(TestCase):
         """Model-level validation: non-empty list, labels non-blank, max in 1..1000 (or your chosen bound)."""
         # Empty list → invalid
         tpl = AssessmentTemplate(
+            component=1,
             title="Empty",
             module_code="KB0000",
             assessment_title="Empty",
@@ -231,6 +268,7 @@ class AssessmentTemplateModelTests(TestCase):
         """Categories with grade bands can store descriptions for main grades (1st, 2:1, 2:2, 3rd, Fail).
         Maximum is included in 1st class, not separate."""
         tpl = AssessmentTemplate.objects.create(
+            component=1,
             title="Test Template",
             module_code="KB5031",
             assessment_title="Test",
@@ -257,3 +295,4 @@ class AssessmentTemplateModelTests(TestCase):
             tpl.categories[0]["grade_band_descriptions"]["1st"],
             "Complex engineering principles are creatively and critically applied"
         )
+

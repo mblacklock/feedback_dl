@@ -25,12 +25,14 @@ class HomeViewTest(TestCase):
         """Home page lists all templates in a list group"""
         # Create test templates
         template1 = AssessmentTemplate.objects.create(
+            component=1,
             title="Template 1",
             module_code="CS101",
             assessment_title="Assignment 1",
             categories=[{"label": "Content", "max": 10}]
         )
         template2 = AssessmentTemplate.objects.create(
+            component=1,
             title="Template 2",
             module_code="CS202",
             assessment_title="Exam",
@@ -70,6 +72,7 @@ class TemplateDeleteViewTests(TestCase):
         """POST /feedback/template/<pk>/delete/ removes the template and returns JSON."""
         import json
         template = AssessmentTemplate.objects.create(
+            component=1,
             title="To Delete",
             module_code="DEL101",
             assessment_title="Delete Test",
@@ -90,6 +93,7 @@ class TemplateDeleteViewTests(TestCase):
     def test_get_delete_not_allowed(self):
         """GET /feedback/template/<pk>/delete/ is not allowed (only POST)."""
         template = AssessmentTemplate.objects.create(
+            component=1,
             title="To Delete",
             module_code="DEL101",
             assessment_title="Delete Test",
@@ -101,6 +105,39 @@ class TemplateDeleteViewTests(TestCase):
         
         # Should return 405 Method Not Allowed
         self.assertEqual(resp.status_code, 405)
+
+class TemplateUpdateViewTests(TestCase):
+    def test_post_update_saves_component_field(self):
+        """POST /feedback/template/<pk>/update/ saves the component field."""
+        import json
+        template = AssessmentTemplate.objects.create(
+            component=1,
+            title="Test Template",
+            module_code="KB5031",
+            assessment_title="Test",
+            categories=[{"label": "Test", "max": 10}]
+        )
+        
+        url = reverse("template_update", args=[template.pk])
+        data = {
+            "title": "Updated Title",
+            "module_code": "KB5031",
+            "assessment_title": "Test",
+            "component": 2,
+            "categories": [{"label": "Test", "max": 10}]
+        }
+        
+        resp = self.client.post(url, data=json.dumps(data), content_type="application/json")
+        
+        # Should return 200 with success
+        self.assertEqual(resp.status_code, 200)
+        result = json.loads(resp.content)
+        self.assertEqual(result["status"], "saved")
+        
+        # Template should be updated
+        template.refresh_from_db()
+        self.assertEqual(template.component, 2)
+        self.assertEqual(template.title, "Updated Title")
 
 class TemplateBuilderViewTests(TestCase):
     def test_get_new_template_creates_template_and_redirects_to_edit(self):
@@ -127,6 +164,7 @@ class TemplateBuilderViewTests(TestCase):
         """POST valid data creates a template with categories (in order) and redirects to summary."""
         url = reverse("template_new")
         payload = {
+            "component": "1",
             "title": "KB5031 – FEA Coursework",
             "module_code": "KB5031",
             "assessment_title": "Coursework 1: Truss Analysis",
@@ -212,6 +250,7 @@ class TemplateBuilderViewTests(TestCase):
         """POST with grade type and subdivision creates category with those fields."""
         url = reverse("template_new")
         payload = {
+            "component": "1",
             "title": "Grade Bands Template",
             "module_code": "KB5031",
             "assessment_title": "Test",

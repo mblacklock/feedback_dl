@@ -15,6 +15,7 @@ def template_new(request):
     # If POST request, use legacy form submission (for backwards compatibility with tests)
     if request.method == "POST":
         # Extract form data
+        component_str = request.POST.get("component", "").strip()
         title = request.POST.get("title", "").strip()
         module_code = request.POST.get("module_code", "").strip()
         assessment_title = request.POST.get("assessment_title", "").strip()
@@ -27,6 +28,14 @@ def template_new(request):
         categories = []
         
         # Validate required fields
+        if not component_str:
+            errors.append("Component is required")
+        else:
+            try:
+                component = int(component_str)
+            except (ValueError, TypeError):
+                errors.append("Component must be a number")
+        
         if not title:
             errors.append("Title is required")
         if not module_code:
@@ -91,6 +100,7 @@ def template_new(request):
         
         # Create the template
         tpl = AssessmentTemplate.objects.create(
+            component=component,
             title=title,
             module_code=module_code,
             assessment_title=assessment_title,
@@ -101,6 +111,7 @@ def template_new(request):
     
     # GET request - create minimal template and redirect to edit page
     tpl = AssessmentTemplate.objects.create(
+        component=1,
         title="Untitled Template",
         module_code="",
         assessment_title="",
@@ -135,6 +146,8 @@ def template_update(request, pk):
         tpl.module_code = data["module_code"]
     if "assessment_title" in data:
         tpl.assessment_title = data["assessment_title"]
+    if "component" in data:
+        tpl.component = data["component"]
     if "categories" in data:
         tpl.categories = data["categories"]
     

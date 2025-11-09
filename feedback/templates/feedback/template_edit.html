@@ -22,10 +22,18 @@
                 <h5 class="mb-0">Template Information</h5>
             </div>
             <div class="card-body">
+                
                 <div class="mb-3">
-                    <label for="title" class="form-label">Title <span class="text-danger">*</span></label>
+                    <label for="title" class="form-label">Template Title <span class="text-danger">*</span></label>
                     <input type="text" class="form-control auto-save" id="title" name="title" 
                            value="{{ template.title }}" placeholder="e.g., KB5031 – FEA Coursework">
+                    <small class="form-text text-muted">This title is for your reference only.</small>
+                </div>
+
+                <div class="mb-3">
+                    <label for="component" class="form-label">Component Number <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control auto-save" id="component" name="component" 
+                           value="{{ template.component }}" placeholder="e.g., 1, 2, 3" required>
                 </div>
                 
                 <div class="mb-3">

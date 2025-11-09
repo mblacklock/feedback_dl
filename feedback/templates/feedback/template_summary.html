@@ -20,10 +20,13 @@
             </div>
             <div class="card-body">
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-3">
                         <p><strong>Module Code:</strong> {{ template.module_code }}</p>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-3">
+                        <p><strong>Component:</strong> {{ template.component|default:"N/A" }}</p>
+                    </div>
+                    <div class="col-md-4">
                         <p><strong>Assessment:</strong> {{ template.assessment_title }}</p>
                     </div>
                 </div>
