@@ -32,7 +32,6 @@ Django 5.2.8 application for creating and managing feedback templates for assess
 
 ### Static Files
 - JavaScript in `feedback/static/feedback/js/`:
-  - `template_builder.js` - Dynamic form for creating templates
   - `template_editor.js` - Autosave and dynamic editing with grade bands support
 - Always use `{% load static %}` and `{% static 'path' %}` in templates
 
