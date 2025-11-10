@@ -13,13 +13,28 @@ class AssessmentTemplate(models.Model):
     categories = models.JSONField(default=list)
 
     def clean(self):
-        """Validate categories structure and bounds."""
+        """Validate categories structure, bounds, and required fields."""
         super().clean()
         
-        if not self.categories:
-            raise ValidationError("At least one category is required")
-        
         errors = []
+        
+        # Check required fields
+        if not self.module_title or not self.module_title.strip():
+            errors.append("Module title is required")
+        
+        if self.weighting is None:
+            errors.append("Weighting is required")
+        
+        if self.max_marks is None:
+            errors.append("Max marks is required")
+        
+        if not self.categories:
+            errors.append("At least one category is required")
+        
+        if errors:
+            raise ValidationError(errors)
+        
+        # Validate categories
         VALID_TYPES = ["numeric", "grade"]
         VALID_SUBDIVISIONS = ["none", "high_low", "high_mid_low"]
         

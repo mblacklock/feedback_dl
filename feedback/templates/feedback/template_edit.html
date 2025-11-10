@@ -36,9 +36,9 @@
                                value="{{ template.module_code }}" placeholder="e.g., KB5031">
                     </div>
                     <div class="col-md-7">
-                        <label for="module_title" class="form-label">Module Title</label>
+                        <label for="module_title" class="form-label">Module Title <span class="text-danger">*</span></label>
                         <input type="text" class="form-control auto-save" id="module_title" name="module_title" 
-                               value="{{ template.module_title }}" placeholder="e.g., Finite Element Analysis">
+                               value="{{ template.module_title }}" placeholder="e.g., Finite Element Analysis" required>
                     </div>
                     <div class="col-md-2">
                         <label for="component" class="form-label">Component <span class="text-danger">*</span></label>
@@ -54,14 +54,14 @@
                                value="{{ template.assessment_title }}" placeholder="e.g., Coursework 1: Truss Analysis">
                     </div>
                     <div class="col-md-2">
-                        <label for="weighting" class="form-label">Weighting %</label>
+                        <label for="weighting" class="form-label">Weighting % <span class="text-danger">*</span></label>
                         <input type="number" class="form-control auto-save" id="weighting" name="weighting" 
-                               value="{{ template.weighting|default:'' }}" placeholder="e.g., 40" min="0" max="100">
+                               value="{{ template.weighting|default:'' }}" placeholder="e.g., 40" min="0" max="100" required>
                     </div>
                     <div class="col-md-2">
-                        <label for="max_marks" class="form-label">Max Marks</label>
+                        <label for="max_marks" class="form-label">Max Marks <span class="text-danger">*</span></label>
                         <input type="number" class="form-control auto-save" id="max_marks" name="max_marks" 
-                               value="{{ template.max_marks|default:'' }}" placeholder="e.g., 100" min="1">
+                               value="{{ template.max_marks|default:'' }}" placeholder="e.g., 100" min="1" required>
                     </div>
                 </div>
             </div>

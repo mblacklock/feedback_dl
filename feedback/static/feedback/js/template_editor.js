@@ -59,8 +59,8 @@ function addCategoryRow(categoryData = null) {
     row.innerHTML = `
         <div class="row mb-2">
             <div class="col-md-10">
-                <label class="form-label">Category Label</label>
-                <input type="text" class="form-control cat-label" placeholder="e.g., Introduction" value="${label}">
+                <label class="form-label">Category Label <span class="text-danger">*</span></label>
+                <input type="text" class="form-control cat-label" placeholder="e.g., Introduction" value="${label}" required>
             </div>
             <div class="col-md-2">
                 <label class="form-label">&nbsp;</label>
@@ -69,8 +69,8 @@ function addCategoryRow(categoryData = null) {
         </div>
         <div class="row mb-2">
             <div class="col-md-2">
-                <label class="form-label">Max Marks</label>
-                <input type="number" class="form-control cat-max" placeholder="Max" value="${max}" min="1" max="1000">
+                <label class="form-label">Max Marks <span class="text-danger">*</span></label>
+                <input type="number" class="form-control cat-max" placeholder="Max" value="${max}" min="1" max="1000" required>
             </div>
             <div class="col-md-3">
                 <label class="form-label">Type</label>

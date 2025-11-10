@@ -5,6 +5,9 @@
 
 ## Future Enhancements
 - Refactor functional tests to reduce duplication (extract common setup methods)
+- Separate Rubric and Feedback Sheet view pages
+- Ability to have non-mark category, e.g. for performance data
+- Add a changelog file
 
 ## AI suggested enhancements
 - Consider adding bulk import/export functionality for templates

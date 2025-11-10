@@ -10,7 +10,10 @@ class AssessmentTemplateModelTests(TestCase):
             component=1,
             title="Test Template",
             module_code="KB5031",
+            module_title="Test Module",
             assessment_title="Coursework 1",
+            weighting=40,
+            max_marks=100,
             categories=[{"label": "Introduction", "max": 10}],
         )
         self.assertEqual(tpl.component, 1)
@@ -20,7 +23,10 @@ class AssessmentTemplateModelTests(TestCase):
             component=123,
             title="Test Template 2",
             module_code="KB5031",
+            module_title="Test Module 2",
             assessment_title="Coursework 2",
+            weighting=50,
+            max_marks=80,
             categories=[{"label": "Design", "max": 10}],
         )
         self.assertEqual(tpl2.component, 123)
@@ -39,56 +45,72 @@ class AssessmentTemplateModelTests(TestCase):
             tpl.full_clean()
     
     def test_can_create_template_with_module_title(self):
-        """Module title field stores the module name and is optional."""
+        """Module title field stores the module name and is required."""
         tpl = AssessmentTemplate.objects.create(
             component=1,
             title="Test Template",
             module_code="KB5031",
             module_title="Finite Element Analysis",
             assessment_title="Coursework 1",
+            weighting=40,
+            max_marks=100,
             categories=[{"label": "Introduction", "max": 10}],
         )
         self.assertEqual(tpl.module_title, "Finite Element Analysis")
-        
-        # Module title can be blank
-        tpl2 = AssessmentTemplate.objects.create(
+    
+    def test_module_title_is_required(self):
+        """Module title cannot be blank."""
+        tpl = AssessmentTemplate(
             component=1,
-            title="Test Template 2",
-            module_code="KB5032",
+            title="Test Template",
+            module_code="KB5031",
             module_title="",
-            assessment_title="Coursework 2",
-            categories=[{"label": "Design", "max": 10}],
+            assessment_title="Coursework 1",
+            weighting=40,
+            max_marks=100,
+            categories=[{"label": "Introduction", "max": 10}],
         )
-        self.assertEqual(tpl2.module_title, "")
+        with self.assertRaises(ValidationError):
+            tpl.full_clean()
     
     def test_can_create_template_with_weighting(self):
-        """Weighting field stores assessment weighting as integer percentage (optional)."""
+        """Weighting field stores assessment weighting as integer percentage (required)."""
         tpl = AssessmentTemplate.objects.create(
             component=1,
             title="Test Template",
             module_code="KB5031",
+            module_title="Finite Element Analysis",
             assessment_title="Coursework 1",
             weighting=40,
+            max_marks=100,
             categories=[{"label": "Introduction", "max": 10}],
         )
         self.assertEqual(tpl.weighting, 40)
-        
-        # Weighting can be blank/null
-        tpl2 = AssessmentTemplate.objects.create(
+    
+    def test_weighting_is_required(self):
+        """Weighting cannot be null."""
+        tpl = AssessmentTemplate(
             component=1,
-            title="Test Template 2",
-            module_code="KB5032",
-            assessment_title="Coursework 2",
-            categories=[{"label": "Design", "max": 10}],
+            title="Test Template",
+            module_code="KB5031",
+            module_title="Finite Element Analysis",
+            assessment_title="Coursework 1",
+            weighting=None,
+            max_marks=100,
+            categories=[{"label": "Introduction", "max": 10}],
         )
-        self.assertIsNone(tpl2.weighting)
+        with self.assertRaises(ValidationError):
+            tpl.full_clean()
 
     def test_can_create_template_with_ordered_categories(self):
         tpl = AssessmentTemplate.objects.create(
             component=1,
             title="KB5031 – FEA Coursework",
             module_code="KB5031",
+            module_title="Finite Element Analysis",
             assessment_title="Coursework 1",
+            weighting=40,
+            max_marks=40,
             categories=[
                 {"label": "Introduction", "max": 10},
                 {"label": "Method", "max": 20},
@@ -114,7 +136,10 @@ class AssessmentTemplateModelTests(TestCase):
             component=1,
             title="Advanced Template",
             module_code="KB5031",
+            module_title="Advanced Engineering",
             assessment_title="Coursework 1",
+            weighting=40,
+            max_marks=60,
             categories=[
                 {
                     "label": "Comprehension and application",
@@ -151,7 +176,10 @@ class AssessmentTemplateModelTests(TestCase):
             component=1,
             title="Empty",
             module_code="KB0000",
+            module_title="Empty Module",
             assessment_title="Empty",
+            weighting=50,
+            max_marks=100,
             categories=[],
         )
         with self.assertRaises(ValidationError):
@@ -174,9 +202,13 @@ class AssessmentTemplateModelTests(TestCase):
     def test_validate_grade_subdivision(self):
         """Grade categories must have valid subdivision values."""
         tpl = AssessmentTemplate(
+            component=1,
             title="Test Bands",
             module_code="KB0000",
+            module_title="Test Module",
             assessment_title="Test",
+            weighting=50,
+            max_marks=100,
             categories=[
                 {
                     "label": "Category",
@@ -316,7 +348,10 @@ class AssessmentTemplateModelTests(TestCase):
             component=1,
             title="Test Template",
             module_code="KB5031",
+            module_title="Engineering Principles",
             assessment_title="Test",
+            weighting=50,
+            max_marks=30,
             categories=[
                 {
                     "label": "Comprehension",
@@ -342,12 +377,14 @@ class AssessmentTemplateModelTests(TestCase):
         )
     
     def test_can_create_template_with_max_marks(self):
-        """Templates can store max marks for the assessment (optional field)."""
+        """Templates can store max marks for the assessment (required field)."""
         tpl = AssessmentTemplate.objects.create(
             component=1,
             title="Test Template",
             module_code="KB5031",
+            module_title="Advanced Module",
             assessment_title="Final Exam",
+            weighting=50,
             max_marks=100,
             categories=[{"label": "Question 1", "max": 25, "type": "numeric"}]
         )
@@ -356,16 +393,19 @@ class AssessmentTemplateModelTests(TestCase):
         
         retrieved = AssessmentTemplate.objects.get(pk=tpl.id)
         self.assertEqual(retrieved.max_marks, 100)
-        
-        # Max marks should be optional (can be null)
-        tpl2 = AssessmentTemplate.objects.create(
-            component=2,
-            title="Test Template 2",
-            module_code="KB5032",
-            assessment_title="Coursework",
+    
+    def test_max_marks_is_required(self):
+        """Max marks cannot be null."""
+        tpl = AssessmentTemplate(
+            component=1,
+            title="Test Template",
+            module_code="KB5031",
+            module_title="Advanced Module",
+            assessment_title="Final Exam",
+            weighting=50,
             max_marks=None,
-            categories=[{"label": "Question 1", "max": 10, "type": "numeric"}]
+            categories=[{"label": "Question 1", "max": 25, "type": "numeric"}]
         )
-        tpl2.full_clean()
-        self.assertIsNone(tpl2.max_marks)
+        with self.assertRaises(ValidationError):
+            tpl.full_clean()
 

@@ -28,14 +28,20 @@ class HomeViewTest(TestCase):
             component=1,
             title="Template 1",
             module_code="CS101",
+            module_title="Computer Science 101",
             assessment_title="Assignment 1",
+            weighting=40,
+            max_marks=100,
             categories=[{"label": "Content", "max": 10}]
         )
         template2 = AssessmentTemplate.objects.create(
             component=1,
             title="Template 2",
             module_code="CS202",
+            module_title="Computer Science 202",
             assessment_title="Exam",
+            weighting=60,
+            max_marks=150,
             categories=[{"label": "Quality", "max": 20}, {"label": "Style", "max": 10}]
         )
         
@@ -79,7 +85,10 @@ class TemplateDeleteViewTests(TestCase):
             component=1,
             title="To Delete",
             module_code="DEL101",
+            module_title="Deletion Module",
             assessment_title="Delete Test",
+            weighting=50,
+            max_marks=100,
             categories=[{"label": "Test", "max": 10}]
         )
         
@@ -100,7 +109,10 @@ class TemplateDeleteViewTests(TestCase):
             component=1,
             title="To Delete",
             module_code="DEL101",
+            module_title="Deletion Module",
             assessment_title="Delete Test",
+            weighting=50,
+            max_marks=100,
             categories=[{"label": "Test", "max": 10}]
         )
         
@@ -117,7 +129,10 @@ class TemplateUpdateViewTests(TestCase):
             component=1,
             title="Test Template",
             module_code="KB5031",
+            module_title="Test Module",
             assessment_title="Test",
+            weighting=40,
+            max_marks=100,
             categories=[{"label": "Test", "max": 10}]
         )
         
@@ -138,8 +153,10 @@ class TemplateUpdateViewTests(TestCase):
             component=1,
             title="Test Template",
             module_code="KB5031",
+            module_title="Test Module",
             assessment_title="Test",
             weighting=30,
+            max_marks=100,
             categories=[{"label": "Test", "max": 10}]
         )
         
@@ -171,7 +188,9 @@ class TemplateUpdateViewTests(TestCase):
             component=1,
             title="Test Template",
             module_code="KB5031",
+            module_title="Test Module",
             assessment_title="Test",
+            weighting=40,
             max_marks=80,
             categories=[{"label": "Test", "max": 10}]
         )
@@ -206,6 +225,8 @@ class TemplateUpdateViewTests(TestCase):
             module_code="KB5031",
             module_title="Old Title",
             assessment_title="Test",
+            weighting=40,
+            max_marks=100,
             categories=[{"label": "Test", "max": 10}]
         )
         
@@ -237,7 +258,10 @@ class TemplateUpdateViewTests(TestCase):
             component=1,
             title="Test Template",
             module_code="KB5031",
+            module_title="Test Module",
             assessment_title="Test",
+            weighting=40,
+            max_marks=100,
             categories=[{"label": "Test", "max": 10}]
         )
         

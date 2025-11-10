@@ -16,7 +16,10 @@ def template_new(request):
         component=1,
         title="Untitled Template",
         module_code="",
+        module_title="",
         assessment_title="",
+        weighting=0,
+        max_marks=0,
         categories=[]
     )
     return redirect("template_edit", pk=tpl.id)
