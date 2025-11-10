@@ -41,12 +41,43 @@ Django 5.2.8 application for creating and managing feedback templates for assess
 ### Testing (Critical - This Project Uses TDD!)
 **Follow "Obey the Testing Goat" methodology - RED, GREEN, REFACTOR**
 
-```powershell
-# Run unit tests
-python manage.py test feedback.tests
+## 🚨 MANDATORY TDD WORKFLOW FOR ALL CHANGES 🚨
 
-# Run functional tests (Selenium)
-python manage.py test functional_tests
+**When adding ANY new feature, YOU MUST write tests in this EXACT order:**
+
+1. **FUNCTIONAL TEST FIRST** (in `functional_tests/`)
+   - Write a user-facing test describing the feature from end-user perspective
+   - Use Given-When-Then (GWT) comments
+   - Run it to see it FAIL (RED)
+
+2. **UNIT TESTS SECOND** (in `feedback/tests/`)
+   - **Model test** (`test_models.py`) - if adding/changing model fields
+   - **View test** (`test_views.py`) - if adding/changing views or form handling
+   - Run them to see them FAIL (RED)
+
+3. **IMPLEMENTATION THIRD**
+   - Write minimal code to make tests pass
+   - Models → Migrations → Views → Templates → JavaScript
+   - Run tests to see them PASS (GREEN)
+
+4. **REFACTOR IF NEEDED**
+   - Clean up code while keeping tests passing
+
+**❌ WRONG ORDER (DON'T DO THIS):**
+- ❌ Write model test only, skip FT and view tests
+- ❌ Write implementation first, then write tests
+- ❌ Write model code, then write model test, then discover you need view tests
+
+**✅ CORRECT ORDER (ALWAYS DO THIS):**
+- ✅ Functional Test (fail) → Model Test (fail) → View Test (fail) → Implementation (all pass)
+
+```powershell
+# Run all tests (recommended for commits)
+python manage.py test --parallel=auto  # 60% faster than serial
+
+# Run specific test types
+python manage.py test functional_tests  # Selenium end-to-end tests
+python manage.py test feedback.tests    # Unit tests
 
 # Run specific test
 python manage.py test feedback.tests.test_views.TemplateBuilderViewTests.test_post_valid_creates_template_and_redirects_to_summary
@@ -63,9 +94,9 @@ python manage.py test feedback.tests.test_views.TemplateBuilderViewTests.test_po
 
 **Test Conventions:**
 - Use **Given-When-Then (GWT)** comments in functional tests for BDD clarity
-- Write failing test FIRST, then implement minimal code to pass
 - Unit tests use Django's `TestCase`, functional tests use `StaticLiveServerTestCase`
 - JavaScript behavior is tested via functional tests (no separate JS unit tests for simple interactions)
+- ALL new features require: 1 FT + 1+ model test (if model changes) + 1+ view test (if view changes)
 
 ### Initial Setup
 ```powershell
@@ -96,7 +127,7 @@ python manage.py migrate
 python manage.py test --parallel=auto  # Recommended: 60% faster than serial
 ```
 
-**Current Test Count:** 44 tests (all passing)
+**Current Test Count:** 48 tests (all passing)
 
 ### Running the Server
 ```powershell
@@ -131,7 +162,12 @@ Standard Django exclusions: `__pycache__/`, `*.pyc`, `.venv/`, `db.sqlite3`, `.v
 - Actual errors still displayed
 
 ## Important Notes for AI Assistants
-- **Always follow TDD**: Write tests first, implement step-by-step
+- **CRITICAL: Follow TDD order**: FT → Model Test → View Test → Implementation (NOT model test only!)
+- **Always write ALL three test types** when adding features:
+  1. Functional test (user perspective, Given-When-Then)
+  2. Model test (if model changes)
+  3. View test (if view/form handling changes)
 - **Keep changes small**: One failing test → minimal code → pass → next test
 - **Check exit codes**: Tests should exit with code 0 (success)
 - **Static files**: After creating/editing static files, may need server restart in development
+- **Don't skip view tests**: Model tests alone are insufficient - views need testing too!
