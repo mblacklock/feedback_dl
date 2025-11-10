@@ -302,3 +302,70 @@ class TemplateBuilderFT(FunctionalTestBase):
         # AND the max marks is displayed
         body_text = self.browser.find_element(By.TAG_NAME, "body").text
         self.assertIn("100", body_text, "Max marks should be displayed on summary page")
+    
+    def test_staff_sees_warning_when_category_marks_dont_match_max_marks(self):
+        """
+        GIVEN: A staff member creates a template with max marks and categories
+        WHEN: The sum of category marks doesn't equal max marks
+        THEN: They see a warning on the edit page
+        """
+        # GIVEN: Staff member creates new template
+        self.browser.get(self.live_server_url + "/feedback/")
+        create_btn = self.wait.until(EC.presence_of_element_located((By.LINK_TEXT, "Create New Template")))
+        create_btn.click()
+        self.wait.until(EC.url_matches(r'/feedback/template/\d+/edit/'))
+        
+        # WHEN: They enter max marks of 100
+        max_marks = self.browser.find_element(By.NAME, "max_marks")
+        max_marks.clear()
+        max_marks.send_keys("100")
+        
+        # AND add categories totaling 90 marks (not 100)
+        cat_rows = self.browser.find_elements(By.CSS_SELECTOR, ".category-row")
+        cat_rows[0].find_element(By.CSS_SELECTOR, "input.cat-label").send_keys("Part A")
+        max_input1 = cat_rows[0].find_element(By.CSS_SELECTOR, "input.cat-max")
+        max_input1.clear()
+        max_input1.send_keys("40")
+        
+        add_btn = self.browser.find_element(By.ID, "add-category")
+        add_btn.click()
+        
+        import time
+        time.sleep(0.3)
+        
+        cat_rows = self.browser.find_elements(By.CSS_SELECTOR, ".category-row")
+        cat_rows[1].find_element(By.CSS_SELECTOR, "input.cat-label").send_keys("Part B")
+        max_input2 = cat_rows[1].find_element(By.CSS_SELECTOR, "input.cat-max")
+        max_input2.clear()
+        max_input2.send_keys("50")
+        
+        time.sleep(0.5)
+        
+        # THEN: They should see a warning alert
+        warning = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".alert-warning")))
+        warning_text = warning.text
+        self.assertIn("90", warning_text, "Warning should show current total (90)")
+        self.assertIn("100", warning_text, "Warning should show max marks (100)")
+        
+        # WHEN: They view the template summary
+        time.sleep(1)  # Wait for autosave
+        view_btn = self.browser.find_element(By.LINK_TEXT, "View Template")
+        self.browser.execute_script("arguments[0].click();", view_btn)
+        self.wait.until(EC.url_matches(r'/feedback/template/\d+/$'))
+        
+        # THEN: The warning also appears on the summary page
+        summary_warning = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".alert-warning")))
+        summary_warning_text = summary_warning.text
+        self.assertIn("90", summary_warning_text)
+        self.assertIn("100", summary_warning_text)
+        
+        # WHEN: They return to edit
+        edit_btn = self.browser.find_element(By.LINK_TEXT, "Edit Template")
+        edit_btn.click()
+        self.wait.until(EC.url_matches(r'/feedback/template/\d+/edit/'))
+        
+        # THEN: The warning is still visible on page load (bug fix test)
+        edit_warning = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".alert-warning")))
+        edit_warning_text = edit_warning.text
+        self.assertIn("90", edit_warning_text, "Warning should persist after view→edit")
+        self.assertIn("100", edit_warning_text, "Warning should persist after view→edit")

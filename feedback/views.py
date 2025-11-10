@@ -96,8 +96,11 @@ def template_summary(request, pk):
     
     # Calculate grade bands for each category
     categories_with_bands = []
+    total_category_marks = 0
     for cat in tpl.categories:
         cat_data = cat.copy()
+        total_category_marks += cat.get("max", 0)
+        
         if cat.get("type") == "grade" and cat.get("subdivision"):
             bands = calculate_grade_bands(cat["max"], cat["subdivision"])
             cat_data["bands"] = bands
@@ -112,9 +115,18 @@ def template_summary(request, pk):
             
         categories_with_bands.append(cat_data)
     
+    # Check if marks match
+    marks_mismatch = None
+    if tpl.max_marks and total_category_marks != tpl.max_marks:
+        marks_mismatch = {
+            'total': total_category_marks,
+            'max_marks': tpl.max_marks
+        }
+    
     return render(request, "feedback/template_summary.html", {
         "template": tpl,
-        "categories_with_bands": categories_with_bands
+        "categories_with_bands": categories_with_bands,
+        "marks_mismatch": marks_mismatch
     })
 
 def template_delete(request, pk):

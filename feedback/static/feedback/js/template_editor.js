@@ -21,6 +21,9 @@ document.addEventListener('DOMContentLoaded', function() {
         field.addEventListener('input', debouncedSave);
         field.addEventListener('blur', saveNow);
     });
+    
+    // Check if max marks match on page load
+    checkMaxMarksMatch();
 });
 
 // Add category button
@@ -212,6 +215,46 @@ function showValidationError(row, message) {
     errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
+function checkMaxMarksMatch() {
+    // Remove any existing warning
+    const existingWarning = document.getElementById('max-marks-warning');
+    if (existingWarning) {
+        existingWarning.remove();
+    }
+    
+    const maxMarksInput = document.getElementById('max_marks');
+    const maxMarks = maxMarksInput && maxMarksInput.value ? parseInt(maxMarksInput.value) : null;
+    
+    if (!maxMarks) return; // No max marks set, no warning needed
+    
+    // Calculate total from categories
+    let totalCategoryMarks = 0;
+    document.querySelectorAll('.category-row').forEach(row => {
+        const label = row.querySelector('.cat-label').value.trim();
+        const max = parseInt(row.querySelector('.cat-max').value);
+        if (label && max) {
+            totalCategoryMarks += max;
+        }
+    });
+    
+    // Show warning if they don't match
+    if (totalCategoryMarks !== maxMarks && totalCategoryMarks > 0) {
+        const warning = document.createElement('div');
+        warning.id = 'max-marks-warning';
+        warning.className = 'alert alert-warning alert-dismissible fade show';
+        warning.innerHTML = `
+            <strong>Warning:</strong> Category marks total ${totalCategoryMarks}, but max marks is set to ${maxMarks}.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        // Insert warning before the rubric categories card
+        const categoriesCard = document.querySelector('.card:nth-of-type(2)');
+        if (categoriesCard) {
+            categoriesCard.parentNode.insertBefore(warning, categoriesCard);
+        }
+    }
+}
+
 function debouncedSave() {
     updateSaveStatus('pending');
     
@@ -222,6 +265,9 @@ function debouncedSave() {
     saveTimeout = setTimeout(() => {
         saveNow();
     }, 1000); // Wait 1 second after user stops typing
+    
+    // Also check max marks match
+    checkMaxMarksMatch();
 }
 
 function updateStoredCategoryData(row) {
