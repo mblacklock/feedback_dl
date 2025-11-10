@@ -127,7 +127,7 @@ python manage.py migrate
 python manage.py test --parallel=auto  # Recommended: 60% faster than serial
 ```
 
-**Current Test Count:** 48 tests (all passing)
+**Current Test Count:** 44 tests (all passing)
 
 ### Running the Server
 ```powershell
