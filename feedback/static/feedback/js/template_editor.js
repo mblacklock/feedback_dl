@@ -246,7 +246,8 @@ function checkMaxMarksMatch() {
         `;
         
         // Insert warning before the rubric categories card
-        const categoriesCard = document.querySelector('.card:nth-of-type(2)');
+        const categoriesContainer = document.getElementById('categories');
+        const categoriesCard = categoriesContainer?.closest('.card');
         if (categoriesCard) {
             categoriesCard.parentNode.insertBefore(warning, categoriesCard);
         }

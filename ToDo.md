@@ -5,7 +5,6 @@
 
 ## Future Enhancements
 - Refactor functional tests to reduce duplication (extract common setup methods)
-- Remove html from js and import from html templates instead
 
 ## AI suggested enhancements
 - Consider adding bulk import/export functionality for templates
