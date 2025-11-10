@@ -340,4 +340,32 @@ class AssessmentTemplateModelTests(TestCase):
             tpl.categories[0]["grade_band_descriptions"]["1st"],
             "Complex engineering principles are creatively and critically applied"
         )
+    
+    def test_can_create_template_with_max_marks(self):
+        """Templates can store max marks for the assessment (optional field)."""
+        tpl = AssessmentTemplate.objects.create(
+            component=1,
+            title="Test Template",
+            module_code="KB5031",
+            assessment_title="Final Exam",
+            max_marks=100,
+            categories=[{"label": "Question 1", "max": 25, "type": "numeric"}]
+        )
+        tpl.full_clean()
+        tpl.save()
+        
+        retrieved = AssessmentTemplate.objects.get(pk=tpl.id)
+        self.assertEqual(retrieved.max_marks, 100)
+        
+        # Max marks should be optional (can be null)
+        tpl2 = AssessmentTemplate.objects.create(
+            component=2,
+            title="Test Template 2",
+            module_code="KB5032",
+            assessment_title="Coursework",
+            max_marks=None,
+            categories=[{"label": "Question 1", "max": 10, "type": "numeric"}]
+        )
+        tpl2.full_clean()
+        self.assertIsNone(tpl2.max_marks)
 

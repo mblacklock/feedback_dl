@@ -39,6 +39,11 @@
                         <p><strong>Weighting:</strong> {{ template.weighting }}%</p>
                     </div>
                     {% endif %}
+                    {% if template.max_marks %}
+                    <div class="col-md-2">
+                        <p><strong>Max Marks:</strong> {{ template.max_marks }}</p>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

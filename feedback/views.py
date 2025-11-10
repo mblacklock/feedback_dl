@@ -52,6 +52,8 @@ def template_update(request, pk):
         tpl.assessment_title = data["assessment_title"]
     if "weighting" in data:
         tpl.weighting = data["weighting"]
+    if "max_marks" in data:
+        tpl.max_marks = data["max_marks"]
     if "component" in data:
         tpl.component = data["component"]
     if "categories" in data:

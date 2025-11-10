@@ -285,6 +285,7 @@ function saveNow() {
         module_title: document.getElementById('module_title').value,
         assessment_title: document.getElementById('assessment_title').value,
         weighting: document.getElementById('weighting').value ? parseInt(document.getElementById('weighting').value) : null,
+        max_marks: document.getElementById('max_marks').value ? parseInt(document.getElementById('max_marks').value) : null,
         component: parseInt(document.getElementById('component').value),
         categories: []
     };

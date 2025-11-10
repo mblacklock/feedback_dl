@@ -164,6 +164,39 @@ class TemplateUpdateViewTests(TestCase):
         template.refresh_from_db()
         self.assertEqual(template.weighting, 50)
     
+    def test_post_update_saves_max_marks_field(self):
+        """POST /feedback/template/<pk>/update/ saves the max_marks field."""
+        import json
+        template = AssessmentTemplate.objects.create(
+            component=1,
+            title="Test Template",
+            module_code="KB5031",
+            assessment_title="Test",
+            max_marks=80,
+            categories=[{"label": "Test", "max": 10}]
+        )
+        
+        url = reverse("template_update", args=[template.pk])
+        data = {
+            "title": "Test Template",
+            "module_code": "KB5031",
+            "assessment_title": "Test",
+            "component": 1,
+            "max_marks": 100,
+            "categories": [{"label": "Test", "max": 10}]
+        }
+        
+        resp = self.client.post(url, data=json.dumps(data), content_type="application/json")
+        
+        # Should return 200 with success
+        self.assertEqual(resp.status_code, 200)
+        result = json.loads(resp.content)
+        self.assertEqual(result["status"], "saved")
+        
+        # Template should be updated
+        template.refresh_from_db()
+        self.assertEqual(template.max_marks, 100)
+    
     def test_post_update_saves_module_title_field(self):
         """POST /feedback/template/<pk>/update/ saves the module_title field."""
         import json

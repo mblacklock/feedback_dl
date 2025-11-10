@@ -255,3 +255,50 @@ class TemplateBuilderFT(FunctionalTestBase):
         assert "Fail" in items[2].text
         third_cat_grid = items[2].find_element(By.CSS_SELECTOR, ".grade-bands-grid")
         assert third_cat_grid is not None
+    
+    def test_staff_can_add_max_marks_field_to_template(self):
+        """
+        GIVEN: A staff member creates a new template
+        WHEN: They enter max marks for the assessment (e.g., 100)
+        THEN: The max marks is saved and displayed on the summary page
+        """
+        # GIVEN: Staff member visits feedback portal and creates new template
+        self.browser.get(self.live_server_url + "/feedback/")
+        create_btn = self.wait.until(EC.presence_of_element_located((By.LINK_TEXT, "Create New Template")))
+        create_btn.click()
+        
+        # THEN: They are taken to the edit page
+        self.wait.until(EC.url_matches(r'/feedback/template/\d+/edit/'))
+        
+        # WHEN: They enter basic info including max marks
+        title = self.wait.until(EC.presence_of_element_located((By.NAME, "title")))
+        title.clear()
+        title.send_keys("Assessment with Max Marks")
+        
+        module_code = self.browser.find_element(By.NAME, "module_code")
+        module_code.clear()
+        module_code.send_keys("KB5031")
+        
+        assessment_title = self.browser.find_element(By.NAME, "assessment_title")
+        assessment_title.clear()
+        assessment_title.send_keys("Final Exam")
+        
+        # Enter max marks
+        max_marks = self.browser.find_element(By.NAME, "max_marks")
+        max_marks.clear()
+        max_marks.send_keys("100")
+        
+        import time
+        time.sleep(2)  # Wait for autosave
+        
+        # WHEN: They click View Template
+        view_btn = self.browser.find_element(By.ID, "view-template")
+        self.browser.execute_script("arguments[0].scrollIntoView(true);", view_btn)
+        self.browser.execute_script("arguments[0].click();", view_btn)
+        
+        # THEN: They see the summary page
+        self.wait.until(EC.url_matches(r'/feedback/template/\d+/$'))
+        
+        # AND the max marks is displayed
+        body_text = self.browser.find_element(By.TAG_NAME, "body").text
+        self.assertIn("100", body_text, "Max marks should be displayed on summary page")
