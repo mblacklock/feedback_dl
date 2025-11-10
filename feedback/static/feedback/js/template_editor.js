@@ -36,8 +36,21 @@ function addCategoryRow(categoryData = null) {
     
     const label = categoryData ? categoryData.label : '';
     const max = categoryData ? categoryData.max : 10;
-    const type = categoryData ? categoryData.type : 'grade';
+    // If categoryData exists, use its type; if no type field, infer from presence of subdivision
+    // For new empty rows (no categoryData), default to 'grade'
+    let type = 'grade';  // Default for new empty rows
+    if (categoryData) {
+        if (categoryData.type) {
+            type = categoryData.type;
+        } else {
+            // Backward compatibility: if no type field, infer from subdivision field
+            type = categoryData.subdivision ? 'grade' : 'numeric';
+        }
+    }
     const subdivision = categoryData && categoryData.subdivision ? categoryData.subdivision : 'none';
+    
+    // Store original category data on the row element for preservation when switching types
+    row.dataset.originalCategoryData = JSON.stringify(categoryData || {});
     
     row.innerHTML = `
         <div class="row mb-2">
@@ -82,6 +95,15 @@ function addCategoryRow(categoryData = null) {
         </div>
     `;
     container.appendChild(row);
+    
+    // Explicitly set the checked property on the radio button (HTML attribute doesn't always work)
+    const gradeRadio = row.querySelector('.cat-type-grade');
+    const numericRadio = row.querySelector('.cat-type-numeric');
+    if (type === 'grade') {
+        gradeRadio.checked = true;
+    } else {
+        numericRadio.checked = true;
+    }
     
     // Update grade bands preview if grade type is selected
     if (type === 'grade' && subdivision) {
@@ -201,6 +223,43 @@ function debouncedSave() {
     }, 1000); // Wait 1 second after user stops typing
 }
 
+function updateStoredCategoryData(row) {
+    // Update the stored original category data with current values
+    // This ensures descriptions are preserved when switching between types
+    try {
+        const originalData = JSON.parse(row.dataset.originalCategoryData || '{}');
+        
+        // Collect current descriptions from DOM
+        const descriptions = {};
+        row.querySelectorAll('.grade-description').forEach(textarea => {
+            const grade = textarea.getAttribute('data-grade');
+            const desc = textarea.value.trim();
+            if (desc) {
+                descriptions[grade] = desc;
+            }
+        });
+        
+        // Update stored data
+        if (Object.keys(descriptions).length > 0) {
+            originalData.grade_band_descriptions = descriptions;
+        }
+        
+        const subdivision = row.querySelector('.subdivision-value')?.value;
+        if (subdivision) {
+            originalData.subdivision = subdivision;
+        }
+        
+        const typeRadio = row.querySelector('input[type="radio"]:checked');
+        if (typeRadio) {
+            originalData.type = typeRadio.value;
+        }
+        
+        row.dataset.originalCategoryData = JSON.stringify(originalData);
+    } catch (e) {
+        console.error('Error updating stored category data:', e);
+    }
+}
+
 function saveNow() {
     if (isSaving) return;
     
@@ -209,6 +268,11 @@ function saveNow() {
         clearTimeout(saveTimeout);
         saveTimeout = null;
     }
+    
+    // Update stored data for all rows before saving
+    document.querySelectorAll('.category-row').forEach(row => {
+        updateStoredCategoryData(row);
+    });
     
     updateSaveStatus('saving');
     isSaving = true;
@@ -240,24 +304,37 @@ function saveNow() {
             type: type
         };
         
-        if (type === 'grade') {
-            const subdivision = row.querySelector('.subdivision-value').value;
-            if (subdivision) {
-                category.subdivision = subdivision;
+        // Preserve subdivision and descriptions even when switching to numeric
+        // (so they can be restored if user switches back to grade)
+        const subdivision = row.querySelector('.subdivision-value').value;
+        if (subdivision) {
+            category.subdivision = subdivision;
+        }
+        
+        // Collect grade band descriptions from visible textareas (if grade type)
+        const descriptions = {};
+        row.querySelectorAll('.grade-description').forEach(textarea => {
+            const grade = textarea.getAttribute('data-grade');
+            const desc = textarea.value.trim();
+            if (desc) {
+                descriptions[grade] = desc;
             }
-            
-            // Collect grade band descriptions (one per main grade: 1st, 2:1, 2:2, 3rd, Fail)
-            const descriptions = {};
-            row.querySelectorAll('.grade-description').forEach(textarea => {
-                const grade = textarea.getAttribute('data-grade');
-                const desc = textarea.value.trim();
-                if (desc) {
-                    descriptions[grade] = desc;
+        });
+        
+        // If numeric type and no visible descriptions, preserve original descriptions from data
+        if (type === 'numeric' && Object.keys(descriptions).length === 0) {
+            try {
+                const originalData = JSON.parse(row.dataset.originalCategoryData || '{}');
+                if (originalData.grade_band_descriptions) {
+                    Object.assign(descriptions, originalData.grade_band_descriptions);
                 }
-            });
-            if (Object.keys(descriptions).length > 0) {
-                category.grade_band_descriptions = descriptions;
+            } catch (e) {
+                // Ignore JSON parse errors
             }
+        }
+        
+        if (Object.keys(descriptions).length > 0) {
+            category.grade_band_descriptions = descriptions;
         }
         
         data.categories.push(category);
@@ -342,6 +419,16 @@ function updateGradeBandsPreview(row) {
         return;
     }
     
+    // Save current descriptions from DOM before re-rendering
+    const currentDescriptions = {};
+    previewEl.querySelectorAll('.grade-description').forEach(textarea => {
+        const grade = textarea.getAttribute('data-grade');
+        const value = textarea.value.trim();
+        if (value) {
+            currentDescriptions[grade] = value;
+        }
+    });
+    
     // Fetch grade bands HTML from server
     fetch(`/feedback/grade-bands-preview/?max_marks=${maxMarks}&subdivision=${subdivision}`)
         .then(response => response.json())
@@ -349,9 +436,12 @@ function updateGradeBandsPreview(row) {
             if (data.html) {
                 previewEl.innerHTML = data.html;
                 
-                // Get existing descriptions from category data and fill textareas
+                // Get existing descriptions from saved category data
                 const categoryData = getCategoryDataForRow(row);
-                const descriptions = categoryData && categoryData.grade_band_descriptions ? categoryData.grade_band_descriptions : {};
+                const savedDescriptions = categoryData && categoryData.grade_band_descriptions ? categoryData.grade_band_descriptions : {};
+                
+                // Merge: current DOM values take priority over saved values
+                const descriptions = { ...savedDescriptions, ...currentDescriptions };
                 
                 // Fill in existing descriptions and attach event listeners
                 // Use setTimeout to ensure DOM is ready

@@ -150,3 +150,50 @@ class TemplateAutoSaveFT(FunctionalTestBase):
         time.sleep(0.5)
         previews = self.browser.find_elements(By.CSS_SELECTOR, ".grade-bands-grid")
         self.assertGreaterEqual(len(previews), 2, "Both categories should now have grade bands")
+    
+    def test_category_data_persists_after_viewing_template(self):
+        # GIVEN a staff member creates a template with a category
+        self.browser.get(self.live_server_url + "/feedback/")
+        create_btn = self.wait.until(EC.presence_of_element_located((By.LINK_TEXT, "Create New Template")))
+        create_btn.click()
+        self.wait.until(EC.url_matches(r'/feedback/template/\d+/edit/'))
+        
+        # WHEN they fill in first category details with NUMERIC type
+        cat_rows = self.browser.find_elements(By.CSS_SELECTOR, ".category-row")
+        cat_rows[0].find_element(By.CSS_SELECTOR, "input.cat-label").send_keys("Introduction")
+        max_input = cat_rows[0].find_element(By.CSS_SELECTOR, "input.cat-max")
+        max_input.clear()
+        max_input.send_keys("15")
+        
+        # Set to Numeric type (should be default, but click to be sure)
+        numeric_label = cat_rows[0].find_element(By.XPATH, ".//label[contains(text(), 'Numeric')]")
+        self.browser.execute_script("arguments[0].click();", numeric_label)
+        
+        # Wait for autosave
+        time.sleep(2)
+        
+        # WHEN they go to View Template
+        view_btn = self.browser.find_element(By.ID, "view-template")
+        view_btn.click()
+        self.wait.until(EC.url_matches(r'/feedback/template/\d+/$'))
+        
+        # AND then go back to Edit
+        edit_link = self.wait.until(EC.presence_of_element_located((By.LINK_TEXT, "Edit Template")))
+        edit_link.click()
+        self.wait.until(EC.url_matches(r'/feedback/template/\d+/edit/'))
+        
+        # THEN the first category should still have all its data
+        cat_rows = self.browser.find_elements(By.CSS_SELECTOR, ".category-row")
+        self.assertGreater(len(cat_rows), 0, "Should have at least one category")
+        
+        # Check label
+        label_value = cat_rows[0].find_element(By.CSS_SELECTOR, "input.cat-label").get_attribute('value')
+        self.assertEqual(label_value, "Introduction", "Label should be preserved")
+        
+        # Check max marks
+        max_value = cat_rows[0].find_element(By.CSS_SELECTOR, "input.cat-max").get_attribute('value')
+        self.assertEqual(max_value, "15", "Max marks should be preserved")
+        
+        # Check type is still Numeric
+        numeric_radio = cat_rows[0].find_element(By.CSS_SELECTOR, "input.cat-type-numeric")
+        self.assertTrue(numeric_radio.is_selected(), "Numeric type should be selected")
