@@ -217,6 +217,7 @@ function saveNow() {
     const data = {
         title: document.getElementById('title').value,
         module_code: document.getElementById('module_code').value,
+        module_title: document.getElementById('module_title').value,
         assessment_title: document.getElementById('assessment_title').value,
         component: parseInt(document.getElementById('component').value),
         categories: []

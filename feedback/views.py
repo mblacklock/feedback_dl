@@ -18,6 +18,7 @@ def template_new(request):
         component_str = request.POST.get("component", "").strip()
         title = request.POST.get("title", "").strip()
         module_code = request.POST.get("module_code", "").strip()
+        module_title = request.POST.get("module_title", "").strip()
         assessment_title = request.POST.get("assessment_title", "").strip()
         category_labels = request.POST.getlist("category_label")
         category_maxes = request.POST.getlist("category_max")
@@ -103,6 +104,7 @@ def template_new(request):
             component=component,
             title=title,
             module_code=module_code,
+            module_title=module_title,
             assessment_title=assessment_title,
             categories=categories
         )
@@ -144,6 +146,8 @@ def template_update(request, pk):
         tpl.title = data["title"]
     if "module_code" in data:
         tpl.module_code = data["module_code"]
+    if "module_title" in data:
+        tpl.module_title = data["module_title"]
     if "assessment_title" in data:
         tpl.assessment_title = data["assessment_title"]
     if "component" in data:

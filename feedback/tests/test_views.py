@@ -131,6 +131,39 @@ class TemplateUpdateViewTests(TestCase):
         # Check for View Template button
         self.assertContains(resp, 'View Template')
     
+    def test_post_update_saves_module_title_field(self):
+        """POST /feedback/template/<pk>/update/ saves the module_title field."""
+        import json
+        template = AssessmentTemplate.objects.create(
+            component=1,
+            title="Test Template",
+            module_code="KB5031",
+            module_title="Old Title",
+            assessment_title="Test",
+            categories=[{"label": "Test", "max": 10}]
+        )
+        
+        url = reverse("template_update", args=[template.pk])
+        data = {
+            "title": "Test Template",
+            "module_code": "KB5031",
+            "module_title": "Finite Element Analysis",
+            "assessment_title": "Test",
+            "component": 1,
+            "categories": [{"label": "Test", "max": 10}]
+        }
+        
+        resp = self.client.post(url, data=json.dumps(data), content_type="application/json")
+        
+        # Should return 200 with success
+        self.assertEqual(resp.status_code, 200)
+        result = json.loads(resp.content)
+        self.assertEqual(result["status"], "saved")
+        
+        # Template should be updated
+        template.refresh_from_db()
+        self.assertEqual(template.module_title, "Finite Element Analysis")
+    
     def test_post_update_saves_component_field(self):
         """POST /feedback/template/<pk>/update/ saves the component field."""
         import json
@@ -184,6 +217,26 @@ class TemplateBuilderViewTests(TestCase):
         self.assertContains(res, 'id="save-status"')
         self.assertContains(res, 'id="view-template"')
 
+    def test_post_valid_creates_template_with_module_title(self):
+        """POST with module_title creates template with that field."""
+        url = reverse("template_new")
+        payload = {
+            "component": "1",
+            "title": "Test Template",
+            "module_code": "KB5031",
+            "module_title": "Finite Element Analysis",
+            "assessment_title": "Coursework 1",
+            "category_label": ["Quality"],
+            "category_max": ["10"],
+        }
+        res = self.client.post(url, data=payload, follow=False)
+        self.assertEqual(res.status_code, 302)
+        
+        tpl = AssessmentTemplate.objects.first()
+        self.assertEqual(tpl.module_code, "KB5031")
+        self.assertEqual(tpl.module_title, "Finite Element Analysis")
+        self.assertEqual(tpl.component, 1)
+    
     def test_post_valid_creates_template_and_redirects_to_summary(self):
         """POST valid data creates a template with categories (in order) and redirects to summary."""
         url = reverse("template_new")

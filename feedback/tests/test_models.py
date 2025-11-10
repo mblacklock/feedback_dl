@@ -37,6 +37,29 @@ class AssessmentTemplateModelTests(TestCase):
         )
         with self.assertRaises(ValidationError):
             tpl.full_clean()
+    
+    def test_can_create_template_with_module_title(self):
+        """Module title field stores the module name and is optional."""
+        tpl = AssessmentTemplate.objects.create(
+            component=1,
+            title="Test Template",
+            module_code="KB5031",
+            module_title="Finite Element Analysis",
+            assessment_title="Coursework 1",
+            categories=[{"label": "Introduction", "max": 10}],
+        )
+        self.assertEqual(tpl.module_title, "Finite Element Analysis")
+        
+        # Module title can be blank
+        tpl2 = AssessmentTemplate.objects.create(
+            component=1,
+            title="Test Template 2",
+            module_code="KB5032",
+            module_title="",
+            assessment_title="Coursework 2",
+            categories=[{"label": "Design", "max": 10}],
+        )
+        self.assertEqual(tpl2.module_title, "")
 
     def test_can_create_template_with_ordered_categories(self):
         tpl = AssessmentTemplate.objects.create(

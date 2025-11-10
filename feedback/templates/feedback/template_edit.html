@@ -28,17 +28,23 @@
                            value="{{ template.title }}" placeholder="e.g., KB5031 – FEA Coursework">
                     <small class="form-text text-muted">This title is for your reference only.</small>
                 </div>
-
-                <div class="mb-3">
-                    <label for="component" class="form-label">Component Number <span class="text-danger">*</span></label>
-                    <input type="number" class="form-control auto-save" id="component" name="component" 
-                           value="{{ template.component }}" placeholder="e.g., 1, 2, 3" required>
-                </div>
                 
-                <div class="mb-3">
-                    <label for="module_code" class="form-label">Module Code <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control auto-save" id="module_code" name="module_code" 
-                           value="{{ template.module_code }}" placeholder="e.g., KB5031">
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <label for="module_code" class="form-label">Module Code <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control auto-save" id="module_code" name="module_code" 
+                               value="{{ template.module_code }}" placeholder="e.g., KB5031">
+                    </div>
+                    <div class="col-md-7">
+                        <label for="module_title" class="form-label">Module Title</label>
+                        <input type="text" class="form-control auto-save" id="module_title" name="module_title" 
+                               value="{{ template.module_title }}" placeholder="e.g., Finite Element Analysis">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="component" class="form-label">Component <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control auto-save" id="component" name="component" 
+                               value="{{ template.component }}" placeholder="e.g., 1" required>
+                    </div>
                 </div>
                 
                 <div class="mb-3">

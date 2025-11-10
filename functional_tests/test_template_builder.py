@@ -10,6 +10,56 @@ class TemplateBuilderFT(FunctionalTestBase):
     summary info and adding rubric categories, and then see a summary page.
     """
 
+    def test_staff_can_add_module_title_field_to_template(self):
+        """
+        GIVEN: A staff member creates a new template
+        WHEN: They enter module code, module title, and component
+        THEN: All three fields are saved and displayed correctly
+        """
+        # GIVEN: Staff member visits the feedback portal and creates a new template
+        self.browser.get(self.live_server_url + "/feedback/")
+        create_btn = self.wait.until(EC.presence_of_element_located((By.LINK_TEXT, "Create New Template")))
+        create_btn.click()
+        
+        # THEN: They are taken to the edit page
+        self.wait.until(EC.url_matches(r'/feedback/template/\d+/edit/'))
+        
+        # WHEN: They enter module code, module title, and component
+        module_code = self.wait.until(EC.presence_of_element_located((By.NAME, "module_code")))
+        module_code.send_keys("KB5031")
+        
+        module_title = self.browser.find_element(By.NAME, "module_title")
+        module_title.send_keys("Finite Element Analysis")
+        
+        component = self.browser.find_element(By.NAME, "component")
+        component.clear()
+        component.send_keys("1")
+        
+        # AND: They add a title and assessment
+        title = self.browser.find_element(By.NAME, "title")
+        title.clear()
+        title.send_keys("Test Template")
+        
+        assessment_title = self.browser.find_element(By.NAME, "assessment_title")
+        assessment_title.send_keys("Coursework 1")
+        
+        # AND: They wait for autosave
+        import time
+        time.sleep(2)
+        
+        # WHEN: They click "View Template"
+        view_btn = self.browser.find_element(By.ID, "view-template")
+        view_btn.click()
+        
+        # THEN: They see the summary page with all fields
+        self.wait.until(EC.url_matches(r'/feedback/template/\d+/$'))
+        page_content = self.browser.page_source
+        
+        # Verify module code, module title, and component are all present
+        assert "KB5031" in page_content
+        assert "Finite Element Analysis" in page_content or "Finite Element Analysis" in page_content
+        assert "Component:" in page_content or "Component" in page_content
+    
     def test_staff_can_add_component_field_to_template(self):
         """
         GIVEN: A staff member creates a new template

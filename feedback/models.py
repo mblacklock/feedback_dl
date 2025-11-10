@@ -6,6 +6,7 @@ class AssessmentTemplate(models.Model):
     component = models.IntegerField()
     title = models.CharField(max_length=200)
     module_code = models.CharField(max_length=50)
+    module_title = models.CharField(max_length=200, blank=True, default='')
     assessment_title = models.CharField(max_length=200)
     categories = models.JSONField(default=list)
 
