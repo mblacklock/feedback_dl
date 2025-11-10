@@ -94,7 +94,7 @@ function addCategoryRow(categoryData = null) {
 
 function setupRowEventHandlers(row) {
     const typeRadios = row.querySelectorAll('input[type="radio"]');
-    const subdivisionControls = row.querySelector('.subdivision-controls');
+    const subdivisionControls = row.querySelectorAll('.subdivision-controls');
     const subdivisionButtons = row.querySelectorAll('.subdivision-btn');
     const subdivisionInput = row.querySelector('.subdivision-value');
     const maxMarksInput = row.querySelector('.cat-max');
@@ -111,7 +111,7 @@ function setupRowEventHandlers(row) {
     typeRadios.forEach(radio => {
         radio.addEventListener('change', function() {
             if (this.value === 'grade') {
-                subdivisionControls.style.display = 'block';
+                subdivisionControls.forEach(el => el.style.display = 'block');
                 if (!subdivisionInput.value) {
                     subdivisionInput.value = 'none';
                     subdivisionButtons[0].classList.add('active');
@@ -119,7 +119,7 @@ function setupRowEventHandlers(row) {
                 validateRow(row);
                 updateGradeBandsPreview(row);
             } else {
-                subdivisionControls.style.display = 'none';
+                subdivisionControls.forEach(el => el.style.display = 'none');
                 subdivisionInput.value = '';
                 subdivisionButtons.forEach(btn => btn.classList.remove('active'));
                 removeRowValidationError(row);

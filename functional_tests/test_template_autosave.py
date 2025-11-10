@@ -86,3 +86,67 @@ class TemplateAutoSaveFT(FunctionalTestBase):
         self.assertIn("1st", preview_text)
         self.assertIn("Fail", preview_text)
         self.assertIn("30", preview_text)  # Maximum marks
+    
+    def test_multiple_categories_work_independently(self):
+        # GIVEN a staff member is on the edit page
+        self.browser.get(self.live_server_url + "/feedback/")
+        create_btn = self.wait.until(EC.presence_of_element_located((By.LINK_TEXT, "Create New Template")))
+        create_btn.click()
+        self.wait.until(EC.url_matches(r'/feedback/template/\d+/edit/'))
+        
+        # WHEN they add one more category (one already exists by default)
+        add_btn = self.browser.find_element(By.ID, "add-category")
+        add_btn.click()
+        
+        cat_rows = self.browser.find_elements(By.CSS_SELECTOR, ".category-row")
+        assert len(cat_rows) >= 2
+        
+        # AND set first category to Grade type with 30 marks
+        cat_rows[0].find_element(By.CSS_SELECTOR, "input.cat-label").send_keys("Introduction")
+        max_input1 = cat_rows[0].find_element(By.CSS_SELECTOR, "input.cat-max")
+        max_input1.clear()
+        max_input1.send_keys("30")
+        
+        grade_label1 = cat_rows[0].find_element(By.XPATH, ".//label[contains(text(), 'Grade')]")
+        self.browser.execute_script("arguments[0].click();", grade_label1)
+        
+        subdivision_btn1 = cat_rows[0].find_element(By.CSS_SELECTOR, "button[data-subdivision='high_low']")
+        self.browser.execute_script("arguments[0].click();", subdivision_btn1)
+        
+        # THEN first category shows grade bands
+        time.sleep(0.5)
+        previews = self.browser.find_elements(By.CSS_SELECTOR, ".grade-bands-grid")
+        self.assertGreaterEqual(len(previews), 1, "First category should have grade bands")
+        
+        # WHEN they set second category to Numeric type with 10 marks
+        cat_rows = self.browser.find_elements(By.CSS_SELECTOR, ".category-row")  # Re-fetch
+        cat_rows[1].find_element(By.CSS_SELECTOR, "input.cat-label").send_keys("Methodology")
+        max_input2 = cat_rows[1].find_element(By.CSS_SELECTOR, "input.cat-max")
+        max_input2.clear()
+        max_input2.send_keys("10")
+        
+        numeric_label2 = cat_rows[1].find_element(By.XPATH, ".//label[contains(text(), 'Numeric')]")
+        self.browser.execute_script("arguments[0].click();", numeric_label2)
+        
+        # THEN second category does NOT show subdivision controls or grade bands
+        time.sleep(0.3)
+        subdivision_controls = cat_rows[1].find_elements(By.CSS_SELECTOR, ".subdivision-controls")
+        for control in subdivision_controls:
+            assert not control.is_displayed(), "Numeric category should not show subdivision controls"
+        
+        # AND first category still shows grade bands (not affected by second category)
+        previews = self.browser.find_elements(By.CSS_SELECTOR, ".grade-bands-grid")
+        self.assertGreaterEqual(len(previews), 1, "First category should still have grade bands")
+        
+        # WHEN they change second category back to Grade type
+        cat_rows = self.browser.find_elements(By.CSS_SELECTOR, ".category-row")  # Re-fetch
+        grade_label2 = cat_rows[1].find_element(By.XPATH, ".//label[contains(text(), 'Grade')]")
+        self.browser.execute_script("arguments[0].click();", grade_label2)
+        
+        subdivision_btn2 = cat_rows[1].find_element(By.CSS_SELECTOR, "button[data-subdivision='high_mid_low']")
+        self.browser.execute_script("arguments[0].click();", subdivision_btn2)
+        
+        # THEN second category now shows its own grade bands
+        time.sleep(0.5)
+        previews = self.browser.find_elements(By.CSS_SELECTOR, ".grade-bands-grid")
+        self.assertGreaterEqual(len(previews), 2, "Both categories should now have grade bands")
