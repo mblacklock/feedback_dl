@@ -206,10 +206,9 @@ function removeRowValidationError(row) {
 
 function showValidationError(row, message) {
     const errorDiv = document.createElement('div');
-    errorDiv.className = 'alert alert-danger alert-dismissible fade show mt-2 grade-validation-error';
+    errorDiv.className = 'alert alert-danger mt-2 grade-validation-error';
     errorDiv.innerHTML = `
         <strong>Validation Error:</strong> ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
     row.appendChild(errorDiv);
     errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -241,10 +240,9 @@ function checkMaxMarksMatch() {
     if (totalCategoryMarks !== maxMarks && totalCategoryMarks > 0) {
         const warning = document.createElement('div');
         warning.id = 'max-marks-warning';
-        warning.className = 'alert alert-warning alert-dismissible fade show';
+        warning.className = 'alert alert-warning';
         warning.innerHTML = `
             <strong>Warning:</strong> Category marks total ${totalCategoryMarks}, but max marks is set to ${maxMarks}.
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         `;
         
         // Insert warning before the rubric categories card
