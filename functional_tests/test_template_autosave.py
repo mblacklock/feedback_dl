@@ -150,6 +150,39 @@ class TemplateAutoSaveFT(FunctionalTestBase):
         time.sleep(0.5)
         previews = self.browser.find_elements(By.CSS_SELECTOR, ".grade-bands-grid")
         self.assertGreaterEqual(len(previews), 2, "Both categories should now have grade bands")
+        
+        # WHEN they save and navigate to view and back to edit
+        time.sleep(2)  # Wait for autosave
+        view_btn = self.browser.find_element(By.ID, "view-template")
+        self.browser.execute_script("arguments[0].scrollIntoView(true);", view_btn)
+        self.browser.execute_script("arguments[0].click();", view_btn)
+        self.wait.until(EC.url_matches(r'/feedback/template/\d+/$'))
+        
+        edit_link = self.wait.until(EC.presence_of_element_located((By.LINK_TEXT, "Edit Template")))
+        edit_link.click()
+        self.wait.until(EC.url_matches(r'/feedback/template/\d+/edit/'))
+        
+        # THEN both categories should still work independently
+        cat_rows = self.browser.find_elements(By.CSS_SELECTOR, ".category-row")
+        
+        # First category should be Grade type
+        grade_radio1 = cat_rows[0].find_element(By.CSS_SELECTOR, "input.cat-type-grade")
+        self.assertTrue(grade_radio1.is_selected(), "First category should still be Grade type")
+        
+        # Second category should be Grade type
+        grade_radio2 = cat_rows[1].find_element(By.CSS_SELECTOR, "input.cat-type-grade")
+        self.assertTrue(grade_radio2.is_selected(), "Second category should still be Grade type")
+        
+        # AND clicking numeric on second category should NOT affect first
+        numeric_label2 = cat_rows[1].find_element(By.XPATH, ".//label[contains(text(), 'Numeric')]")
+        self.browser.execute_script("arguments[0].click();", numeric_label2)
+        
+        time.sleep(0.3)
+        
+        # Verify first category is still Grade
+        cat_rows = self.browser.find_elements(By.CSS_SELECTOR, ".category-row")
+        grade_radio1 = cat_rows[0].find_element(By.CSS_SELECTOR, "input.cat-type-grade")
+        self.assertTrue(grade_radio1.is_selected(), "First category should remain Grade type after clicking second category's Numeric button")
     
     def test_category_data_persists_after_viewing_template(self):
         # GIVEN a staff member creates a template with a category

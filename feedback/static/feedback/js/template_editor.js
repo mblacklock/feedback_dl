@@ -2,6 +2,7 @@
 
 let saveTimeout = null;
 let isSaving = false;
+let categoryIdCounter = 0;  // Counter to ensure unique IDs for radio buttons
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
@@ -31,7 +32,7 @@ document.getElementById('add-category').addEventListener('click', function() {
 function addCategoryRow(categoryData = null) {
     const container = document.getElementById('categories');
     const row = document.createElement('div');
-    const uniqueId = Date.now();
+    const uniqueId = categoryIdCounter++;  // Simple counter: 0, 1, 2, etc.
     row.className = 'category-row mb-4 p-3 border rounded';
     
     const label = categoryData ? categoryData.label : '';
