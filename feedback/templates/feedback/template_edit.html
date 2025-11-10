@@ -47,10 +47,17 @@
                     </div>
                 </div>
                 
-                <div class="mb-3">
-                    <label for="assessment_title" class="form-label">Assessment Title <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control auto-save" id="assessment_title" name="assessment_title" 
-                           value="{{ template.assessment_title }}" placeholder="e.g., Coursework 1: Truss Analysis">
+                <div class="row mb-3">
+                    <div class="col-md-10">
+                        <label for="assessment_title" class="form-label">Assessment Title <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control auto-save" id="assessment_title" name="assessment_title" 
+                               value="{{ template.assessment_title }}" placeholder="e.g., Coursework 1: Truss Analysis">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="weighting" class="form-label">Weighting %</label>
+                        <input type="number" class="form-control auto-save" id="weighting" name="weighting" 
+                               value="{{ template.weighting|default:'' }}" placeholder="e.g., 40" min="0" max="100">
+                    </div>
                 </div>
             </div>
         </div>

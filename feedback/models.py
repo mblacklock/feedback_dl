@@ -8,6 +8,7 @@ class AssessmentTemplate(models.Model):
     module_code = models.CharField(max_length=50)
     module_title = models.CharField(max_length=200, blank=True, default='')
     assessment_title = models.CharField(max_length=200)
+    weighting = models.IntegerField(null=True, blank=True, help_text="Assessment weighting as percentage (e.g., 40 for 40%)")
     categories = models.JSONField(default=list)
 
     def clean(self):

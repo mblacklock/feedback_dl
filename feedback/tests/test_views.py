@@ -131,6 +131,39 @@ class TemplateUpdateViewTests(TestCase):
         # Check for View Template button
         self.assertContains(resp, 'View Template')
     
+    def test_post_update_saves_weighting_field(self):
+        """POST /feedback/template/<pk>/update/ saves the weighting field."""
+        import json
+        template = AssessmentTemplate.objects.create(
+            component=1,
+            title="Test Template",
+            module_code="KB5031",
+            assessment_title="Test",
+            weighting=30,
+            categories=[{"label": "Test", "max": 10}]
+        )
+        
+        url = reverse("template_update", args=[template.pk])
+        data = {
+            "title": "Test Template",
+            "module_code": "KB5031",
+            "assessment_title": "Test",
+            "component": 1,
+            "weighting": 50,
+            "categories": [{"label": "Test", "max": 10}]
+        }
+        
+        resp = self.client.post(url, data=json.dumps(data), content_type="application/json")
+        
+        # Should return 200 with success
+        self.assertEqual(resp.status_code, 200)
+        result = json.loads(resp.content)
+        self.assertEqual(result["status"], "saved")
+        
+        # Template should be updated
+        template.refresh_from_db()
+        self.assertEqual(template.weighting, 50)
+    
     def test_post_update_saves_module_title_field(self):
         """POST /feedback/template/<pk>/update/ saves the module_title field."""
         import json
@@ -217,6 +250,24 @@ class TemplateBuilderViewTests(TestCase):
         self.assertContains(res, 'id="save-status"')
         self.assertContains(res, 'id="view-template"')
 
+    def test_post_valid_creates_template_with_weighting(self):
+        """POST with weighting creates template with that field."""
+        url = reverse("template_new")
+        payload = {
+            "component": "1",
+            "title": "Test Template",
+            "module_code": "KB5031",
+            "assessment_title": "Coursework 1",
+            "weighting": "40",
+            "category_label": ["Quality"],
+            "category_max": ["10"],
+        }
+        res = self.client.post(url, data=payload, follow=False)
+        self.assertEqual(res.status_code, 302)
+        
+        tpl = AssessmentTemplate.objects.first()
+        self.assertEqual(tpl.weighting, 40)
+    
     def test_post_valid_creates_template_with_module_title(self):
         """POST with module_title creates template with that field."""
         url = reverse("template_new")

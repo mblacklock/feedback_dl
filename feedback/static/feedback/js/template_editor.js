@@ -219,6 +219,7 @@ function saveNow() {
         module_code: document.getElementById('module_code').value,
         module_title: document.getElementById('module_title').value,
         assessment_title: document.getElementById('assessment_title').value,
+        weighting: document.getElementById('weighting').value ? parseInt(document.getElementById('weighting').value) : null,
         component: parseInt(document.getElementById('component').value),
         categories: []
     };

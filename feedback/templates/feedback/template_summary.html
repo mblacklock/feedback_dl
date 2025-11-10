@@ -24,16 +24,21 @@
                         <p><strong>Module Code:</strong> {{ template.module_code }}</p>
                     </div>
                     {% if template.module_title %}
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <p><strong>Module Title:</strong> {{ template.module_title }}</p>
                     </div>
                     {% endif %}
                     <div class="col-md-2">
                         <p><strong>Component:</strong> {{ template.component|default:"N/A" }}</p>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <p><strong>Assessment:</strong> {{ template.assessment_title }}</p>
                     </div>
+                    {% if template.weighting %}
+                    <div class="col-md-2">
+                        <p><strong>Weighting:</strong> {{ template.weighting }}%</p>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

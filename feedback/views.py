@@ -20,6 +20,7 @@ def template_new(request):
         module_code = request.POST.get("module_code", "").strip()
         module_title = request.POST.get("module_title", "").strip()
         assessment_title = request.POST.get("assessment_title", "").strip()
+        weighting_str = request.POST.get("weighting", "").strip()
         category_labels = request.POST.getlist("category_label")
         category_maxes = request.POST.getlist("category_max")
         category_types = request.POST.getlist("category_type")
@@ -36,6 +37,16 @@ def template_new(request):
                 component = int(component_str)
             except (ValueError, TypeError):
                 errors.append("Component must be a number")
+        
+        # Validate weighting (optional)
+        weighting = None
+        if weighting_str:
+            try:
+                weighting = int(weighting_str)
+                if weighting < 0 or weighting > 100:
+                    errors.append("Weighting must be between 0 and 100")
+            except (ValueError, TypeError):
+                errors.append("Weighting must be a number")
         
         if not title:
             errors.append("Title is required")
@@ -106,6 +117,7 @@ def template_new(request):
             module_code=module_code,
             module_title=module_title,
             assessment_title=assessment_title,
+            weighting=weighting,
             categories=categories
         )
         
@@ -150,6 +162,8 @@ def template_update(request, pk):
         tpl.module_title = data["module_title"]
     if "assessment_title" in data:
         tpl.assessment_title = data["assessment_title"]
+    if "weighting" in data:
+        tpl.weighting = data["weighting"]
     if "component" in data:
         tpl.component = data["component"]
     if "categories" in data:

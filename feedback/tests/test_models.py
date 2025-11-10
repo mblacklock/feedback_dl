@@ -60,6 +60,28 @@ class AssessmentTemplateModelTests(TestCase):
             categories=[{"label": "Design", "max": 10}],
         )
         self.assertEqual(tpl2.module_title, "")
+    
+    def test_can_create_template_with_weighting(self):
+        """Weighting field stores assessment weighting as integer percentage (optional)."""
+        tpl = AssessmentTemplate.objects.create(
+            component=1,
+            title="Test Template",
+            module_code="KB5031",
+            assessment_title="Coursework 1",
+            weighting=40,
+            categories=[{"label": "Introduction", "max": 10}],
+        )
+        self.assertEqual(tpl.weighting, 40)
+        
+        # Weighting can be blank/null
+        tpl2 = AssessmentTemplate.objects.create(
+            component=1,
+            title="Test Template 2",
+            module_code="KB5032",
+            assessment_title="Coursework 2",
+            categories=[{"label": "Design", "max": 10}],
+        )
+        self.assertIsNone(tpl2.weighting)
 
     def test_can_create_template_with_ordered_categories(self):
         tpl = AssessmentTemplate.objects.create(

@@ -10,6 +10,50 @@ class TemplateBuilderFT(FunctionalTestBase):
     summary info and adding rubric categories, and then see a summary page.
     """
 
+    def test_staff_can_add_weighting_field_to_template(self):
+        """
+        GIVEN: A staff member creates a new template
+        WHEN: They enter an assessment weighting (e.g., 40%)
+        THEN: The weighting is saved and displayed on the summary page
+        """
+        # GIVEN: Staff member visits the feedback portal and creates a new template
+        self.browser.get(self.live_server_url + "/feedback/")
+        create_btn = self.wait.until(EC.presence_of_element_located((By.LINK_TEXT, "Create New Template")))
+        create_btn.click()
+        
+        # THEN: They are taken to the edit page
+        self.wait.until(EC.url_matches(r'/feedback/template/\d+/edit/'))
+        
+        # WHEN: They enter basic info including weighting
+        title = self.wait.until(EC.presence_of_element_located((By.NAME, "title")))
+        title.clear()
+        title.send_keys("Test Template")
+        
+        module_code = self.browser.find_element(By.NAME, "module_code")
+        module_code.send_keys("KB5031")
+        
+        assessment_title = self.browser.find_element(By.NAME, "assessment_title")
+        assessment_title.send_keys("Coursework 1")
+        
+        weighting = self.browser.find_element(By.NAME, "weighting")
+        weighting.send_keys("40")
+        
+        # AND: They wait for autosave
+        import time
+        time.sleep(2)
+        
+        # WHEN: They click "View Template"
+        view_btn = self.browser.find_element(By.ID, "view-template")
+        view_btn.click()
+        
+        # THEN: They see the summary page with weighting displayed
+        self.wait.until(EC.url_matches(r'/feedback/template/\d+/$'))
+        page_content = self.browser.page_source
+        
+        # Verify weighting is present (could be "40%" or "Weighting: 40")
+        assert "40" in page_content
+        assert "Weight" in page_content or "weight" in page_content
+    
     def test_staff_can_add_module_title_field_to_template(self):
         """
         GIVEN: A staff member creates a new template
