@@ -68,7 +68,7 @@ class ChartsFT(FunctionalTestBase):
         category_checkboxes = chart_row.find_elements(By.CSS_SELECTOR, "input.chart-category")
         for checkbox in category_checkboxes:
             if not checkbox.is_selected():
-                checkbox.click()
+                self.browser.execute_script("arguments[0].click();", checkbox)
         
         self.wait_for_autosave()
         
@@ -104,3 +104,97 @@ class ChartsFT(FunctionalTestBase):
         # Should show the configured titles
         self.assertIn("Performance Breakdown", feedback_content)
         self.assertIn("Class Mark Distribution", feedback_content)
+    
+    def test_select_all_button_for_radar_chart_categories(self):
+        """
+        GIVEN: A staff member is configuring a radar chart with multiple categories
+        WHEN: They click the "Select All" button
+        THEN: All category checkboxes are selected
+        AND: The button text changes to "Deselect All"
+        AND: Clicking again deselects all checkboxes
+        """
+        # GIVEN: Navigate to home and create a new template with categories
+        self.navigate_to_home()
+        self.create_new_template()
+        
+        self.fill_template_fields(
+            title="Test Template",
+            module_code="CS101",
+            module_title="Intro to CS",
+            assessment_title="Exam",
+            component=1,
+            weighting=50,
+            max_marks=100
+        )
+        
+        # Add multiple categories
+        self.add_category_row()
+        self.fill_category(0, "Category A", 25)
+        self.add_category_row()
+        self.fill_category(1, "Category B", 25)
+        self.add_category_row()
+        self.fill_category(2, "Category C", 25)
+        self.add_category_row()
+        self.fill_category(3, "Category D", 25)
+        
+        self.wait_for_autosave()
+        
+        # Add a radar chart
+        add_chart_btn = self.browser.find_element(By.ID, "add-chart")
+        self.browser.execute_script("arguments[0].scrollIntoView(true);", add_chart_btn)
+        self.browser.execute_script("arguments[0].click();", add_chart_btn)
+        
+        chart_row = self.wait.until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, ".chart-row"))
+        )
+        
+        # Configure as radar chart
+        chart_type_select = chart_row.find_element(By.CSS_SELECTOR, "select.chart-type")
+        chart_type_select.send_keys("Radar")
+        
+        # Wait for chart config to render (category checkboxes should appear)
+        self.wait.until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "input.chart-category"))
+        )
+        
+        # WHEN: Look for the "Select All" button
+        select_all_btn = self.wait.until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, ".select-all-categories"))
+        )
+        
+        # Scroll to button to ensure it's clickable
+        self.browser.execute_script("arguments[0].scrollIntoView(true);", select_all_btn)
+        
+        # THEN: Button should be visible and say "Select All"
+        self.assertTrue(select_all_btn.is_displayed())
+        self.assertEqual(select_all_btn.text, "Select All")
+        
+        # Get all category checkboxes - initially should be unchecked
+        category_checkboxes = chart_row.find_elements(By.CSS_SELECTOR, "input.chart-category")
+        self.assertEqual(len(category_checkboxes), 4, "Should have 4 category checkboxes")
+        
+        initial_checked_count = sum(1 for cb in category_checkboxes if cb.is_selected())
+        
+        # WHEN: Click "Select All" button
+        self.browser.execute_script("arguments[0].click();", select_all_btn)
+        self.wait_for_autosave()
+        
+        # THEN: All checkboxes should be selected
+        category_checkboxes = chart_row.find_elements(By.CSS_SELECTOR, "input.chart-category")
+        checked_count = sum(1 for cb in category_checkboxes if cb.is_selected())
+        self.assertEqual(checked_count, 4, "All checkboxes should be selected")
+        
+        # AND: Button text should change to "Deselect All"
+        self.assertEqual(select_all_btn.text, "Deselect All")
+        
+        # WHEN: Click button again
+        self.browser.execute_script("arguments[0].click();", select_all_btn)
+        self.wait_for_autosave()
+        
+        # THEN: All checkboxes should be deselected
+        category_checkboxes = chart_row.find_elements(By.CSS_SELECTOR, "input.chart-category")
+        checked_count = sum(1 for cb in category_checkboxes if cb.is_selected())
+        self.assertEqual(checked_count, 0, "All checkboxes should be deselected")
+        
+        # AND: Button text should change back to "Select All"
+        self.assertEqual(select_all_btn.text, "Select All")

@@ -583,14 +583,14 @@ function addChartRow(chartData = null) {
     
     row.innerHTML = `
         <div class="row mb-2">
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label class="form-label">Chart Type <span class="text-danger">*</span></label>
                 <select class="form-control chart-type">
                     <option value="radar" ${chartType === 'radar' ? 'selected' : ''}>Radar</option>
                     <option value="histogram" ${chartType === 'histogram' ? 'selected' : ''}>Histogram</option>
                 </select>
             </div>
-            <div class="col-md-7">
+            <div class="col-md-8">
                 <label class="form-label">Chart Title <span class="text-danger">*</span></label>
                 <input type="text" class="form-control chart-title" placeholder="e.g., Performance Breakdown" value="${title}">
             </div>
@@ -636,12 +636,26 @@ function setupChartRowEventHandlers(row) {
     });
 }
 
+function getCategoriesFromDOM() {
+    // Read current categories from DOM (works even when window.templateData is stale during dynamic editing)
+    const categories = [];
+    document.querySelectorAll('.category-row').forEach(row => {
+        const label = row.querySelector('.cat-label').value.trim();
+        const max = parseInt(row.querySelector('.cat-max').value);
+        if (label && max) {
+            categories.push({ label, max });
+        }
+    });
+    return categories;
+}
+
 function renderChartConfig(row, chartType, existingData = {}) {
     const configContainer = row.querySelector('.chart-config');
     
     if (chartType === 'radar') {
         // Radar chart needs category selection
-        const currentCategories = window.templateData && window.templateData.categories ? window.templateData.categories : [];
+        // Read from DOM to get current categories (window.templateData may be stale)
+        const currentCategories = getCategoriesFromDOM();
         const selectedCategories = existingData.categories || [];
         
         let checkboxesHtml = currentCategories.map(cat => {
@@ -658,9 +672,13 @@ function renderChartConfig(row, chartType, existingData = {}) {
             checkboxesHtml = '<p class="text-muted">No categories available. Add categories above first.</p>';
         }
         
+        const selectAllButton = currentCategories.length > 0 ? 
+            '<button type="button" class="btn btn-sm btn-outline-secondary mb-2 select-all-categories">Select All</button>' : '';
+        
         configContainer.innerHTML = `
             <div class="col-md-12">
                 <label class="form-label">Select Categories <span class="text-danger">*</span></label>
+                ${selectAllButton}
                 <div class="category-checkboxes">
                     ${checkboxesHtml}
                 </div>
@@ -673,9 +691,34 @@ function renderChartConfig(row, chartType, existingData = {}) {
             checkbox.addEventListener('change', debouncedSave);
         });
         
+        // Add event listener to "Select All" button
+        const selectAllBtn = configContainer.querySelector('.select-all-categories');
+        if (selectAllBtn) {
+            selectAllBtn.addEventListener('click', () => {
+                const checkboxes = configContainer.querySelectorAll('.chart-category');
+                const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+                
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = !allChecked;
+                });
+                
+                // Update button text
+                selectAllBtn.textContent = allChecked ? 'Select All' : 'Deselect All';
+                
+                // Trigger save
+                debouncedSave();
+            });
+            
+            // Set initial button text based on current state
+            const checkboxes = configContainer.querySelectorAll('.chart-category');
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            selectAllBtn.textContent = allChecked ? 'Deselect All' : 'Select All';
+        }
+        
     } else if (chartType === 'histogram') {
         // Histogram needs data source selection
-        const currentCategories = window.templateData && window.templateData.categories ? window.templateData.categories : [];
+        // Read from DOM to get current categories (window.templateData may be stale)
+        const currentCategories = getCategoriesFromDOM();
         const dataSource = existingData.dataSource || 'overall';
         
         let optionsHtml = '<option value="overall" ' + (dataSource === 'overall' ? 'selected' : '') + '>Overall Marks</option>';
