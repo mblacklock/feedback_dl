@@ -649,6 +649,19 @@ function getCategoriesFromDOM() {
     return categories;
 }
 
+function updateSelectAllCheckbox(configContainer) {
+    // Update the select all checkbox state based on individual checkboxes
+    const selectAllCb = configContainer.querySelector('.select-all-categories');
+    if (!selectAllCb) return;
+    
+    const checkboxes = configContainer.querySelectorAll('.chart-category');
+    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+    const someChecked = Array.from(checkboxes).some(cb => cb.checked);
+    
+    selectAllCb.checked = allChecked;
+    selectAllCb.indeterminate = someChecked && !allChecked;
+}
+
 function renderChartConfig(row, chartType, existingData = {}) {
     const configContainer = row.querySelector('.chart-config');
     
@@ -672,47 +685,44 @@ function renderChartConfig(row, chartType, existingData = {}) {
             checkboxesHtml = '<p class="text-muted">No categories available. Add categories above first.</p>';
         }
         
-        const selectAllButton = currentCategories.length > 0 ? 
-            '<button type="button" class="btn btn-sm btn-outline-secondary mb-2 select-all-categories">Select All</button>' : '';
+        const selectAllHtml = currentCategories.length > 0 ? 
+            `<div class="form-check">
+                <input class="form-check-input select-all-categories" type="checkbox">
+                <label class="form-check-label"><em>(select all)</em></label>
+            </div>` : '';
         
         configContainer.innerHTML = `
             <div class="col-md-12">
                 <label class="form-label">Select Categories <span class="text-danger">*</span></label>
-                ${selectAllButton}
                 <div class="category-checkboxes">
+                    ${selectAllHtml}
                     ${checkboxesHtml}
                 </div>
                 <small class="form-text text-muted">Select which categories to display on the radar chart.</small>
             </div>
         `;
         
-        // Add event listeners to checkboxes
+        // Add event listeners to category checkboxes
         configContainer.querySelectorAll('.chart-category').forEach(checkbox => {
-            checkbox.addEventListener('change', debouncedSave);
+            checkbox.addEventListener('change', () => {
+                updateSelectAllCheckbox(configContainer);
+                debouncedSave();
+            });
         });
         
-        // Add event listener to "Select All" button
-        const selectAllBtn = configContainer.querySelector('.select-all-categories');
-        if (selectAllBtn) {
-            selectAllBtn.addEventListener('click', () => {
+        // Add event listener to "select all" checkbox
+        const selectAllCb = configContainer.querySelector('.select-all-categories');
+        if (selectAllCb) {
+            selectAllCb.addEventListener('change', () => {
                 const checkboxes = configContainer.querySelectorAll('.chart-category');
-                const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-                
                 checkboxes.forEach(checkbox => {
-                    checkbox.checked = !allChecked;
+                    checkbox.checked = selectAllCb.checked;
                 });
-                
-                // Update button text
-                selectAllBtn.textContent = allChecked ? 'Select All' : 'Deselect All';
-                
-                // Trigger save
                 debouncedSave();
             });
             
-            // Set initial button text based on current state
-            const checkboxes = configContainer.querySelectorAll('.chart-category');
-            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-            selectAllBtn.textContent = allChecked ? 'Deselect All' : 'Select All';
+            // Set initial state of select all checkbox
+            updateSelectAllCheckbox(configContainer);
         }
         
     } else if (chartType === 'histogram') {

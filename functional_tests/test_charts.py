@@ -157,17 +157,17 @@ class ChartsFT(FunctionalTestBase):
             EC.presence_of_element_located((By.CSS_SELECTOR, "input.chart-category"))
         )
         
-        # WHEN: Look for the "Select All" button
-        select_all_btn = self.wait.until(
+        # WHEN: Look for the "(select all)" checkbox
+        select_all_checkbox = self.wait.until(
             EC.presence_of_element_located((By.CSS_SELECTOR, ".select-all-categories"))
         )
         
-        # Scroll to button to ensure it's clickable
-        self.browser.execute_script("arguments[0].scrollIntoView(true);", select_all_btn)
+        # Scroll to checkbox to ensure it's visible
+        self.browser.execute_script("arguments[0].scrollIntoView(true);", select_all_checkbox)
         
-        # THEN: Button should be visible and say "Select All"
-        self.assertTrue(select_all_btn.is_displayed())
-        self.assertEqual(select_all_btn.text, "Select All")
+        # THEN: Checkbox should be visible and initially unchecked
+        self.assertTrue(select_all_checkbox.is_displayed())
+        self.assertFalse(select_all_checkbox.is_selected())
         
         # Get all category checkboxes - initially should be unchecked
         category_checkboxes = chart_row.find_elements(By.CSS_SELECTOR, "input.chart-category")
@@ -175,26 +175,26 @@ class ChartsFT(FunctionalTestBase):
         
         initial_checked_count = sum(1 for cb in category_checkboxes if cb.is_selected())
         
-        # WHEN: Click "Select All" button
-        self.browser.execute_script("arguments[0].click();", select_all_btn)
+        # WHEN: Click the "(select all)" checkbox
+        self.browser.execute_script("arguments[0].click();", select_all_checkbox)
         self.wait_for_autosave()
         
-        # THEN: All checkboxes should be selected
+        # THEN: All category checkboxes should be selected
         category_checkboxes = chart_row.find_elements(By.CSS_SELECTOR, "input.chart-category")
         checked_count = sum(1 for cb in category_checkboxes if cb.is_selected())
-        self.assertEqual(checked_count, 4, "All checkboxes should be selected")
+        self.assertEqual(checked_count, 4, "All category checkboxes should be selected")
         
-        # AND: Button text should change to "Deselect All"
-        self.assertEqual(select_all_btn.text, "Deselect All")
+        # AND: Select all checkbox should be checked
+        self.assertTrue(select_all_checkbox.is_selected())
         
-        # WHEN: Click button again
-        self.browser.execute_script("arguments[0].click();", select_all_btn)
+        # WHEN: Click the checkbox again
+        self.browser.execute_script("arguments[0].click();", select_all_checkbox)
         self.wait_for_autosave()
         
-        # THEN: All checkboxes should be deselected
+        # THEN: All category checkboxes should be deselected
         category_checkboxes = chart_row.find_elements(By.CSS_SELECTOR, "input.chart-category")
         checked_count = sum(1 for cb in category_checkboxes if cb.is_selected())
-        self.assertEqual(checked_count, 0, "All checkboxes should be deselected")
+        self.assertEqual(checked_count, 0, "All category checkboxes should be deselected")
         
-        # AND: Button text should change back to "Select All"
-        self.assertEqual(select_all_btn.text, "Select All")
+        # AND: Select all checkbox should be unchecked
+        self.assertFalse(select_all_checkbox.is_selected())
