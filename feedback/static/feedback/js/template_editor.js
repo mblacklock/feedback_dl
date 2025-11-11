@@ -577,7 +577,13 @@ function addChartRow(chartData = null) {
     row.className = 'chart-row mb-4 p-3 border rounded';
     
     const chartType = chartData ? chartData.type : 'radar';
-    const title = chartData ? chartData.title : '';
+    // Set default title based on chart type if no data provided
+    let title = '';
+    if (chartData) {
+        title = chartData.title;
+    } else {
+        title = chartType === 'radar' ? 'Marks Breakdown' : 'Distribution of class marks';
+    }
     const dataSource = chartData && chartData.data_source ? chartData.data_source : 'overall';
     const categories = chartData && chartData.categories ? chartData.categories : [];
     
@@ -592,7 +598,7 @@ function addChartRow(chartData = null) {
             </div>
             <div class="col-md-8">
                 <label class="form-label">Chart Title <span class="text-danger">*</span></label>
-                <input type="text" class="form-control chart-title" placeholder="e.g., Performance Breakdown" value="${title}">
+                <input type="text" class="form-control chart-title" placeholder="${chartType === 'radar' ? 'Marks Breakdown' : 'Distribution of class marks'}" value="${title}">
             </div>
             <div class="col-md-2">
                 <label class="form-label">&nbsp;</label>
@@ -625,6 +631,12 @@ function setupChartRowEventHandlers(row) {
     // Handle chart type changes
     typeSelect.addEventListener('change', function() {
         const newType = this.value;
+        
+        // Update title to default for new chart type
+        const defaultTitle = newType === 'radar' ? 'Marks Breakdown' : 'Distribution of class marks';
+        titleInput.value = defaultTitle;
+        titleInput.placeholder = defaultTitle;
+        
         renderChartConfig(row, newType);
         debouncedSave();
     });

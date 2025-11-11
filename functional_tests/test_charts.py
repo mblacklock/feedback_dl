@@ -198,3 +198,55 @@ class ChartsFT(FunctionalTestBase):
         
         # AND: Select all checkbox should be unchecked
         self.assertFalse(select_all_checkbox.is_selected())
+    
+    def test_chart_title_updates_when_chart_type_changes(self):
+        """
+        GIVEN: A staff member is editing a template with a radar chart
+        WHEN: They change the chart type to histogram
+        THEN: The chart title updates to the default for that type
+        """
+        # GIVEN: Navigate to home and create a new template with categories
+        self.navigate_to_home()
+        self.create_new_template()
+        
+        self.fill_template_fields(
+            title="Test Template",
+            module_code="CS101",
+            module_title="Intro to CS",
+            assessment_title="Exam",
+            component=1,
+            weighting=50,
+            max_marks=100
+        )
+        
+        # Add categories
+        self.add_category_row()
+        self.fill_category(0, "Category A", 50)
+        self.add_category_row()
+        self.fill_category(1, "Category B", 50)
+        
+        self.wait_for_autosave()
+        
+        # Add a radar chart (default)
+        add_chart_btn = self.browser.find_element(By.ID, "add-chart")
+        self.browser.execute_script("arguments[0].scrollIntoView(true);", add_chart_btn)
+        self.browser.execute_script("arguments[0].click();", add_chart_btn)
+        
+        chart_row = self.wait.until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, ".chart-row"))
+        )
+        
+        # THEN: Chart title should default to "Marks Breakdown" for radar
+        title_input = chart_row.find_element(By.CSS_SELECTOR, "input.chart-title")
+        self.assertEqual(title_input.get_attribute('value'), "Marks Breakdown")
+        
+        # WHEN: Change chart type to histogram
+        chart_type_select = chart_row.find_element(By.CSS_SELECTOR, "select.chart-type")
+        chart_type_select.send_keys("Histogram")
+        
+        # Give it a moment for the JavaScript to update
+        import time
+        time.sleep(0.5)
+        
+        # THEN: Chart title should update to "Distribution of class marks"
+        self.assertEqual(title_input.get_attribute('value'), "Distribution of class marks")
