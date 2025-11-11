@@ -395,10 +395,19 @@ function saveNow() {
         // Add type-specific configuration
         if (type === 'radar') {
             const selectedCategories = [];
+            const categoryShortNames = {};
             row.querySelectorAll('.chart-category:checked').forEach(checkbox => {
-                selectedCategories.push(checkbox.value);
+                const categoryLabel = checkbox.value;
+                selectedCategories.push(categoryLabel);
+                
+                // Get the short name input for this category
+                const shortNameInput = checkbox.closest('.d-flex').querySelector('.category-short-name');
+                if (shortNameInput && shortNameInput.value.trim()) {
+                    categoryShortNames[categoryLabel] = shortNameInput.value.trim();
+                }
             });
             chart.categories = selectedCategories;
+            chart.category_short_names = categoryShortNames;
         } else if (type === 'histogram') {
             const dataSource = row.querySelector('.chart-data-source').value;
             chart.data_source = dataSource;
@@ -605,7 +614,10 @@ function addChartRow(chartData = null) {
     container.appendChild(row);
     
     // Render configuration based on chart type
-    renderChartConfig(row, chartType, { dataSource, categories });
+    // If full chartData was provided (loaded from the template), pass it through
+    // so any saved keys like `category_short_names` are preserved.
+    const existingData = chartData ? chartData : { dataSource, categories };
+    renderChartConfig(row, chartType, existingData);
     
     // Set up event handlers
     setupChartRowEventHandlers(row);
@@ -674,13 +686,24 @@ function renderChartConfig(row, chartType, existingData = {}) {
         // Read from DOM to get current categories (window.templateData may be stale)
         const currentCategories = getCategoriesFromDOM();
         const selectedCategories = existingData.categories || [];
+        const categoryShortNames = existingData.category_short_names || {};
         
         let checkboxesHtml = currentCategories.map(cat => {
             const isChecked = selectedCategories.includes(cat.label);
+            const shortName = categoryShortNames[cat.label] || '';
             return `
-                <div class="form-check">
-                    <input class="form-check-input chart-category" type="checkbox" value="${cat.label}" ${isChecked ? 'checked' : ''}>
-                    <label class="form-check-label">${cat.label}</label>
+                <div class="d-flex align-items-center mb-2">
+                    <div class="form-check" style="min-width: 200px;">
+                        <input class="form-check-input chart-category" type="checkbox" value="${cat.label}" ${isChecked ? 'checked' : ''}>
+                        <label class="form-check-label mb-0">${cat.label}</label>
+                    </div>
+                    <div class="ms-auto" style="max-width: 200px;">
+                        <input type="text" class="form-control form-control-sm category-short-name" 
+                               placeholder="Short name (optional)" 
+                               value="${shortName}"
+                               data-category="${cat.label}"
+                               ${!isChecked ? 'disabled' : ''}>
+                    </div>
                 </div>
             `;
         }).join('');
@@ -702,14 +725,26 @@ function renderChartConfig(row, chartType, existingData = {}) {
                     ${selectAllHtml}
                     ${checkboxesHtml}
                 </div>
-                <small class="form-text text-muted">Select which categories to display on the radar chart.</small>
+                <small class="form-text text-muted">Select which categories to display on the radar chart. If the category label is too long, add a short name. The short name will be displayed on the chart axis.</small>
             </div>
         `;
         
         // Add event listeners to category checkboxes
         configContainer.querySelectorAll('.chart-category').forEach(checkbox => {
             checkbox.addEventListener('change', () => {
+                // Enable/disable the corresponding short name input
+                const shortNameInput = checkbox.closest('.d-flex').querySelector('.category-short-name');
+                if (shortNameInput) {
+                    shortNameInput.disabled = !checkbox.checked;
+                }
                 updateSelectAllCheckbox(configContainer);
+                debouncedSave();
+            });
+        });
+        
+        // Add event listeners to short name inputs
+        configContainer.querySelectorAll('.category-short-name').forEach(input => {
+            input.addEventListener('input', () => {
                 debouncedSave();
             });
         });

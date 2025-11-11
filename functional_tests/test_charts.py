@@ -250,3 +250,157 @@ class ChartsFT(FunctionalTestBase):
         
         # THEN: Chart title should update to "Distribution of class marks"
         self.assertEqual(title_input.get_attribute('value'), "Distribution of class marks")
+    
+    def test_staff_can_add_short_names_for_radar_chart_categories(self):
+        """
+        GIVEN: A staff member is configuring a radar chart
+        WHEN: They add short names for categories with long labels
+        THEN: The radar chart displays the short names instead of full labels
+        """
+        # GIVEN: Create template with categories that have long names
+        self.navigate_to_home()
+        self.create_new_template()
+        
+        self.fill_template_fields(
+            title="Test Template",
+            module_code="CS101",
+            assessment_title="Assignment"
+        )
+        
+        # Add categories with long names
+        self.add_category_row()
+        self.fill_category(0, "Implementation and Code Quality", 40)
+        self.add_category_row()
+        self.fill_category(1, "Documentation and Comments", 30)
+        self.add_category_row()
+        self.fill_category(2, "Testing", 30)
+        
+        self.wait_for_autosave()
+        
+        # WHEN: They add a radar chart
+        add_chart_btn = self.browser.find_element(By.ID, "add-chart")
+        self.browser.execute_script("arguments[0].scrollIntoView(true);", add_chart_btn)
+        import time
+        time.sleep(0.2)
+        self.browser.execute_script("arguments[0].click();", add_chart_btn)
+        
+        import time
+        time.sleep(0.3)
+        
+        chart_rows = self.browser.find_elements(By.CSS_SELECTOR, ".chart-row")
+        self.assertEqual(len(chart_rows), 1)
+        
+        # Select radar chart type
+        chart_type = chart_rows[0].find_element(By.CSS_SELECTOR, ".chart-type")
+        # Use JavaScript to set the value and trigger the change event
+        self.browser.execute_script("arguments[0].value = 'radar'; arguments[0].dispatchEvent(new Event('change'));", chart_type)
+        
+        time.sleep(0.5)
+        
+        # Check some categories
+        category_checkboxes = chart_rows[0].find_elements(By.CSS_SELECTOR, ".chart-category")
+        self.assertGreater(len(category_checkboxes), 0, "Should have category checkboxes for radar chart")
+        
+        # Click first two category checkboxes
+        self.browser.execute_script("arguments[0].click();", category_checkboxes[0])
+        time.sleep(0.2)
+        self.browser.execute_script("arguments[0].click();", category_checkboxes[1])
+        time.sleep(0.2)
+        
+        # AND: They enter short names for the long category labels
+        # Find short name inputs next to the checked categories
+        short_name_inputs = chart_rows[0].find_elements(By.CSS_SELECTOR, "input.category-short-name")
+        self.assertGreaterEqual(len(short_name_inputs), 2, "Should have short name inputs for checked categories")
+        
+        # Enter short names
+        short_name_inputs[0].clear()
+        short_name_inputs[0].send_keys("Code")
+        short_name_inputs[1].clear()
+        short_name_inputs[1].send_keys("Docs")
+        
+        self.wait_for_autosave(2)
+        
+        # WHEN: They view the feedback sheet
+        view_feedback_btn = self.browser.find_element(By.LINK_TEXT, "View Feedback Sheet")
+        self.browser.execute_script("arguments[0].scrollIntoView(true);", view_feedback_btn)
+        time.sleep(0.2)
+        self.browser.execute_script("arguments[0].click();", view_feedback_btn)
+        
+        self.wait.until(EC.url_contains("/feedback-sheet/"))
+        
+        # THEN: The radar chart should display the short names
+        time.sleep(1)  # Wait for chart to render
+        
+        page_source = self.browser.page_source
+        # Chart.js renders canvas, but we can check if the script has the short names
+        # The labels should be in the JavaScript that configures the chart
+        self.assertIn("Code", page_source, "Short name 'Code' should appear in chart config")
+        self.assertIn("Docs", page_source, "Short name 'Docs' should appear in chart config")
+
+    def test_short_names_persist_when_editing_from_feedback_sheet(self):
+        """Full end-to-end: short names entered in the editor should be saved,
+        visible on the feedback sheet, and pre-filled when returning to the editor."""
+        import time
+        # GIVEN: Create template and categories
+        self.navigate_to_home()
+        self.create_new_template()
+
+        self.fill_template_fields(
+            title="Persistence Test",
+            module_code="CS200",
+            assessment_title="Assignment"
+        )
+
+        self.add_category_row()
+        self.fill_category(0, "Design", 30)
+        self.add_category_row()
+        self.fill_category(1, "Implementation", 70)
+
+        self.wait_for_autosave()
+
+        # WHEN: Add a radar chart and set short names
+        add_chart_btn = self.browser.find_element(By.ID, "add-chart")
+        self.browser.execute_script("arguments[0].scrollIntoView(true);", add_chart_btn)
+        time.sleep(0.2)
+        self.browser.execute_script("arguments[0].click();", add_chart_btn)
+        time.sleep(0.3)
+
+        chart_row = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".chart-row")))
+
+        # Ensure radar type
+        chart_type = chart_row.find_element(By.CSS_SELECTOR, ".chart-type")
+        self.browser.execute_script("arguments[0].value = 'radar'; arguments[0].dispatchEvent(new Event('change'));", chart_type)
+        time.sleep(0.3)
+
+        # Select category checkboxes and add short names
+        category_checkboxes = chart_row.find_elements(By.CSS_SELECTOR, "input.chart-category")
+        for cb in category_checkboxes:
+            if not cb.is_selected():
+                self.browser.execute_script("arguments[0].click();", cb)
+                time.sleep(0.1)
+
+        short_name_inputs = chart_row.find_elements(By.CSS_SELECTOR, "input.category-short-name")
+        self.assertGreaterEqual(len(short_name_inputs), 2)
+        short_name_inputs[0].clear()
+        short_name_inputs[0].send_keys("Dsg")
+        short_name_inputs[1].clear()
+        short_name_inputs[1].send_keys("Impl")
+
+        self.wait_for_autosave(2)
+
+        # WHEN: View feedback sheet then click Edit Template to return
+        view_feedback_btn = self.browser.find_element(By.LINK_TEXT, "View Feedback Sheet")
+        self.browser.execute_script("arguments[0].scrollIntoView(true);", view_feedback_btn)
+        time.sleep(0.2)
+        self.browser.execute_script("arguments[0].click();", view_feedback_btn)
+        self.wait_for_feedback_sheet_page()
+
+        # Click edit link to go back to editor
+        self.click_edit_template()
+
+        # THEN: On the edit page the chart short-name inputs should be pre-filled
+        chart_row = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".chart-row")))
+        short_name_inputs = chart_row.find_elements(By.CSS_SELECTOR, "input.category-short-name")
+        # Values should persist
+        self.assertEqual(short_name_inputs[0].get_attribute('value'), "Dsg")
+        self.assertEqual(short_name_inputs[1].get_attribute('value'), "Impl")

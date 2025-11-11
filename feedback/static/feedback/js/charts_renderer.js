@@ -19,10 +19,17 @@ function renderFeedbackCharts(charts, categories) {
 }
 
 function renderRadarChart(ctx, chart) {
+    // Use short names if available, otherwise use full category labels
+    const labels = chart.categories.map(cat => {
+        return chart.category_short_names && chart.category_short_names[cat] 
+            ? chart.category_short_names[cat] 
+            : cat;
+    });
+    
     new Chart(ctx, {
         type: 'radar',
         data: {
-            labels: chart.categories,
+            labels: labels,
             datasets: [{
                 label: 'Example Student Performance',
                 data: chart.categories.map(() => Math.floor(Math.random() * 30) + 60), // Random 60-90%
@@ -43,7 +50,10 @@ function renderRadarChart(ctx, chart) {
             plugins: {
                 legend: {
                     display: true,
-                    position: 'top'
+                    position: 'bottom',
+                    labels: {
+                        boxHeight: 6
+                    }
                 }
             }
         }
@@ -60,17 +70,17 @@ function renderHistogramChart(ctx, chart) {
                 data: [2, 5, 12, 18, 8], // Example distribution
                 backgroundColor: [
                     'rgba(255, 99, 132, 0.5)',
-                    'rgba(255, 159, 64, 0.5)',
-                    'rgba(255, 205, 86, 0.5)',
-                    'rgba(75, 192, 192, 0.5)',
-                    'rgba(54, 162, 235, 0.5)'
+                    'rgba(54, 162, 235, 0.5)',
+                    'rgba(54, 162, 235, 0.5)',
+                    'rgba(54, 162, 235, 0.5)',
+                    'rgba(8, 163, 34, 0.5)'
                 ],
                 borderColor: [
-                    'rgb(255, 99, 132)',
-                    'rgb(255, 159, 64)',
-                    'rgb(255, 205, 86)',
-                    'rgb(75, 192, 192)',
-                    'rgb(54, 162, 235)'
+                    'rgba(255, 99, 132, 0.5)',
+                    'rgba(54, 162, 235, 0.5)',
+                    'rgba(54, 162, 235, 0.5)',
+                    'rgba(54, 162, 235, 0.5)',
+                    'rgba(8, 163, 34, 0.5)'
                 ],
                 borderWidth: 1
             }]

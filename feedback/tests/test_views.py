@@ -526,6 +526,41 @@ class ChartViewTests(TestCase):
         self.assertEqual(template.charts[0]["type"], "radar")
         self.assertEqual(template.charts[0]["title"], "Performance Breakdown")
     
+    def test_template_edit_includes_category_short_names(self):
+        """The edit page should include saved category_short_names in the JS payload
+        so the UI can pre-fill short-name inputs when editing an existing template."""
+        import json
+        template = AssessmentTemplate.objects.create(
+            component=1,
+            title="Test Template",
+            module_code="CS101",
+            module_title="Intro to CS",
+            assessment_title="Exam",
+            weighting=50,
+            max_marks=100,
+            categories=[
+                {"label": "Design", "max": 30},
+                {"label": "Implementation", "max": 70}
+            ],
+            charts=[
+                {
+                    "type": "radar",
+                    "title": "Performance Breakdown",
+                    "categories": ["Design", "Implementation"],
+                    "category_short_names": {"Design": "Dsg", "Implementation": "Impl"}
+                }
+            ]
+        )
+
+        url = reverse('template_edit', args=[template.pk])
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+
+        # The template renders a JS payload `window.templateData` that should include
+        # the saved charts JSON including the `category_short_names` key.
+        content = resp.content.decode('utf-8')
+        self.assertIn('category_short_names', content)
+        self.assertIn('Dsg', content)
     def test_feedback_sheet_view_passes_charts_to_template(self):
         """Feedback sheet view includes charts in context"""
         template = AssessmentTemplate.objects.create(
@@ -571,3 +606,92 @@ class ChartViewTests(TestCase):
         resp = self.client.get(f"/feedback/template/{template.pk}/feedback-sheet/")
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(resp.context["charts"]), 0)
+    
+    def test_radar_chart_can_store_category_short_names(self):
+        """Radar charts can store optional short names for categories"""
+        import json
+        template = AssessmentTemplate.objects.create(
+            component=1,
+            title="Test Template",
+            module_code="CS101",
+            module_title="Intro to CS",
+            assessment_title="Exam",
+            weighting=50,
+            max_marks=100,
+            categories=[
+                {"label": "Implementation and Code Quality", "max": 40},
+                {"label": "Documentation and Comments", "max": 30},
+                {"label": "Testing", "max": 30}
+            ]
+        )
+        
+        url = reverse("template_update", args=[template.pk])
+        charts = [
+            {
+                "type": "radar",
+                "title": "Performance Overview",
+                "categories": ["Implementation and Code Quality", "Documentation and Comments"],
+                "category_short_names": {
+                    "Implementation and Code Quality": "Code",
+                    "Documentation and Comments": "Docs"
+                }
+            }
+        ]
+        
+        data = {
+            "title": "Test Template",
+            "module_code": "CS101",
+            "module_title": "Intro to CS",
+            "assessment_title": "Exam",
+            "component": 1,
+            "weighting": 50,
+            "max_marks": 100,
+            "categories": template.categories,
+            "charts": charts
+        }
+        
+        resp = self.client.post(url, json.dumps(data), content_type="application/json")
+        self.assertEqual(resp.status_code, 200)
+        
+        # Reload and verify short names are stored
+        template.refresh_from_db()
+        self.assertEqual(len(template.charts), 1)
+        self.assertIn("category_short_names", template.charts[0])
+        self.assertEqual(template.charts[0]["category_short_names"]["Implementation and Code Quality"], "Code")
+        self.assertEqual(template.charts[0]["category_short_names"]["Documentation and Comments"], "Docs")
+    
+    def test_feedback_sheet_view_passes_short_names_in_charts(self):
+        """Feedback sheet view includes category_short_names in chart data"""
+        template = AssessmentTemplate.objects.create(
+            component=1,
+            title="Test Template",
+            module_code="CS101",
+            module_title="Intro to CS",
+            assessment_title="Exam",
+            weighting=50,
+            max_marks=100,
+            categories=[
+                {"label": "Very Long Category Name", "max": 50},
+                {"label": "Another Long Name", "max": 50}
+            ],
+            charts=[
+                {
+                    "type": "radar",
+                    "title": "Overview",
+                    "categories": ["Very Long Category Name", "Another Long Name"],
+                    "category_short_names": {
+                        "Very Long Category Name": "Short1",
+                        "Another Long Name": "Short2"
+                    }
+                }
+            ]
+        )
+        
+        resp = self.client.get(f"/feedback/template/{template.pk}/feedback-sheet/")
+        self.assertEqual(resp.status_code, 200)
+        
+        # Check short names are in context
+        self.assertIn("charts", resp.context)
+        self.assertEqual(len(resp.context["charts"]), 1)
+        self.assertIn("category_short_names", resp.context["charts"][0])
+        self.assertEqual(resp.context["charts"][0]["category_short_names"]["Very Long Category Name"], "Short1")
