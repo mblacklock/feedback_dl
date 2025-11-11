@@ -1,0 +1,18 @@
+{% if charts %}
+<div class="card mb-4">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0">Performance Visualizations</h5>
+    </div>
+    <div class="card-body">
+        <p class="text-muted">Example charts showing how student performance data would be visualized:</p>
+        <div class="row">
+            {% for chart in charts %}
+            <div class="col-md-6 mb-4">
+                <h6>{{ chart.title }}</h6>
+                <canvas id="chart-{{ forloop.counter }}"></canvas>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}

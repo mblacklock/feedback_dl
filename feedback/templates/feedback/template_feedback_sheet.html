@@ -121,24 +121,7 @@
             </div>
         </div>
         
-        {% if charts %}
-        <div class="card mb-4">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0">Performance Visualizations</h5>
-            </div>
-            <div class="card-body">
-                <p class="text-muted">Example charts showing how student performance data would be visualized:</p>
-                <div class="row">
-                    {% for chart in charts %}
-                    <div class="col-md-6 mb-4">
-                        <h6>{{ chart.title }}</h6>
-                        <canvas id="chart-{{ forloop.counter }}"></canvas>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-        {% endif %}
+        {% include "feedback/partials/charts_display.html" %}
         
         <div class="alert alert-info">
             <strong>Note:</strong> This is an example feedback sheet showing the structure. 
@@ -151,89 +134,13 @@
 {% block extra_js %}
 {% if charts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% load static %}
+<script src="{% static 'feedback/js/charts_renderer.js' %}"></script>
 <script>
-// Render charts with placeholder data
 document.addEventListener('DOMContentLoaded', function() {
     const charts = {{ charts|safe }};
     const categories = {{ template.categories|safe }};
-    
-    charts.forEach((chart, index) => {
-        const ctx = document.getElementById(`chart-${index + 1}`);
-        if (!ctx) return;
-        
-        if (chart.type === 'radar') {
-            // Radar chart showing performance across categories
-            new Chart(ctx, {
-                type: 'radar',
-                data: {
-                    labels: chart.categories,
-                    datasets: [{
-                        label: 'Example Student Performance',
-                        data: chart.categories.map(() => Math.floor(Math.random() * 30) + 60), // Random 60-90%
-                        borderColor: 'rgb(75, 192, 192)',
-                        backgroundColor: 'rgba(75, 192, 192, 0.2)'
-                    }]
-                },
-                options: {
-                    scales: {
-                        r: {
-                            beginAtZero: true,
-                            max: 100
-                        }
-                    }
-                }
-            });
-        } else if (chart.type === 'histogram' || chart.type === 'bar') {
-            // Histogram showing mark distribution
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['0-39%', '40-49%', '50-59%', '60-69%', '70-100%'],
-                    datasets: [{
-                        label: 'Number of Students',
-                        data: [2, 5, 12, 18, 8], // Example distribution
-                        backgroundColor: [
-                            'rgba(255, 99, 132, 0.5)',
-                            'rgba(255, 159, 64, 0.5)',
-                            'rgba(255, 205, 86, 0.5)',
-                            'rgba(75, 192, 192, 0.5)',
-                            'rgba(54, 162, 235, 0.5)'
-                        ],
-                        borderColor: [
-                            'rgb(255, 99, 132)',
-                            'rgb(255, 159, 64)',
-                            'rgb(255, 205, 86)',
-                            'rgb(75, 192, 192)',
-                            'rgb(54, 162, 235)'
-                        ],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Number of Students'
-                            }
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: chart.data_source === 'overall' ? 'Overall Mark Range' : `${chart.data_source} Mark Range`
-                            }
-                        }
-                    },
-                    plugins: {
-                        title: {
-                            display: false
-                        }
-                    }
-                }
-            });
-        }
-    });
+    renderFeedbackCharts(charts, categories);
 });
 </script>
 {% endif %}
