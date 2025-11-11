@@ -91,3 +91,43 @@ class SeparateViewsFT(FunctionalTestBase):
         # Should show total marks
         self.assertIn("Total", feedback_content)
         self.assertIn("100", feedback_content)
+    
+    def test_marks_mismatch_warning_appears_on_rubric_page(self):
+        """
+        GIVEN: A template where category marks don't match max marks
+        WHEN: Staff views the rubric page
+        THEN: They see a warning about the mismatch
+        """
+        # GIVEN: Create a template with mismatched marks (100 category total vs 150 max)
+        template = self.create_test_template()
+        template.max_marks = 150
+        template.save()
+        
+        # WHEN: Staff visits the rubric page
+        self.browser.get(self.live_server_url + f'/feedback/template/{template.id}/rubric/')
+        
+        # THEN: They see a warning
+        warning = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '.alert-warning')))
+        warning_text = warning.text
+        self.assertIn("100", warning_text, "Warning should show category total (100)")
+        self.assertIn("150", warning_text, "Warning should show max marks (150)")
+    
+    def test_marks_mismatch_warning_appears_on_feedback_sheet_page(self):
+        """
+        GIVEN: A template where category marks don't match max marks
+        WHEN: Staff views the feedback sheet page
+        THEN: They see a warning about the mismatch
+        """
+        # GIVEN: Create a template with mismatched marks (100 category total vs 150 max)
+        template = self.create_test_template()
+        template.max_marks = 150
+        template.save()
+        
+        # WHEN: Staff visits the feedback sheet page
+        self.browser.get(self.live_server_url + f'/feedback/template/{template.id}/feedback-sheet/')
+        
+        # THEN: They see a warning
+        warning = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '.alert-warning')))
+        warning_text = warning.text
+        self.assertIn("100", warning_text, "Warning should show category total (100)")
+        self.assertIn("150", warning_text, "Warning should show max marks (150)")

@@ -154,11 +154,20 @@ def template_feedback_sheet(request, pk):
             
         categories_with_bands.append(cat_data)
     
+    # Check if marks match
+    marks_mismatch = None
+    if tpl.max_marks and total_category_marks != tpl.max_marks:
+        marks_mismatch = {
+            'total': total_category_marks,
+            'max_marks': tpl.max_marks
+        }
+    
     return render(request, "feedback/template_feedback_sheet.html", {
         "template": tpl,
         "categories_with_bands": categories_with_bands,
         "total_marks": total_category_marks,
-        "charts": tpl.charts if tpl.charts else []
+        "charts": tpl.charts if tpl.charts else [],
+        "marks_mismatch": marks_mismatch
     })
 
 def template_delete(request, pk):

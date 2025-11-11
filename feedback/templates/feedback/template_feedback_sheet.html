@@ -40,16 +40,13 @@
                 
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <label class="form-label fw-bold">Student Name:</label>
-                        <input type="text" class="form-control" placeholder="[Student Name]" disabled>
+                        <p><strong>Student Name:</strong> <span class="text-muted">[Student Name]</span></p>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label fw-bold">Student ID:</label>
-                        <input type="text" class="form-control" placeholder="[Student ID]" disabled>
+                        <p><strong>Student ID:</strong> <span class="text-muted">[Student ID]</span></p>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label fw-bold">Date:</label>
-                        <input type="text" class="form-control" placeholder="[Date]" disabled>
+                        <p><strong>Date:</strong> <span class="text-muted">[Date]</span></p>
                     </div>
                 </div>
                 
@@ -67,23 +64,20 @@
                         <div class="row mb-3">
                             <div class="col-md-3">
                                 {% if cat.type == 'grade' %}
-                                <label class="form-label">Grade Awarded:</label>
-                                <select class="form-select" disabled>
-                                    <option>[Select Grade]</option>
+                                <p><strong>Grade Awarded:</strong></p>
+                                <p class="text-muted">[Select Grade from: 
                                     {% if cat.bands %}
-                                        {% for band in cat.bands %}
-                                        <option>{{ band.grade }}</option>
-                                        {% endfor %}
-                                    {% endif %}
-                                </select>
+                                        {% for band in cat.bands %}{{ band.grade }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                                    {% endif %}] [__ marks]
+                                </p>
                                 {% else %}
-                                <label class="form-label">Mark Awarded:</label>
-                                <input type="number" class="form-control" placeholder="0-{{ cat.max }}" min="0" max="{{ cat.max }}" disabled>
+                                <p><strong>Mark Awarded:</strong></p>
+                                <p class="text-muted">[0 - {{ cat.max }} marks]</p>
                                 {% endif %}
                             </div>
                             <div class="col-md-9">
-                                <label class="form-label">Comments / Feedback:</label>
-                                <textarea class="form-control" rows="3" placeholder="[Feedback comments for {{ cat.label }}]" disabled></textarea>
+                                <p><strong>Comments / Feedback:</strong></p>
+                                <p class="text-muted">[Feedback comments for {{ cat.label }}]</p>
                             </div>
                         </div>
                     </div>
@@ -104,22 +98,22 @@
                 </div>
                 
                 <div class="mt-4">
-                    <label class="form-label fw-bold">Overall Comments:</label>
-                    <textarea class="form-control" rows="4" placeholder="[Overall feedback and summary comments]" disabled></textarea>
+                    <p class="fw-bold">Overall Comments:</p>
+                    <p class="text-muted border rounded p-3 bg-light">[Overall feedback and summary comments]</p>
                 </div>
                 
                 <div class="row mt-4">
                     <div class="col-md-6">
-                        <label class="form-label fw-bold">Marker Name:</label>
-                        <input type="text" class="form-control" placeholder="[Marker Name]" disabled>
+                        <p><strong>Marker Name:</strong> <span class="text-muted">[Marker Name]</span></p>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label fw-bold">Date Marked:</label>
-                        <input type="text" class="form-control" placeholder="[Date Marked]" disabled>
+                        <p><strong>Date Marked:</strong> <span class="text-muted">[Date Marked]</span></p>
                     </div>
                 </div>
             </div>
         </div>
+        
+        {% include 'feedback/partials/marks_mismatch_warning.html' %}
         
         {% include "feedback/partials/charts_display.html" %}
         

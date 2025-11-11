@@ -48,11 +48,7 @@
             </div>
         </div>
         
-        {% if marks_mismatch %}
-        <div class="alert alert-warning mt-3" role="alert">
-            <strong>Warning:</strong> Category marks total {{ marks_mismatch.total }}, but max marks is set to {{ marks_mismatch.max_marks }}.
-        </div>
-        {% endif %}
+        {% include 'feedback/partials/marks_mismatch_warning.html' %}
         
         <div class="card">
             <div class="card-header">

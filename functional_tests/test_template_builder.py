@@ -219,11 +219,12 @@ class TemplateBuilderFT(FunctionalTestBase):
         self.add_category_row()
         self.fill_category(1, "Part B", 50)
         
+        # Wait for autosave to trigger (which calls checkMaxMarksMatch)
         import time
-        time.sleep(0.5)
+        time.sleep(1.5)
         
-        # THEN: They should see a warning alert
-        warning = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".alert-warning")))
+        # THEN: They should see a warning alert (visible, not just present)
+        warning = self.wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".alert-warning")))
         warning_text = warning.text
         self.assertIn("90", warning_text, "Warning should show current total (90)")
         self.assertIn("100", warning_text, "Warning should show max marks (100)")

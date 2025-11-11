@@ -215,16 +215,15 @@ function showValidationError(row, message) {
 }
 
 function checkMaxMarksMatch() {
-    // Remove any existing warning
-    const existingWarning = document.getElementById('max-marks-warning');
-    if (existingWarning) {
-        existingWarning.remove();
-    }
-    
     const maxMarksInput = document.getElementById('max_marks');
     const maxMarks = maxMarksInput && maxMarksInput.value ? parseInt(maxMarksInput.value) : null;
     
-    if (!maxMarks) return; // No max marks set, no warning needed
+    if (!maxMarks) {
+        // No max marks set, hide warning
+        const warning = document.getElementById('max-marks-warning');
+        if (warning) warning.style.display = 'none';
+        return;
+    }
     
     // Calculate total from categories
     let totalCategoryMarks = 0;
@@ -236,21 +235,14 @@ function checkMaxMarksMatch() {
         }
     });
     
-    // Show warning if they don't match
+    // Show/hide warning if they don't match
+    const warning = document.getElementById('max-marks-warning');
     if (totalCategoryMarks !== maxMarks && totalCategoryMarks > 0) {
-        const warning = document.createElement('div');
-        warning.id = 'max-marks-warning';
-        warning.className = 'alert alert-warning';
-        warning.innerHTML = `
-            <strong>Warning:</strong> Category marks total ${totalCategoryMarks}, but max marks is set to ${maxMarks}.
-        `;
-        
-        // Insert warning before the rubric categories card
-        const categoriesContainer = document.getElementById('categories');
-        const categoriesCard = categoriesContainer?.closest('.card');
-        if (categoriesCard) {
-            categoriesCard.parentNode.insertBefore(warning, categoriesCard);
-        }
+        document.getElementById('marks-total').textContent = totalCategoryMarks;
+        document.getElementById('marks-max').textContent = maxMarks;
+        warning.style.display = 'block';
+    } else {
+        warning.style.display = 'none';
     }
 }
 

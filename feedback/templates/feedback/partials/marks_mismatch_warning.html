@@ -1,0 +1,5 @@
+{% if marks_mismatch %}
+<div class="alert alert-warning mt-3" role="alert">
+    <strong>Warning:</strong> Category marks total {{ marks_mismatch.total }}, but max marks is set to {{ marks_mismatch.max_marks }}.
+</div>
+{% endif %}
