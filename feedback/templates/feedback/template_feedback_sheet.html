@@ -18,6 +18,7 @@
             <div class="card-header bg-primary text-white">
                 <h5 class="mb-0">{{ template.module_code }} - {{ template.title }}</h5>
             </div>
+            {% include 'feedback/partials/marks_mismatch_warning.html' %}
             <div class="card-body">
                 <div class="row mb-3">
                     <div class="col-md-3">
@@ -112,8 +113,6 @@
                 </div>
             </div>
         </div>
-        
-        {% include 'feedback/partials/marks_mismatch_warning.html' %}
         
         {% include "feedback/partials/charts_display.html" %}
         
