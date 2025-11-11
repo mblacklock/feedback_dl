@@ -269,3 +269,57 @@ class FunctionalTestBase(StaticLiveServerTestCase):
     def wait_for_autosave(self, seconds=2):
         """Wait for autosave to complete. Uses time-based wait for reliability."""
         time.sleep(seconds)
+    
+    # ===== Test Data Helpers =====
+    
+    def create_test_template(self, **kwargs):
+        """
+        Create a test template with sensible defaults.
+        
+        Args:
+            **kwargs: Override any default values. Common overrides:
+                - title, module_code, module_title, assessment_title
+                - component, weighting, max_marks
+                - categories (list of dicts)
+        
+        Returns:
+            AssessmentTemplate instance
+        """
+        from feedback.models import AssessmentTemplate
+        
+        defaults = {
+            "component": 1,
+            "title": "Software Engineering",
+            "module_code": "CS301",
+            "module_title": "Advanced Software Development",
+            "assessment_title": "Coursework 1",
+            "weighting": 40,
+            "max_marks": 100,
+            "categories": [
+                {
+                    "label": "Design",
+                    "max": 30,
+                    "type": "grade",
+                    "subdivision": "high_low",
+                    "grade_band_descriptions": {
+                        "1st": "Excellent design with clear justification",
+                        "2:1": "Good design with adequate justification"
+                    }
+                },
+                {
+                    "label": "Implementation",
+                    "max": 40,
+                    "type": "grade",
+                    "subdivision": "none"
+                },
+                {
+                    "label": "Testing",
+                    "max": 30,
+                    "type": "numeric"
+                }
+            ]
+        }
+        
+        # Merge kwargs into defaults
+        defaults.update(kwargs)
+        return AssessmentTemplate.objects.create(**defaults)

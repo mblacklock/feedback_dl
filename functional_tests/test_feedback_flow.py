@@ -134,8 +134,7 @@ class FeedbackFT(FunctionalTestBase):
         THEN: The template is removed from the list
         """
         # GIVEN: Create a test template
-        template = AssessmentTemplate.objects.create(
-            component=1,
+        template = self.create_test_template(
             title="Test Template",
             module_code="TEST101",
             assessment_title="Test Assessment",

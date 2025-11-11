@@ -19,38 +19,7 @@ class SeparateViewsFT(FunctionalTestBase):
         AND: Each view shows appropriate content for its purpose
         """
         # GIVEN: Create a template with grade bands
-        template = AssessmentTemplate.objects.create(
-            component=1,
-            title="Software Engineering",
-            module_code="CS301",
-            module_title="Advanced Software Development",
-            assessment_title="Coursework 1",
-            weighting=40,
-            max_marks=100,
-            categories=[
-                {
-                    "label": "Design",
-                    "max": 30,
-                    "type": "grade",
-                    "subdivision": "high_low",
-                    "grade_band_descriptions": {
-                        "1st": "Excellent design with clear justification",
-                        "2:1": "Good design with adequate justification"
-                    }
-                },
-                {
-                    "label": "Implementation",
-                    "max": 40,
-                    "type": "grade",
-                    "subdivision": "none"
-                },
-                {
-                    "label": "Testing",
-                    "max": 30,
-                    "type": "numeric"
-                }
-            ]
-        )
+        template = self.create_test_template()
         
         # WHEN: Staff member visits the home page
         self.navigate_to_home()
