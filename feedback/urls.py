@@ -4,7 +4,8 @@ from . import views
 urlpatterns = [
     path("", views.home, name="home"),
     path("template/new/", views.template_new, name="template_new"),
-    path("template/<int:pk>/", views.template_summary, name="template_summary"),
+    path("template/<int:pk>/rubric/", views.template_rubric, name="template_rubric"),
+    path("template/<int:pk>/feedback-sheet/", views.template_feedback_sheet, name="template_feedback_sheet"),
     path("template/<int:pk>/edit/", views.template_edit, name="template_edit"),
     path("template/<int:pk>/update/", views.template_update, name="template_update"),
     path("template/<int:pk>/delete/", views.template_delete, name="template_delete"),

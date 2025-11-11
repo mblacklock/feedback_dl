@@ -94,7 +94,8 @@ def grade_bands_preview(request):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=400)
 
-def template_summary(request, pk):
+def template_rubric(request, pk):
+    """View rubric for pasting into assessment briefs"""
     tpl = AssessmentTemplate.objects.get(pk=pk)
     
     # Calculate grade bands for each category
@@ -126,10 +127,35 @@ def template_summary(request, pk):
             'max_marks': tpl.max_marks
         }
     
-    return render(request, "feedback/template_summary.html", {
+    return render(request, "feedback/template_rubric.html", {
         "template": tpl,
         "categories_with_bands": categories_with_bands,
         "marks_mismatch": marks_mismatch
+    })
+
+def template_feedback_sheet(request, pk):
+    """View example feedback sheet for students"""
+    tpl = AssessmentTemplate.objects.get(pk=pk)
+    
+    # Calculate grade bands for each category (for reference)
+    categories_with_bands = []
+    total_category_marks = 0
+    for cat in tpl.categories:
+        cat_data = cat.copy()
+        total_category_marks += cat.get("max", 0)
+        
+        if cat.get("type") == "grade" and cat.get("subdivision"):
+            bands = calculate_grade_bands(cat["max"], cat["subdivision"])
+            cat_data["bands"] = bands
+            grouped_bands = _group_bands_by_main_grade(bands)
+            cat_data["grouped_bands"] = grouped_bands
+            
+        categories_with_bands.append(cat_data)
+    
+    return render(request, "feedback/template_feedback_sheet.html", {
+        "template": tpl,
+        "categories_with_bands": categories_with_bands,
+        "total_marks": total_category_marks
     })
 
 def template_delete(request, pk):

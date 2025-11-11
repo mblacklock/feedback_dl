@@ -35,7 +35,7 @@ class TemplateAutoSaveFT(FunctionalTestBase):
         self.assertIn("Sav", save_status.text)  # Catches both "Saving" and "Saved"
         
         # WHEN they click "View Template" button
-        self.click_view_template()
+        self.click_view_rubric()
         
         # THEN they see the view page with their saved data
         h1 = self.wait.until(EC.presence_of_element_located((By.TAG_NAME, "h1")))
@@ -111,7 +111,7 @@ class TemplateAutoSaveFT(FunctionalTestBase):
         
         # WHEN they save and navigate to view and back to edit
         self.wait_for_autosave()
-        self.click_view_template()
+        self.click_view_rubric()
         self.click_edit_template()
         
         # THEN both categories should still work independently
@@ -147,7 +147,7 @@ class TemplateAutoSaveFT(FunctionalTestBase):
         self.wait_for_autosave()
         
         # WHEN they go to View Template and back to Edit
-        self.click_view_template()
+        self.click_view_rubric()
         self.click_edit_template()
         
         # THEN the first category should still have all its data

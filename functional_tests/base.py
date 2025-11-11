@@ -52,16 +52,31 @@ class FunctionalTestBase(StaticLiveServerTestCase):
         """Wait for the template edit page to load."""
         self.wait.until(EC.url_matches(r'/feedback/template/\d+/edit/'))
     
-    def wait_for_summary_page(self):
-        """Wait for the template summary page to load."""
-        self.wait.until(EC.url_matches(r'/feedback/template/\d+/$'))
+    def wait_for_rubric_page(self):
+        """Wait for the template rubric page to load."""
+        self.wait.until(EC.url_matches(r'/feedback/template/\d+/rubric/'))
     
-    def click_view_template(self):
-        """Click 'View Template' button and wait for summary page."""
-        view_btn = self.browser.find_element(By.ID, "view-template")
+    def wait_for_feedback_sheet_page(self):
+        """Wait for the feedback sheet page to load."""
+        self.wait.until(EC.url_matches(r'/feedback/template/\d+/feedback-sheet/'))
+    
+    def click_view_rubric(self):
+        """Click 'View Rubric' button and wait for rubric page."""
+        view_btn = self.wait.until(
+            EC.presence_of_element_located((By.LINK_TEXT, "View Rubric"))
+        )
         self.browser.execute_script("arguments[0].scrollIntoView(true);", view_btn)
         self.browser.execute_script("arguments[0].click();", view_btn)
-        self.wait_for_summary_page()
+        self.wait_for_rubric_page()
+    
+    def click_view_feedback_sheet(self):
+        """Click 'View Feedback Sheet' button and wait for feedback sheet page."""
+        view_btn = self.wait.until(
+            EC.presence_of_element_located((By.LINK_TEXT, "View Feedback Sheet"))
+        )
+        self.browser.execute_script("arguments[0].scrollIntoView(true);", view_btn)
+        self.browser.execute_script("arguments[0].click();", view_btn)
+        self.wait_for_feedback_sheet_page()
     
     def click_edit_template(self):
         """Click 'Edit Template' link and wait for edit page."""

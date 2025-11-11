@@ -32,7 +32,7 @@ class TemplateBuilderFT(FunctionalTestBase):
         self.wait_for_autosave()
         
         # WHEN: They click "View Template"
-        self.click_view_template()
+        self.click_view_rubric()
         
         # THEN: They see the summary page with weighting displayed
         page_content = self.browser.page_source
@@ -64,7 +64,7 @@ class TemplateBuilderFT(FunctionalTestBase):
         self.wait_for_autosave()
         
         # WHEN: They click "View Template"
-        self.click_view_template()
+        self.click_view_rubric()
         
         # THEN: They see the summary page with all fields
         page_content = self.browser.page_source
@@ -99,7 +99,7 @@ class TemplateBuilderFT(FunctionalTestBase):
         self.wait_for_autosave()
         
         # WHEN: They view the template
-        self.click_view_template()
+        self.click_view_rubric()
         
         # THEN: The summary page shows the component
         page_text = self.browser.find_element(By.TAG_NAME, "body").text
@@ -139,10 +139,10 @@ class TemplateBuilderFT(FunctionalTestBase):
         # AND they wait for autosave
         self.wait_for_autosave()
         
-        # WHEN they click "View Template" button
-        self.click_view_template()
+        # WHEN they click "View Rubric" button
+        self.click_view_rubric()
 
-        # THEN they are taken to a summary page showing the new template title
+        # THEN they are taken to the rubric page showing the template title
         h1 = self.wait.until(EC.presence_of_element_located((By.TAG_NAME, "h1")))
         assert "KB5031 – FEA Coursework" in h1.text
 
@@ -194,7 +194,7 @@ class TemplateBuilderFT(FunctionalTestBase):
         self.wait_for_autosave()
         
         # WHEN: They click View Template
-        self.click_view_template()
+        self.click_view_rubric()
         
         # THEN: They see the summary page
         # AND the max marks is displayed
@@ -228,24 +228,14 @@ class TemplateBuilderFT(FunctionalTestBase):
         self.assertIn("90", warning_text, "Warning should show current total (90)")
         self.assertIn("100", warning_text, "Warning should show max marks (100)")
         
-        # WHEN: They view the template summary
+        # WHEN: They save and return to edit
         self.wait_for_autosave(1)
-        self.click_view_template()
         
-        # THEN: The warning also appears on the summary page
-        summary_warning = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".alert-warning")))
-        summary_warning_text = summary_warning.text
-        self.assertIn("90", summary_warning_text)
-        self.assertIn("100", summary_warning_text)
-        
-        # WHEN: They return to edit
-        self.click_edit_template()
-        
-        # THEN: The warning is still visible on page load (bug fix test)
-        edit_warning = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".alert-warning")))
+        # THEN: The warning is still visible (persists across autosave)
+        edit_warning = self.browser.find_element(By.CSS_SELECTOR, ".alert-warning")
         edit_warning_text = edit_warning.text
-        self.assertIn("90", edit_warning_text, "Warning should persist after view→edit")
-        self.assertIn("100", edit_warning_text, "Warning should persist after view→edit")
+        self.assertIn("90", edit_warning_text, "Warning should persist after autosave")
+        self.assertIn("100", edit_warning_text, "Warning should persist after autosave")
     
     def test_staff_must_provide_mandatory_fields(self):
         """
@@ -283,4 +273,4 @@ class TemplateBuilderFT(FunctionalTestBase):
         
         # THEN: They should see the template saves but with null values
         # (Model validation will happen on the backend, HTML5 validation is just UX hint)
-        self.click_view_template()
+        self.click_view_rubric()

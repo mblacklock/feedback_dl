@@ -48,10 +48,10 @@ class GradeBandDescriptionsFT(FunctionalTestBase):
         # Wait for auto-save
         self.wait_for_autosave()
         
-        # WHEN they click "View Template"
-        self.click_view_template()
+        # WHEN they click "View Rubric"
+        self.click_view_rubric()
         
-        # AND the grade bands are displayed in a card grid format
+        # THEN the grade bands are displayed in a card grid format
         summary_grid = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".grade-bands-grid")))
         
         # AND the descriptions they entered are visible
@@ -122,7 +122,7 @@ class GradeBandDescriptionsFT(FunctionalTestBase):
         self.wait_for_autosave()
         
         # AND they navigate to view and back to edit
-        self.click_view_template()
+        self.click_view_rubric()
         self.click_edit_template()
         
         # AND they switch back to Grade type

@@ -67,17 +67,19 @@ class FeedbackFT(FunctionalTestBase):
         self.assertIn("Assignment 1", second_item.text)
         self.assertIn("2 categories", second_item.text)
         
-        # AND: Each template has View and Edit buttons
-        view_buttons = self.browser.find_elements(By.LINK_TEXT, "View")
+        # AND: Each template has Rubric, Feedback Sheet, and Edit buttons
+        rubric_buttons = self.browser.find_elements(By.LINK_TEXT, "Rubric")
+        feedback_sheet_buttons = self.browser.find_elements(By.LINK_TEXT, "Feedback Sheet")
         edit_buttons = self.browser.find_elements(By.LINK_TEXT, "Edit")
-        self.assertEqual(len(view_buttons), 2)
+        self.assertEqual(len(rubric_buttons), 2)
+        self.assertEqual(len(feedback_sheet_buttons), 2)
         self.assertEqual(len(edit_buttons), 2)
         
-        # WHEN: Staff member clicks View button on first template
-        view_buttons[0].click()
+        # WHEN: Staff member clicks Rubric button on first template
+        rubric_buttons[0].click()
         
-        # THEN: They are taken to the template summary page
-        self.wait.until(EC.url_contains(f"/feedback/template/{template2.pk}/"))
+        # THEN: They are taken to the rubric page
+        self.wait.until(EC.url_contains(f"/feedback/template/{template2.pk}/rubric/"))
         self.assertIn("Database Systems", self.browser.page_source)
         
         # WHEN: They go back to home

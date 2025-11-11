@@ -143,8 +143,9 @@ class TemplateUpdateViewTests(TestCase):
         # Check for Back to Home button
         self.assertContains(resp, 'Back to Home')
         self.assertContains(resp, 'href="/feedback/"')
-        # Check for View Template button
-        self.assertContains(resp, 'View Template')
+        # Check for View Rubric and View Feedback Sheet buttons
+        self.assertContains(resp, 'View Rubric')
+        self.assertContains(resp, 'View Feedback Sheet')
     
     def test_post_update_saves_weighting_field(self):
         """POST /feedback/template/<pk>/update/ saves the weighting field."""
@@ -305,7 +306,8 @@ class TemplateBuilderViewTests(TestCase):
         self.assertContains(res, 'id="categories"')
         self.assertContains(res, 'id="add-category"')
         self.assertContains(res, 'id="save-status"')
-        self.assertContains(res, 'id="view-template"')
+        self.assertContains(res, 'View Rubric')
+        self.assertContains(res, 'View Feedback Sheet')
 
 class GradeBandsPreviewTests(TestCase):
     def test_grade_bands_preview_returns_html_for_valid_params(self):
@@ -359,3 +361,116 @@ class GradeBandsPreviewTests(TestCase):
         import json
         data = json.loads(res.content)
         self.assertEqual(data["html"], "")
+
+
+class TemplateSeparateViewsTest(TestCase):
+    """Test that staff can view rubric and feedback sheet separately"""
+    
+    def test_template_rubric_view_shows_grade_bands(self):
+        """Rubric view shows categories with grade bands"""
+        template = AssessmentTemplate.objects.create(
+            component=1,
+            title="Software Engineering",
+            module_code="CS301",
+            module_title="Advanced Software",
+            assessment_title="CW1",
+            weighting=40,
+            max_marks=50,
+            categories=[
+                {
+                    "label": "Design",
+                    "max": 30,
+                    "type": "grade",
+                    "subdivision": "high_low",
+                    "grade_band_descriptions": {
+                        "1st": "Excellent design"
+                    }
+                },
+                {
+                    "label": "Testing",
+                    "max": 20,
+                    "type": "numeric"
+                }
+            ]
+        )
+        
+        resp = self.client.get(f"/feedback/template/{template.pk}/rubric/")
+        self.assertEqual(resp.status_code, 200)
+        
+        # Should show module info
+        self.assertContains(resp, "CS301")
+        self.assertContains(resp, "Software Engineering")
+        
+        # Should show categories
+        self.assertContains(resp, "Design")
+        self.assertContains(resp, "30 marks")
+        self.assertContains(resp, "Testing")
+        self.assertContains(resp, "Numeric scoring")
+        
+        # Should show grade bands
+        self.assertContains(resp, "High 1st")
+        self.assertContains(resp, "Low 1st")
+        self.assertContains(resp, "Excellent design")
+        
+        # Should NOT show student fields
+        self.assertNotContains(resp, "Student Name")
+        self.assertNotContains(resp, "Mark Awarded")
+    
+    def test_template_feedback_sheet_view_shows_student_fields(self):
+        """Feedback sheet view shows student fields and mark entry areas"""
+        template = AssessmentTemplate.objects.create(
+            component=1,
+            title="Software Engineering",
+            module_code="CS301",
+            assessment_title="CW1",
+            max_marks=50,
+            categories=[
+                {"label": "Design", "max": 30, "type": "grade", "subdivision": "none"},
+                {"label": "Testing", "max": 20, "type": "numeric"}
+            ]
+        )
+        
+        resp = self.client.get(f"/feedback/template/{template.pk}/feedback-sheet/")
+        self.assertEqual(resp.status_code, 200)
+        
+        # Should show module info
+        self.assertContains(resp, "CS301")
+        self.assertContains(resp, "Software Engineering")
+        
+        # Should show student fields
+        self.assertContains(resp, "Student Name")
+        self.assertContains(resp, "Student ID")
+        
+        # Should show categories
+        self.assertContains(resp, "Design")
+        self.assertContains(resp, "Testing")
+        
+        # Should show total marks
+        self.assertContains(resp, "Total")
+        self.assertContains(resp, "50")
+    
+    def test_rubric_url_pattern(self):
+        """Rubric URL pattern resolves correctly"""
+        template = AssessmentTemplate.objects.create(
+            component=1,
+            title="Test",
+            module_code="CS101",
+            assessment_title="Test",
+            categories=[]
+        )
+        
+        url = reverse('template_rubric', kwargs={'pk': template.pk})
+        self.assertEqual(url, f"/feedback/template/{template.pk}/rubric/")
+    
+    def test_feedback_sheet_url_pattern(self):
+        """Feedback sheet URL pattern resolves correctly"""
+        template = AssessmentTemplate.objects.create(
+            component=1,
+            title="Test",
+            module_code="CS101",
+            assessment_title="Test",
+            categories=[]
+        )
+        
+        url = reverse('template_feedback_sheet', kwargs={'pk': template.pk})
+        self.assertEqual(url, f"/feedback/template/{template.pk}/feedback-sheet/")
