@@ -12,7 +12,7 @@ function renderFeedbackCharts(charts, categories) {
         
         if (chart.type === 'radar') {
             renderRadarChart(ctx, chart);
-        } else if (chart.type === 'histogram' || chart.type === 'bar') {
+        } else if (chart.type === 'histogram') {
             renderHistogramChart(ctx, chart);
         }
     });

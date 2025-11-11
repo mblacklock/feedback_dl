@@ -81,7 +81,7 @@ class AssessmentTemplate(models.Model):
         
         # Validate charts
         if self.charts:
-            VALID_CHART_TYPES = ["histogram", "radar", "bar"]
+            VALID_CHART_TYPES = ["histogram", "radar"]
             
             for idx, chart in enumerate(self.charts):
                 chart_num = idx + 1
@@ -110,11 +110,11 @@ class AssessmentTemplate(models.Model):
                             if cat_label not in category_labels:
                                 errors.append(f"Chart {chart_num}: category '{cat_label}' not found in template")
                 
-                elif chart_type in ["histogram", "bar"]:
-                    # Histogram/bar needs data source
+                elif chart_type == "histogram":
+                    # Histogram needs data source
                     data_source = chart.get("data_source")
                     if not data_source:
-                        errors.append(f"Chart {chart_num}: '{chart_type}' requires 'data_source' field")
+                        errors.append(f"Chart {chart_num}: 'histogram' requires 'data_source' field")
                     elif data_source != "overall":
                         # Check if it's a valid category label
                         category_labels = [cat.get("label") for cat in self.categories]

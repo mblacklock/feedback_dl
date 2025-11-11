@@ -526,7 +526,7 @@ class ChartConfigTests(TestCase):
         self.assertIn("'type' is required", str(cm.exception))
     
     def test_chart_type_must_be_valid(self):
-        """Chart type must be histogram, radar, or bar."""
+        """Chart type must be histogram or radar."""
         tpl = AssessmentTemplate(
             component=1,
             title="Test Template",

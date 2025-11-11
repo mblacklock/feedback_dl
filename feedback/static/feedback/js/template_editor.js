@@ -407,7 +407,7 @@ function saveNow() {
                 selectedCategories.push(checkbox.value);
             });
             chart.categories = selectedCategories;
-        } else if (type === 'histogram' || type === 'bar') {
+        } else if (type === 'histogram') {
             const dataSource = row.querySelector('.chart-data-source').value;
             chart.data_source = dataSource;
         }
@@ -588,7 +588,6 @@ function addChartRow(chartData = null) {
                 <select class="form-control chart-type">
                     <option value="radar" ${chartType === 'radar' ? 'selected' : ''}>Radar</option>
                     <option value="histogram" ${chartType === 'histogram' ? 'selected' : ''}>Histogram</option>
-                    <option value="bar" ${chartType === 'bar' ? 'selected' : ''}>Bar</option>
                 </select>
             </div>
             <div class="col-md-7">
@@ -674,8 +673,8 @@ function renderChartConfig(row, chartType, existingData = {}) {
             checkbox.addEventListener('change', debouncedSave);
         });
         
-    } else if (chartType === 'histogram' || chartType === 'bar') {
-        // Histogram/bar needs data source selection
+    } else if (chartType === 'histogram') {
+        // Histogram needs data source selection
         const currentCategories = window.templateData && window.templateData.categories ? window.templateData.categories : [];
         const dataSource = existingData.dataSource || 'overall';
         

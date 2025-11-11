@@ -6,10 +6,10 @@
 ## Future Enhancements
 - Style feedback sheet
 - Ability to have non-mark category, e.g. for performance data
+- General assessment feedback/freeform comments
 - Create a marking spreadsheet from template
 - Import marking sheet (does this need a template? Same template as marking spreadsheet template?)
 - Generate individual feedback sheets
-- General assessment feedback
 - Add a changelog file
 
 ## AI suggested enhancements
