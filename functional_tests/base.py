@@ -115,9 +115,11 @@ class FunctionalTestBase(StaticLiveServerTestCase):
     
     def add_category_row(self):
         """Click 'Add Category' button to add a new category row."""
+        initial_count = len(self.get_category_rows())
         add_btn = self.browser.find_element(By.ID, "add-category")
         add_btn.click()
-        time.sleep(0.3)  # Brief wait for DOM update
+        # Wait for a new category row to appear
+        self.wait.until(lambda driver: len(self.get_category_rows()) > initial_count)
     
     def get_category_rows(self):
         """Get all category rows currently on the page."""
@@ -157,9 +159,9 @@ class FunctionalTestBase(StaticLiveServerTestCase):
             
             # Select subdivision if provided
             if subdivision:
-                time.sleep(0.2)  # Wait for subdivision controls to appear
-                subdivision_btn = row.find_element(
-                    By.CSS_SELECTOR, f"button[data-subdivision='{subdivision}']"
+                # Wait for subdivision controls to appear
+                subdivision_btn = self.wait.until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, f"button[data-subdivision='{subdivision}']"))
                 )
                 self.browser.execute_script("arguments[0].click();", subdivision_btn)
         else:
@@ -250,5 +252,5 @@ class FunctionalTestBase(StaticLiveServerTestCase):
     # ===== Wait Helpers =====
     
     def wait_for_autosave(self, seconds=2):
-        """Wait for autosave to complete."""
+        """Wait for autosave to complete. Uses time-based wait for reliability."""
         time.sleep(seconds)
