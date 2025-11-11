@@ -11,6 +11,11 @@ class AssessmentTemplate(models.Model):
     weighting = models.IntegerField(null=True, blank=True, help_text="Assessment weighting as percentage (e.g., 40 for 40%)")
     max_marks = models.IntegerField(null=True, blank=True, help_text="Maximum marks for the assessment (e.g., 100)")
     categories = models.JSONField(default=list)
+    charts = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Chart configurations for feedback sheet (e.g., histograms, radar charts)"
+    )
 
     def clean(self):
         """Validate categories structure, bounds, and required fields."""
@@ -70,6 +75,51 @@ class AssessmentTemplate(models.Model):
             # Numeric types shouldn't have subdivision
             if cat_type == "numeric" and cat.get("subdivision"):
                 errors.append(f"Category {cat_num}: numeric type cannot have subdivision")
+        
+        if errors:
+            raise ValidationError(errors)
+        
+        # Validate charts
+        if self.charts:
+            VALID_CHART_TYPES = ["histogram", "radar", "bar"]
+            
+            for idx, chart in enumerate(self.charts):
+                chart_num = idx + 1
+                
+                # Check chart type
+                chart_type = chart.get("type")
+                if not chart_type:
+                    errors.append(f"Chart {chart_num}: 'type' is required")
+                elif chart_type not in VALID_CHART_TYPES:
+                    errors.append(f"Chart {chart_num}: type must be one of {VALID_CHART_TYPES}")
+                
+                # Check title
+                if not chart.get("title", "").strip():
+                    errors.append(f"Chart {chart_num}: 'title' cannot be blank")
+                
+                # Validate data source based on chart type
+                if chart_type == "radar":
+                    # Radar needs list of category labels
+                    categories = chart.get("categories", [])
+                    if not categories or not isinstance(categories, list):
+                        errors.append(f"Chart {chart_num}: radar chart requires 'categories' list")
+                    else:
+                        # Check that referenced categories exist
+                        category_labels = [cat.get("label") for cat in self.categories]
+                        for cat_label in categories:
+                            if cat_label not in category_labels:
+                                errors.append(f"Chart {chart_num}: category '{cat_label}' not found in template")
+                
+                elif chart_type in ["histogram", "bar"]:
+                    # Histogram/bar needs data source
+                    data_source = chart.get("data_source")
+                    if not data_source:
+                        errors.append(f"Chart {chart_num}: '{chart_type}' requires 'data_source' field")
+                    elif data_source != "overall":
+                        # Check if it's a valid category label
+                        category_labels = [cat.get("label") for cat in self.categories]
+                        if data_source not in category_labels:
+                            errors.append(f"Chart {chart_num}: data_source '{data_source}' must be 'overall' or a valid category label")
         
         if errors:
             raise ValidationError(errors)

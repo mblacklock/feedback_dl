@@ -474,3 +474,100 @@ class TemplateSeparateViewsTest(TestCase):
         
         url = reverse('template_feedback_sheet', kwargs={'pk': template.pk})
         self.assertEqual(url, f"/feedback/template/{template.pk}/feedback-sheet/")
+
+
+class ChartViewTests(TestCase):
+    """Tests for chart configuration in template views"""
+    
+    def test_template_update_accepts_charts_field(self):
+        """POST /feedback/template/<pk>/update/ can save charts"""
+        import json
+        template = AssessmentTemplate.objects.create(
+            component=1,
+            title="Test Template",
+            module_code="CS101",
+            module_title="Intro to CS",
+            assessment_title="Exam",
+            weighting=50,
+            max_marks=100,
+            categories=[
+                {"label": "Design", "max": 30},
+                {"label": "Implementation", "max": 70}
+            ]
+        )
+        
+        url = reverse("template_update", args=[template.pk])
+        charts = [
+            {
+                "type": "radar",
+                "title": "Performance Breakdown",
+                "categories": ["Design", "Implementation"]
+            }
+        ]
+        
+        data = {
+            "title": "Test Template",
+            "module_code": "CS101",
+            "module_title": "Intro to CS",
+            "assessment_title": "Exam",
+            "component": 1,
+            "weighting": 50,
+            "max_marks": 100,
+            "categories": template.categories,
+            "charts": charts
+        }
+        
+        resp = self.client.post(url, json.dumps(data), content_type="application/json")
+        self.assertEqual(resp.status_code, 200)
+        
+        # Reload and verify
+        template.refresh_from_db()
+        self.assertEqual(len(template.charts), 1)
+        self.assertEqual(template.charts[0]["type"], "radar")
+        self.assertEqual(template.charts[0]["title"], "Performance Breakdown")
+    
+    def test_feedback_sheet_view_passes_charts_to_template(self):
+        """Feedback sheet view includes charts in context"""
+        template = AssessmentTemplate.objects.create(
+            component=1,
+            title="Test Template",
+            module_code="CS101",
+            module_title="Intro to CS",
+            assessment_title="Exam",
+            weighting=50,
+            max_marks=100,
+            categories=[{"label": "Section 1", "max": 100}],
+            charts=[
+                {
+                    "type": "histogram",
+                    "title": "Class Distribution",
+                    "data_source": "overall"
+                }
+            ]
+        )
+        
+        resp = self.client.get(f"/feedback/template/{template.pk}/feedback-sheet/")
+        self.assertEqual(resp.status_code, 200)
+        
+        # Check charts are in context
+        self.assertIn("charts", resp.context)
+        self.assertEqual(len(resp.context["charts"]), 1)
+        self.assertEqual(resp.context["charts"][0]["type"], "histogram")
+    
+    def test_feedback_sheet_with_empty_charts(self):
+        """Feedback sheet works with no charts configured"""
+        template = AssessmentTemplate.objects.create(
+            component=1,
+            title="Test Template",
+            module_code="CS101",
+            module_title="Intro to CS",
+            assessment_title="Exam",
+            weighting=50,
+            max_marks=100,
+            categories=[{"label": "Section 1", "max": 100}],
+            charts=[]
+        )
+        
+        resp = self.client.get(f"/feedback/template/{template.pk}/feedback-sheet/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(resp.context["charts"]), 0)

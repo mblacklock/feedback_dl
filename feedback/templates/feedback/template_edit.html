@@ -83,6 +83,25 @@
                 </div>
             </div>
         </div>
+
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Charts for Feedback Sheet</h5>
+                <button type="button" class="btn btn-sm btn-success" id="add-chart">
+                    <i class="bi bi-plus-circle"></i> Add Chart
+                </button>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">
+                    Configure charts to display on the feedback sheet (using Chart.js).
+                    Radar charts show performance across multiple categories.
+                    Histograms show mark distribution for overall marks or specific categories.
+                </p>
+                <div id="charts">
+                    <!-- Chart rows will be added here by JavaScript -->
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -90,7 +109,8 @@
 // Pass template data to JavaScript
 window.templateData = {
     id: {{ template.id }},
-    categories: {{ categories_json|safe }}
+    categories: {{ categories_json|safe }},
+    charts: {{ template.charts|default:"[]"|safe }}
 };
 </script>
 {% endblock %}

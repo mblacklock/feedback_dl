@@ -61,6 +61,8 @@ def template_update(request, pk):
         tpl.component = data["component"]
     if "categories" in data:
         tpl.categories = data["categories"]
+    if "charts" in data:
+        tpl.charts = data["charts"]
     
     try:
         tpl.save()
@@ -155,7 +157,8 @@ def template_feedback_sheet(request, pk):
     return render(request, "feedback/template_feedback_sheet.html", {
         "template": tpl,
         "categories_with_bands": categories_with_bands,
-        "total_marks": total_category_marks
+        "total_marks": total_category_marks,
+        "charts": tpl.charts if tpl.charts else []
     })
 
 def template_delete(request, pk):

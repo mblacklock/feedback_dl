@@ -409,3 +409,289 @@ class AssessmentTemplateModelTests(TestCase):
         with self.assertRaises(ValidationError):
             tpl.full_clean()
 
+
+class ChartConfigTests(TestCase):
+    """Tests for chart configuration on AssessmentTemplate."""
+    
+    def test_can_create_template_with_empty_charts(self):
+        """Template can be created with no charts (empty list)."""
+        tpl = AssessmentTemplate.objects.create(
+            component=1,
+            title="Test Template",
+            module_code="CS101",
+            module_title="Intro to CS",
+            assessment_title="Exam",
+            weighting=50,
+            max_marks=100,
+            categories=[{"label": "Section 1", "max": 50}],
+            charts=[]
+        )
+        tpl.full_clean()
+        self.assertEqual(tpl.charts, [])
+    
+    def test_can_create_radar_chart(self):
+        """Can configure a radar chart showing multiple categories."""
+        tpl = AssessmentTemplate.objects.create(
+            component=1,
+            title="Test Template",
+            module_code="CS101",
+            module_title="Intro to CS",
+            assessment_title="Exam",
+            weighting=50,
+            max_marks=100,
+            categories=[
+                {"label": "Design", "max": 30},
+                {"label": "Implementation", "max": 40},
+                {"label": "Testing", "max": 30}
+            ],
+            charts=[
+                {
+                    "type": "radar",
+                    "title": "Performance Breakdown",
+                    "categories": ["Design", "Implementation", "Testing"]
+                }
+            ]
+        )
+        tpl.full_clean()
+        self.assertEqual(len(tpl.charts), 1)
+        self.assertEqual(tpl.charts[0]["type"], "radar")
+    
+    def test_can_create_histogram_for_overall_marks(self):
+        """Can configure a histogram showing overall mark distribution."""
+        tpl = AssessmentTemplate.objects.create(
+            component=1,
+            title="Test Template",
+            module_code="CS101",
+            module_title="Intro to CS",
+            assessment_title="Exam",
+            weighting=50,
+            max_marks=100,
+            categories=[{"label": "Section 1", "max": 100}],
+            charts=[
+                {
+                    "type": "histogram",
+                    "title": "Class Mark Distribution",
+                    "data_source": "overall"
+                }
+            ]
+        )
+        tpl.full_clean()
+        self.assertEqual(tpl.charts[0]["data_source"], "overall")
+    
+    def test_can_create_histogram_for_specific_category(self):
+        """Can configure a histogram for a specific category's marks."""
+        tpl = AssessmentTemplate.objects.create(
+            component=1,
+            title="Test Template",
+            module_code="CS101",
+            module_title="Intro to CS",
+            assessment_title="Exam",
+            weighting=50,
+            max_marks=100,
+            categories=[
+                {"label": "Design", "max": 30},
+                {"label": "Implementation", "max": 70}
+            ],
+            charts=[
+                {
+                    "type": "histogram",
+                    "title": "Design Marks Distribution",
+                    "data_source": "Design"
+                }
+            ]
+        )
+        tpl.full_clean()
+        self.assertEqual(tpl.charts[0]["data_source"], "Design")
+    
+    def test_chart_requires_type(self):
+        """Chart must have a type field."""
+        tpl = AssessmentTemplate(
+            component=1,
+            title="Test Template",
+            module_code="CS101",
+            module_title="Intro to CS",
+            assessment_title="Exam",
+            weighting=50,
+            max_marks=100,
+            categories=[{"label": "Section 1", "max": 100}],
+            charts=[
+                {
+                    "title": "Missing Type"
+                }
+            ]
+        )
+        with self.assertRaises(ValidationError) as cm:
+            tpl.full_clean()
+        self.assertIn("Chart 1", str(cm.exception))
+        self.assertIn("'type' is required", str(cm.exception))
+    
+    def test_chart_type_must_be_valid(self):
+        """Chart type must be histogram, radar, or bar."""
+        tpl = AssessmentTemplate(
+            component=1,
+            title="Test Template",
+            module_code="CS101",
+            module_title="Intro to CS",
+            assessment_title="Exam",
+            weighting=50,
+            max_marks=100,
+            categories=[{"label": "Section 1", "max": 100}],
+            charts=[
+                {
+                    "type": "pie",
+                    "title": "Invalid Type"
+                }
+            ]
+        )
+        with self.assertRaises(ValidationError) as cm:
+            tpl.full_clean()
+        self.assertIn("must be one of", str(cm.exception))
+    
+    def test_chart_requires_title(self):
+        """Chart must have a non-blank title."""
+        tpl = AssessmentTemplate(
+            component=1,
+            title="Test Template",
+            module_code="CS101",
+            module_title="Intro to CS",
+            assessment_title="Exam",
+            weighting=50,
+            max_marks=100,
+            categories=[{"label": "Section 1", "max": 100}],
+            charts=[
+                {
+                    "type": "histogram",
+                    "title": "",
+                    "data_source": "overall"
+                }
+            ]
+        )
+        with self.assertRaises(ValidationError) as cm:
+            tpl.full_clean()
+        self.assertIn("'title' cannot be blank", str(cm.exception))
+    
+    def test_radar_chart_requires_categories_list(self):
+        """Radar chart must specify categories to display."""
+        tpl = AssessmentTemplate(
+            component=1,
+            title="Test Template",
+            module_code="CS101",
+            module_title="Intro to CS",
+            assessment_title="Exam",
+            weighting=50,
+            max_marks=100,
+            categories=[{"label": "Section 1", "max": 100}],
+            charts=[
+                {
+                    "type": "radar",
+                    "title": "Missing Categories"
+                }
+            ]
+        )
+        with self.assertRaises(ValidationError) as cm:
+            tpl.full_clean()
+        self.assertIn("requires 'categories' list", str(cm.exception))
+    
+    def test_radar_chart_categories_must_exist_in_template(self):
+        """Radar chart categories must reference actual template categories."""
+        tpl = AssessmentTemplate(
+            component=1,
+            title="Test Template",
+            module_code="CS101",
+            module_title="Intro to CS",
+            assessment_title="Exam",
+            weighting=50,
+            max_marks=100,
+            categories=[{"label": "Design", "max": 50}],
+            charts=[
+                {
+                    "type": "radar",
+                    "title": "Performance",
+                    "categories": ["Design", "NonExistent"]
+                }
+            ]
+        )
+        with self.assertRaises(ValidationError) as cm:
+            tpl.full_clean()
+        self.assertIn("'NonExistent' not found", str(cm.exception))
+    
+    def test_histogram_requires_data_source(self):
+        """Histogram must specify data_source field."""
+        tpl = AssessmentTemplate(
+            component=1,
+            title="Test Template",
+            module_code="CS101",
+            module_title="Intro to CS",
+            assessment_title="Exam",
+            weighting=50,
+            max_marks=100,
+            categories=[{"label": "Section 1", "max": 100}],
+            charts=[
+                {
+                    "type": "histogram",
+                    "title": "Missing Data Source"
+                }
+            ]
+        )
+        with self.assertRaises(ValidationError) as cm:
+            tpl.full_clean()
+        self.assertIn("requires 'data_source'", str(cm.exception))
+    
+    def test_histogram_data_source_must_be_valid(self):
+        """Histogram data_source must be 'overall' or a valid category label."""
+        tpl = AssessmentTemplate(
+            component=1,
+            title="Test Template",
+            module_code="CS101",
+            module_title="Intro to CS",
+            assessment_title="Exam",
+            weighting=50,
+            max_marks=100,
+            categories=[{"label": "Design", "max": 50}],
+            charts=[
+                {
+                    "type": "histogram",
+                    "title": "Invalid Source",
+                    "data_source": "NonExistent"
+                }
+            ]
+        )
+        with self.assertRaises(ValidationError) as cm:
+            tpl.full_clean()
+        self.assertIn("must be 'overall' or a valid category label", str(cm.exception))
+    
+    def test_can_have_multiple_charts(self):
+        """Template can have multiple chart configurations."""
+        tpl = AssessmentTemplate.objects.create(
+            component=1,
+            title="Test Template",
+            module_code="CS101",
+            module_title="Intro to CS",
+            assessment_title="Exam",
+            weighting=50,
+            max_marks=100,
+            categories=[
+                {"label": "Design", "max": 30},
+                {"label": "Implementation", "max": 70}
+            ],
+            charts=[
+                {
+                    "type": "radar",
+                    "title": "Performance Breakdown",
+                    "categories": ["Design", "Implementation"]
+                },
+                {
+                    "type": "histogram",
+                    "title": "Overall Distribution",
+                    "data_source": "overall"
+                },
+                {
+                    "type": "histogram",
+                    "title": "Design Distribution",
+                    "data_source": "Design"
+                }
+            ]
+        )
+        tpl.full_clean()
+        self.assertEqual(len(tpl.charts), 3)
+

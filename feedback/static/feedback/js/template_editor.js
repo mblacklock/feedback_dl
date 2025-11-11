@@ -332,7 +332,8 @@ function saveNow() {
         weighting: document.getElementById('weighting').value ? parseInt(document.getElementById('weighting').value) : null,
         max_marks: document.getElementById('max_marks').value ? parseInt(document.getElementById('max_marks').value) : null,
         component: parseInt(document.getElementById('component').value),
-        categories: []
+        categories: [],
+        charts: []
     };
     
     // Collect categories
@@ -385,6 +386,33 @@ function saveNow() {
         }
         
         data.categories.push(category);
+    });
+    
+    // Collect charts
+    document.querySelectorAll('.chart-row').forEach(row => {
+        const title = row.querySelector('.chart-title').value.trim();
+        const type = row.querySelector('.chart-type').value;
+        
+        if (!title || !type) return; // Skip empty rows
+        
+        const chart = {
+            type: type,
+            title: title
+        };
+        
+        // Add type-specific configuration
+        if (type === 'radar') {
+            const selectedCategories = [];
+            row.querySelectorAll('.chart-category:checked').forEach(checkbox => {
+                selectedCategories.push(checkbox.value);
+            });
+            chart.categories = selectedCategories;
+        } else if (type === 'histogram' || type === 'bar') {
+            const dataSource = row.querySelector('.chart-data-source').value;
+            chart.data_source = dataSource;
+        }
+        
+        data.charts.push(chart);
     });
     
     // Get CSRF token
@@ -524,6 +552,153 @@ function getCategoryDataForRow(row) {
         return window.templateData.categories[rowIndex];
     }
     return null;
+}
+
+// ========== CHART CONFIGURATION ==========
+
+// Load existing charts on page load
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.templateData && window.templateData.charts && window.templateData.charts.length > 0) {
+        window.templateData.charts.forEach(chart => {
+            addChartRow(chart);
+        });
+    }
+});
+
+// Add chart button
+document.getElementById('add-chart').addEventListener('click', function() {
+    addChartRow();
+    debouncedSave();
+});
+
+function addChartRow(chartData = null) {
+    const container = document.getElementById('charts');
+    const row = document.createElement('div');
+    row.className = 'chart-row mb-4 p-3 border rounded';
+    
+    const chartType = chartData ? chartData.type : 'radar';
+    const title = chartData ? chartData.title : '';
+    const dataSource = chartData && chartData.data_source ? chartData.data_source : 'overall';
+    const categories = chartData && chartData.categories ? chartData.categories : [];
+    
+    row.innerHTML = `
+        <div class="row mb-2">
+            <div class="col-md-3">
+                <label class="form-label">Chart Type <span class="text-danger">*</span></label>
+                <select class="form-control chart-type">
+                    <option value="radar" ${chartType === 'radar' ? 'selected' : ''}>Radar</option>
+                    <option value="histogram" ${chartType === 'histogram' ? 'selected' : ''}>Histogram</option>
+                    <option value="bar" ${chartType === 'bar' ? 'selected' : ''}>Bar</option>
+                </select>
+            </div>
+            <div class="col-md-7">
+                <label class="form-label">Chart Title <span class="text-danger">*</span></label>
+                <input type="text" class="form-control chart-title" placeholder="e.g., Performance Breakdown" value="${title}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <button type="button" class="btn btn-danger btn-sm w-100 remove-chart">Remove</button>
+            </div>
+        </div>
+        <div class="row chart-config">
+            <!-- Chart-specific configuration will be inserted here -->
+        </div>
+    `;
+    
+    container.appendChild(row);
+    
+    // Render configuration based on chart type
+    renderChartConfig(row, chartType, { dataSource, categories });
+    
+    // Set up event handlers
+    setupChartRowEventHandlers(row);
+}
+
+function setupChartRowEventHandlers(row) {
+    const typeSelect = row.querySelector('.chart-type');
+    const titleInput = row.querySelector('.chart-title');
+    const removeButton = row.querySelector('.remove-chart');
+    
+    // Auto-save on input changes
+    titleInput.addEventListener('input', debouncedSave);
+    titleInput.addEventListener('blur', saveNow);
+    
+    // Handle chart type changes
+    typeSelect.addEventListener('change', function() {
+        const newType = this.value;
+        renderChartConfig(row, newType);
+        debouncedSave();
+    });
+    
+    // Handle remove button
+    removeButton.addEventListener('click', function() {
+        row.remove();
+        debouncedSave();
+    });
+}
+
+function renderChartConfig(row, chartType, existingData = {}) {
+    const configContainer = row.querySelector('.chart-config');
+    
+    if (chartType === 'radar') {
+        // Radar chart needs category selection
+        const currentCategories = window.templateData && window.templateData.categories ? window.templateData.categories : [];
+        const selectedCategories = existingData.categories || [];
+        
+        let checkboxesHtml = currentCategories.map(cat => {
+            const isChecked = selectedCategories.includes(cat.label);
+            return `
+                <div class="form-check">
+                    <input class="form-check-input chart-category" type="checkbox" value="${cat.label}" ${isChecked ? 'checked' : ''}>
+                    <label class="form-check-label">${cat.label}</label>
+                </div>
+            `;
+        }).join('');
+        
+        if (currentCategories.length === 0) {
+            checkboxesHtml = '<p class="text-muted">No categories available. Add categories above first.</p>';
+        }
+        
+        configContainer.innerHTML = `
+            <div class="col-md-12">
+                <label class="form-label">Select Categories <span class="text-danger">*</span></label>
+                <div class="category-checkboxes">
+                    ${checkboxesHtml}
+                </div>
+                <small class="form-text text-muted">Select which categories to display on the radar chart.</small>
+            </div>
+        `;
+        
+        // Add event listeners to checkboxes
+        configContainer.querySelectorAll('.chart-category').forEach(checkbox => {
+            checkbox.addEventListener('change', debouncedSave);
+        });
+        
+    } else if (chartType === 'histogram' || chartType === 'bar') {
+        // Histogram/bar needs data source selection
+        const currentCategories = window.templateData && window.templateData.categories ? window.templateData.categories : [];
+        const dataSource = existingData.dataSource || 'overall';
+        
+        let optionsHtml = '<option value="overall" ' + (dataSource === 'overall' ? 'selected' : '') + '>Overall Marks</option>';
+        currentCategories.forEach(cat => {
+            const isSelected = dataSource === cat.label;
+            optionsHtml += `<option value="${cat.label}" ${isSelected ? 'selected' : ''}>${cat.label}</option>`;
+        });
+        
+        configContainer.innerHTML = `
+            <div class="col-md-12">
+                <label class="form-label">Data Source <span class="text-danger">*</span></label>
+                <select class="form-control chart-data-source">
+                    ${optionsHtml}
+                </select>
+                <small class="form-text text-muted">Choose whether to show overall marks or marks for a specific category.</small>
+            </div>
+        `;
+        
+        // Add event listener to select
+        const dataSourceSelect = configContainer.querySelector('.chart-data-source');
+        dataSourceSelect.addEventListener('change', debouncedSave);
+    }
 }
 
 // Add spinning animation for save icon
