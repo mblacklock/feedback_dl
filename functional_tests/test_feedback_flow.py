@@ -35,7 +35,7 @@ class FeedbackFT(FunctionalTestBase):
         )
         
         # WHEN: Staff member visits the home page
-        self.browser.get(f"{self.live_server_url}/feedback/")
+        self.navigate_to_home()
         
         # THEN: They see the page title
         page_heading = self.wait.until(
@@ -81,7 +81,7 @@ class FeedbackFT(FunctionalTestBase):
         self.assertIn("Database Systems", self.browser.page_source)
         
         # WHEN: They go back to home
-        self.browser.get(f"{self.live_server_url}/feedback/")
+        self.navigate_to_home()
         
         # AND: Click Edit button on second template
         edit_buttons = self.wait.until(
@@ -102,7 +102,7 @@ class FeedbackFT(FunctionalTestBase):
         # GIVEN: No templates (default state)
         
         # WHEN: Staff member visits the home page
-        self.browser.get(f"{self.live_server_url}/feedback/")
+        self.navigate_to_home()
         
         # THEN: They see the page title
         page_heading = self.wait.until(
@@ -123,8 +123,7 @@ class FeedbackFT(FunctionalTestBase):
         create_buttons[0].click()
         
         # THEN: They are taken to the edit page for a new template
-        self.wait.until(EC.url_contains("/feedback/template/"))
-        self.wait.until(EC.url_contains("/edit/"))
+        self.wait_for_edit_page()
     
     def test_user_can_delete_template_from_home_page(self):
         """
@@ -142,7 +141,7 @@ class FeedbackFT(FunctionalTestBase):
         )
         
         # WHEN: Staff member visits the home page
-        self.browser.get(f"{self.live_server_url}/feedback/")
+        self.navigate_to_home()
         
         # THEN: They see the template listed
         list_items = self.browser.find_elements(By.CSS_SELECTOR, ".list-group-item")

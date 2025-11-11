@@ -13,12 +13,10 @@ class TemplateAutoSaveFT(FunctionalTestBase):
 
     def test_template_autosaves_as_user_types(self):
         # GIVEN a staff member clicks "Create New Template"
-        self.browser.get(self.live_server_url + "/feedback/")
-        create_btn = self.wait.until(EC.presence_of_element_located((By.LINK_TEXT, "Create New Template")))
-        create_btn.click()
+        self.navigate_to_home()
+        self.create_new_template()
         
-        # THEN a template is created immediately and they're on the edit page
-        self.wait.until(EC.url_matches(r'/feedback/template/\d+/edit/'))
+        # THEN they're on the edit page
         current_url = self.browser.current_url
         assert '/edit/' in current_url
         
@@ -26,9 +24,7 @@ class TemplateAutoSaveFT(FunctionalTestBase):
         save_status = self.wait.until(EC.presence_of_element_located((By.ID, "save-status")))
         
         # WHEN they enter a title
-        title = self.browser.find_element(By.NAME, "title")
-        title.clear()
-        title.send_keys("KB5031 – FEA Coursework")
+        self.fill_template_fields(title="KB5031 – FEA Coursework")
         
         # AND wait a moment for debounce
         time.sleep(1.5)
@@ -39,46 +35,30 @@ class TemplateAutoSaveFT(FunctionalTestBase):
         self.assertIn("Sav", save_status.text)  # Catches both "Saving" and "Saved"
         
         # WHEN they click "View Template" button
-        view_btn = self.browser.find_element(By.ID, "view-template")
-        view_btn.click()
+        self.click_view_template()
         
         # THEN they see the view page with their saved data
-        self.wait.until(EC.url_matches(r'/feedback/template/\d+/$'))
         h1 = self.wait.until(EC.presence_of_element_located((By.TAG_NAME, "h1")))
         assert "KB5031 – FEA Coursework" in h1.text
     
     def test_grade_bands_preview_appears_when_selecting_grade_type(self):
         # GIVEN a staff member is on the edit page
-        self.browser.get(self.live_server_url + "/feedback/")
-        create_btn = self.wait.until(EC.presence_of_element_located((By.LINK_TEXT, "Create New Template")))
-        create_btn.click()
-        self.wait.until(EC.url_matches(r'/feedback/template/\d+/edit/'))
+        self.navigate_to_home()
+        self.create_new_template()
         
         # WHEN they add a category
-        add_btn = self.browser.find_element(By.ID, "add-category")
-        add_btn.click()
+        self.add_category_row()
         
         # AND they see at least one category row
-        cat_rows = self.browser.find_elements(By.CSS_SELECTOR, ".category-row")
+        cat_rows = self.get_category_rows()
         assert len(cat_rows) >= 1
         
-        # AND they enter a category with 30 marks
-        cat_rows[0].find_element(By.CSS_SELECTOR, "input.cat-label").send_keys("Comprehension")
-        max_input = cat_rows[0].find_element(By.CSS_SELECTOR, "input.cat-max")
-        max_input.clear()
-        max_input.send_keys("30")
-        
-        # WHEN they select grade type
-        grade_label = cat_rows[0].find_element(By.XPATH, ".//label[contains(text(), 'Grade')]")
-        self.browser.execute_script("arguments[0].click();", grade_label)
-        
-        # AND select a subdivision
-        subdivision_btn = cat_rows[0].find_element(By.CSS_SELECTOR, "button[data-subdivision='high_low']")
-        self.browser.execute_script("arguments[0].click();", subdivision_btn)
+        # AND they enter a category with grade type and subdivision
+        self.fill_category(0, "Comprehension", 30, category_type='grade', subdivision='high_low')
         
         # THEN they see the grade bands grid
         time.sleep(0.5)  # Wait for AJAX call
-        preview = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".grade-bands-grid")))
+        preview = self.get_grade_bands_grid()
         
         # AND it contains grade information in cards
         preview_text = preview.text
@@ -89,29 +69,17 @@ class TemplateAutoSaveFT(FunctionalTestBase):
     
     def test_multiple_categories_work_independently(self):
         # GIVEN a staff member is on the edit page
-        self.browser.get(self.live_server_url + "/feedback/")
-        create_btn = self.wait.until(EC.presence_of_element_located((By.LINK_TEXT, "Create New Template")))
-        create_btn.click()
-        self.wait.until(EC.url_matches(r'/feedback/template/\d+/edit/'))
+        self.navigate_to_home()
+        self.create_new_template()
         
         # WHEN they add one more category (one already exists by default)
-        add_btn = self.browser.find_element(By.ID, "add-category")
-        add_btn.click()
+        self.add_category_row()
         
-        cat_rows = self.browser.find_elements(By.CSS_SELECTOR, ".category-row")
+        cat_rows = self.get_category_rows()
         assert len(cat_rows) >= 2
         
         # AND set first category to Grade type with 30 marks
-        cat_rows[0].find_element(By.CSS_SELECTOR, "input.cat-label").send_keys("Introduction")
-        max_input1 = cat_rows[0].find_element(By.CSS_SELECTOR, "input.cat-max")
-        max_input1.clear()
-        max_input1.send_keys("30")
-        
-        grade_label1 = cat_rows[0].find_element(By.XPATH, ".//label[contains(text(), 'Grade')]")
-        self.browser.execute_script("arguments[0].click();", grade_label1)
-        
-        subdivision_btn1 = cat_rows[0].find_element(By.CSS_SELECTOR, "button[data-subdivision='high_low']")
-        self.browser.execute_script("arguments[0].click();", subdivision_btn1)
+        self.fill_category(0, "Introduction", 30, category_type='grade', subdivision='high_low')
         
         # THEN first category shows grade bands
         time.sleep(0.5)
@@ -119,17 +87,11 @@ class TemplateAutoSaveFT(FunctionalTestBase):
         self.assertGreaterEqual(len(previews), 1, "First category should have grade bands")
         
         # WHEN they set second category to Numeric type with 10 marks
-        cat_rows = self.browser.find_elements(By.CSS_SELECTOR, ".category-row")  # Re-fetch
-        cat_rows[1].find_element(By.CSS_SELECTOR, "input.cat-label").send_keys("Methodology")
-        max_input2 = cat_rows[1].find_element(By.CSS_SELECTOR, "input.cat-max")
-        max_input2.clear()
-        max_input2.send_keys("10")
-        
-        numeric_label2 = cat_rows[1].find_element(By.XPATH, ".//label[contains(text(), 'Numeric')]")
-        self.browser.execute_script("arguments[0].click();", numeric_label2)
+        self.fill_category(1, "Methodology", 10, category_type='numeric')
         
         # THEN second category does NOT show subdivision controls or grade bands
         time.sleep(0.3)
+        cat_rows = self.get_category_rows()
         subdivision_controls = cat_rows[1].find_elements(By.CSS_SELECTOR, ".subdivision-controls")
         for control in subdivision_controls:
             assert not control.is_displayed(), "Numeric category should not show subdivision controls"
@@ -139,12 +101,8 @@ class TemplateAutoSaveFT(FunctionalTestBase):
         self.assertGreaterEqual(len(previews), 1, "First category should still have grade bands")
         
         # WHEN they change second category back to Grade type
-        cat_rows = self.browser.find_elements(By.CSS_SELECTOR, ".category-row")  # Re-fetch
-        grade_label2 = cat_rows[1].find_element(By.XPATH, ".//label[contains(text(), 'Grade')]")
-        self.browser.execute_script("arguments[0].click();", grade_label2)
-        
-        subdivision_btn2 = cat_rows[1].find_element(By.CSS_SELECTOR, "button[data-subdivision='high_mid_low']")
-        self.browser.execute_script("arguments[0].click();", subdivision_btn2)
+        self.select_category_type(1, 'grade')
+        self.select_subdivision(1, 'high_mid_low')
         
         # THEN second category now shows its own grade bands
         time.sleep(0.5)
@@ -152,18 +110,12 @@ class TemplateAutoSaveFT(FunctionalTestBase):
         self.assertGreaterEqual(len(previews), 2, "Both categories should now have grade bands")
         
         # WHEN they save and navigate to view and back to edit
-        time.sleep(2)  # Wait for autosave
-        view_btn = self.browser.find_element(By.ID, "view-template")
-        self.browser.execute_script("arguments[0].scrollIntoView(true);", view_btn)
-        self.browser.execute_script("arguments[0].click();", view_btn)
-        self.wait.until(EC.url_matches(r'/feedback/template/\d+/$'))
-        
-        edit_link = self.wait.until(EC.presence_of_element_located((By.LINK_TEXT, "Edit Template")))
-        edit_link.click()
-        self.wait.until(EC.url_matches(r'/feedback/template/\d+/edit/'))
+        self.wait_for_autosave()
+        self.click_view_template()
+        self.click_edit_template()
         
         # THEN both categories should still work independently
-        cat_rows = self.browser.find_elements(By.CSS_SELECTOR, ".category-row")
+        cat_rows = self.get_category_rows()
         
         # First category should be Grade type
         grade_radio1 = cat_rows[0].find_element(By.CSS_SELECTOR, "input.cat-type-grade")
@@ -174,49 +126,32 @@ class TemplateAutoSaveFT(FunctionalTestBase):
         self.assertTrue(grade_radio2.is_selected(), "Second category should still be Grade type")
         
         # AND clicking numeric on second category should NOT affect first
-        numeric_label2 = cat_rows[1].find_element(By.XPATH, ".//label[contains(text(), 'Numeric')]")
-        self.browser.execute_script("arguments[0].click();", numeric_label2)
+        self.select_category_type(1, 'numeric')
         
         time.sleep(0.3)
         
         # Verify first category is still Grade
-        cat_rows = self.browser.find_elements(By.CSS_SELECTOR, ".category-row")
+        cat_rows = self.get_category_rows()
         grade_radio1 = cat_rows[0].find_element(By.CSS_SELECTOR, "input.cat-type-grade")
         self.assertTrue(grade_radio1.is_selected(), "First category should remain Grade type after clicking second category's Numeric button")
     
     def test_category_data_persists_after_viewing_template(self):
         # GIVEN a staff member creates a template with a category
-        self.browser.get(self.live_server_url + "/feedback/")
-        create_btn = self.wait.until(EC.presence_of_element_located((By.LINK_TEXT, "Create New Template")))
-        create_btn.click()
-        self.wait.until(EC.url_matches(r'/feedback/template/\d+/edit/'))
+        self.navigate_to_home()
+        self.create_new_template()
         
         # WHEN they fill in first category details with NUMERIC type
-        cat_rows = self.browser.find_elements(By.CSS_SELECTOR, ".category-row")
-        cat_rows[0].find_element(By.CSS_SELECTOR, "input.cat-label").send_keys("Introduction")
-        max_input = cat_rows[0].find_element(By.CSS_SELECTOR, "input.cat-max")
-        max_input.clear()
-        max_input.send_keys("15")
-        
-        # Set to Numeric type (should be default, but click to be sure)
-        numeric_label = cat_rows[0].find_element(By.XPATH, ".//label[contains(text(), 'Numeric')]")
-        self.browser.execute_script("arguments[0].click();", numeric_label)
+        self.fill_category(0, "Introduction", 15, category_type='numeric')
         
         # Wait for autosave
-        time.sleep(2)
+        self.wait_for_autosave()
         
-        # WHEN they go to View Template
-        view_btn = self.browser.find_element(By.ID, "view-template")
-        view_btn.click()
-        self.wait.until(EC.url_matches(r'/feedback/template/\d+/$'))
-        
-        # AND then go back to Edit
-        edit_link = self.wait.until(EC.presence_of_element_located((By.LINK_TEXT, "Edit Template")))
-        edit_link.click()
-        self.wait.until(EC.url_matches(r'/feedback/template/\d+/edit/'))
+        # WHEN they go to View Template and back to Edit
+        self.click_view_template()
+        self.click_edit_template()
         
         # THEN the first category should still have all its data
-        cat_rows = self.browser.find_elements(By.CSS_SELECTOR, ".category-row")
+        cat_rows = self.get_category_rows()
         self.assertGreater(len(cat_rows), 0, "Should have at least one category")
         
         # Check label

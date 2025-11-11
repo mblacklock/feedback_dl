@@ -17,37 +17,24 @@ class TemplateBuilderFT(FunctionalTestBase):
         THEN: The weighting is saved and displayed on the summary page
         """
         # GIVEN: Staff member visits the feedback portal and creates a new template
-        self.browser.get(self.live_server_url + "/feedback/")
-        create_btn = self.wait.until(EC.presence_of_element_located((By.LINK_TEXT, "Create New Template")))
-        create_btn.click()
-        
-        # THEN: They are taken to the edit page
-        self.wait.until(EC.url_matches(r'/feedback/template/\d+/edit/'))
+        self.navigate_to_home()
+        self.create_new_template()
         
         # WHEN: They enter basic info including weighting
-        title = self.wait.until(EC.presence_of_element_located((By.NAME, "title")))
-        title.clear()
-        title.send_keys("Test Template")
-        
-        module_code = self.browser.find_element(By.NAME, "module_code")
-        module_code.send_keys("KB5031")
-        
-        assessment_title = self.browser.find_element(By.NAME, "assessment_title")
-        assessment_title.send_keys("Coursework 1")
-        
-        weighting = self.browser.find_element(By.NAME, "weighting")
-        weighting.send_keys("40")
+        self.fill_template_fields(
+            title="Test Template",
+            module_code="KB5031",
+            assessment_title="Coursework 1",
+            weighting=40
+        )
         
         # AND: They wait for autosave
-        import time
-        time.sleep(2)
+        self.wait_for_autosave()
         
         # WHEN: They click "View Template"
-        view_btn = self.browser.find_element(By.ID, "view-template")
-        view_btn.click()
+        self.click_view_template()
         
         # THEN: They see the summary page with weighting displayed
-        self.wait.until(EC.url_matches(r'/feedback/template/\d+/$'))
         page_content = self.browser.page_source
         
         # Verify weighting is present (could be "40%" or "Weighting: 40")
@@ -61,42 +48,25 @@ class TemplateBuilderFT(FunctionalTestBase):
         THEN: All three fields are saved and displayed correctly
         """
         # GIVEN: Staff member visits the feedback portal and creates a new template
-        self.browser.get(self.live_server_url + "/feedback/")
-        create_btn = self.wait.until(EC.presence_of_element_located((By.LINK_TEXT, "Create New Template")))
-        create_btn.click()
-        
-        # THEN: They are taken to the edit page
-        self.wait.until(EC.url_matches(r'/feedback/template/\d+/edit/'))
+        self.navigate_to_home()
+        self.create_new_template()
         
         # WHEN: They enter module code, module title, and component
-        module_code = self.wait.until(EC.presence_of_element_located((By.NAME, "module_code")))
-        module_code.send_keys("KB5031")
-        
-        module_title = self.browser.find_element(By.NAME, "module_title")
-        module_title.send_keys("Finite Element Analysis")
-        
-        component = self.browser.find_element(By.NAME, "component")
-        component.clear()
-        component.send_keys("1")
-        
-        # AND: They add a title and assessment
-        title = self.browser.find_element(By.NAME, "title")
-        title.clear()
-        title.send_keys("Test Template")
-        
-        assessment_title = self.browser.find_element(By.NAME, "assessment_title")
-        assessment_title.send_keys("Coursework 1")
+        self.fill_template_fields(
+            title="Test Template",
+            module_code="KB5031",
+            module_title="Finite Element Analysis",
+            component=1,
+            assessment_title="Coursework 1"
+        )
         
         # AND: They wait for autosave
-        import time
-        time.sleep(2)
+        self.wait_for_autosave()
         
         # WHEN: They click "View Template"
-        view_btn = self.browser.find_element(By.ID, "view-template")
-        view_btn.click()
+        self.click_view_template()
         
         # THEN: They see the summary page with all fields
-        self.wait.until(EC.url_matches(r'/feedback/template/\d+/$'))
         page_content = self.browser.page_source
         
         # Verify module code, module title, and component are all present
@@ -111,121 +81,68 @@ class TemplateBuilderFT(FunctionalTestBase):
         THEN: The component is saved and displayed on the summary page
         """
         # GIVEN: Staff member visits the feedback portal and creates a new template
-        self.browser.get(self.live_server_url + "/feedback/")
-        create_btn = self.wait.until(EC.presence_of_element_located((By.LINK_TEXT, "Create New Template")))
-        create_btn.click()
+        self.navigate_to_home()
+        self.create_new_template()
         
-        # WHEN: They see the edit page
-        self.wait.until(EC.url_matches(r'/feedback/template/\d+/edit/'))
-        
-        # AND: They enter summary info including component field
-        title = self.wait.until(EC.presence_of_element_located((By.NAME, "title")))
-        title.clear()
-        title.send_keys("Test Template")
-        
-        module_code = self.browser.find_element(By.NAME, "module_code")
-        module_code.send_keys("KB5031")
-        
-        assessment_title = self.browser.find_element(By.NAME, "assessment_title")
-        assessment_title.send_keys("Coursework 1")
-        
-        component = self.browser.find_element(By.NAME, "component")
-        component.send_keys("1")
+        # WHEN: They enter summary info including component field
+        self.fill_template_fields(
+            title="Test Template",
+            module_code="KB5031",
+            assessment_title="Coursework 1",
+            component=1
+        )
         
         # AND: They add a simple category
-        cat_row = self.browser.find_element(By.CSS_SELECTOR, "#categories .category-row")
-        cat_row.find_element(By.CSS_SELECTOR, "input.cat-label").send_keys("Introduction")
-        cat_row.find_element(By.CSS_SELECTOR, "input.cat-max").clear()
-        cat_row.find_element(By.CSS_SELECTOR, "input.cat-max").send_keys("10")
+        self.fill_category(0, "Introduction", 10)
         
         # AND: They wait for autosave
-        import time
-        time.sleep(2)
+        self.wait_for_autosave()
         
         # WHEN: They view the template
-        view_btn = self.browser.find_element(By.ID, "view-template")
-        self.browser.execute_script("arguments[0].click();", view_btn)
+        self.click_view_template()
         
         # THEN: The summary page shows the component
-        self.wait.until(EC.url_matches(r'/feedback/template/\d+/$'))
         page_text = self.browser.find_element(By.TAG_NAME, "body").text
         self.assertIn("Component: 1", page_text)
 
     def test_staff_creates_template_with_grade_bands_and_sees_summary(self):
         # GIVEN a staff member visits the feedback portal home page
-        self.browser.get(self.live_server_url + "/feedback/")
+        self.navigate_to_home()
         
         # WHEN they click the "Create New Template" button
-        create_btn = self.wait.until(EC.presence_of_element_located((By.LINK_TEXT, "Create New Template")))
-        create_btn.click()
+        self.create_new_template()
         
-        # THEN they're redirected to the edit page
-        self.wait.until(EC.url_matches(r'/feedback/template/\d+/edit/'))
-        
-        # AND they see the edit page with summary fields
-        title = self.wait.until(EC.presence_of_element_located((By.NAME, "title")))
-        module_code = self.browser.find_element(By.NAME, "module_code")
-        assessment_title = self.browser.find_element(By.NAME, "assessment_title")
-
         # AND they enter summary info
-        title.clear()
-        title.send_keys("KB5031 – FEA Coursework")
-        module_code.send_keys("KB5031")
-        assessment_title.send_keys("Coursework 1: Truss Analysis")
+        self.fill_template_fields(
+            title="KB5031 – FEA Coursework",
+            module_code="KB5031",
+            assessment_title="Coursework 1: Truss Analysis"
+        )
 
         # AND they add three rubric categories
-        add_btn = self.browser.find_element(By.ID, "add-category")
-
-        # Click twice to add two more rows (assume one empty row is present by default)
-        add_btn.click()
-        add_btn.click()
+        self.add_category_row()
+        self.add_category_row()
 
         # Fill the three visible category rows
-        cat_rows = self.browser.find_elements(By.CSS_SELECTOR, "#categories .category-row")
+        cat_rows = self.get_category_rows()
         assert len(cat_rows) >= 3, "Expected at least 3 category rows"
 
         # First category: Comprehension (grade type with high/low subdivision)
-        cat_rows[0].find_element(By.CSS_SELECTOR, "input.cat-label").send_keys("Comprehension")
-        cat_rows[0].find_element(By.CSS_SELECTOR, "input.cat-max").clear()
-        cat_rows[0].find_element(By.CSS_SELECTOR, "input.cat-max").send_keys("30")
-        # Select grade type by clicking the label (like a real user would)
-        grade_label = cat_rows[0].find_element(By.XPATH, ".//label[contains(text(), 'Grade')]")
-        self.browser.execute_script("arguments[0].scrollIntoView(true);", grade_label)
-        self.browser.execute_script("arguments[0].click();", grade_label)
-        # Select high_low subdivision button
-        subdivision_btn = cat_rows[0].find_element(By.CSS_SELECTOR, "button[data-subdivision='high_low']")
-        self.browser.execute_script("arguments[0].click();", subdivision_btn)
+        self.fill_category(0, "Comprehension", 30, category_type='grade', subdivision='high_low')
 
         # Second category: Method (numeric type)
-        cat_rows[1].find_element(By.CSS_SELECTOR, "input.cat-label").send_keys("Method")
-        cat_rows[1].find_element(By.CSS_SELECTOR, "input.cat-max").clear()
-        cat_rows[1].find_element(By.CSS_SELECTOR, "input.cat-max").send_keys("20")
-        # Click Numeric radio button (Grade is now default)
-        numeric_label = cat_rows[1].find_element(By.XPATH, ".//label[contains(text(), 'Numeric')]")
-        self.browser.execute_script("arguments[0].scrollIntoView(true);", numeric_label)
-        self.browser.execute_script("arguments[0].click();", numeric_label)
+        self.fill_category(1, "Method", 20, category_type='numeric')
 
         # Third category: Design (grade type with no subdivision)
-        cat_rows[2].find_element(By.CSS_SELECTOR, "input.cat-label").send_keys("Design")
-        cat_rows[2].find_element(By.CSS_SELECTOR, "input.cat-max").clear()
-        cat_rows[2].find_element(By.CSS_SELECTOR, "input.cat-max").send_keys("10")
-        grade_label2 = cat_rows[2].find_element(By.XPATH, ".//label[contains(text(), 'Grade')]")
-        self.browser.execute_script("arguments[0].scrollIntoView(true);", grade_label2)
-        self.browser.execute_script("arguments[0].click();", grade_label2)
-        subdivision_btn2 = cat_rows[2].find_element(By.CSS_SELECTOR, "button[data-subdivision='none']")
-        self.browser.execute_script("arguments[0].click();", subdivision_btn2)
+        self.fill_category(2, "Design", 10, category_type='grade', subdivision='none')
 
         # AND they wait for autosave
-        import time
-        time.sleep(2)
+        self.wait_for_autosave()
         
         # WHEN they click "View Template" button
-        view_btn = self.browser.find_element(By.ID, "view-template")
-        self.browser.execute_script("arguments[0].scrollIntoView(true);", view_btn)
-        self.browser.execute_script("arguments[0].click();", view_btn)
+        self.click_view_template()
 
         # THEN they are taken to a summary page showing the new template title
-        self.wait.until(EC.url_matches(r'/feedback/template/\d+/$'))
         h1 = self.wait.until(EC.presence_of_element_located((By.TAG_NAME, "h1")))
         assert "KB5031 – FEA Coursework" in h1.text
 
@@ -263,42 +180,23 @@ class TemplateBuilderFT(FunctionalTestBase):
         THEN: The max marks is saved and displayed on the summary page
         """
         # GIVEN: Staff member visits feedback portal and creates new template
-        self.browser.get(self.live_server_url + "/feedback/")
-        create_btn = self.wait.until(EC.presence_of_element_located((By.LINK_TEXT, "Create New Template")))
-        create_btn.click()
-        
-        # THEN: They are taken to the edit page
-        self.wait.until(EC.url_matches(r'/feedback/template/\d+/edit/'))
+        self.navigate_to_home()
+        self.create_new_template()
         
         # WHEN: They enter basic info including max marks
-        title = self.wait.until(EC.presence_of_element_located((By.NAME, "title")))
-        title.clear()
-        title.send_keys("Assessment with Max Marks")
+        self.fill_template_fields(
+            title="Assessment with Max Marks",
+            module_code="KB5031",
+            assessment_title="Final Exam",
+            max_marks=100
+        )
         
-        module_code = self.browser.find_element(By.NAME, "module_code")
-        module_code.clear()
-        module_code.send_keys("KB5031")
-        
-        assessment_title = self.browser.find_element(By.NAME, "assessment_title")
-        assessment_title.clear()
-        assessment_title.send_keys("Final Exam")
-        
-        # Enter max marks
-        max_marks = self.browser.find_element(By.NAME, "max_marks")
-        max_marks.clear()
-        max_marks.send_keys("100")
-        
-        import time
-        time.sleep(2)  # Wait for autosave
+        self.wait_for_autosave()
         
         # WHEN: They click View Template
-        view_btn = self.browser.find_element(By.ID, "view-template")
-        self.browser.execute_script("arguments[0].scrollIntoView(true);", view_btn)
-        self.browser.execute_script("arguments[0].click();", view_btn)
+        self.click_view_template()
         
         # THEN: They see the summary page
-        self.wait.until(EC.url_matches(r'/feedback/template/\d+/$'))
-        
         # AND the max marks is displayed
         body_text = self.browser.find_element(By.TAG_NAME, "body").text
         self.assertIn("100", body_text, "Max marks should be displayed on summary page")
@@ -310,35 +208,18 @@ class TemplateBuilderFT(FunctionalTestBase):
         THEN: They see a warning on the edit page
         """
         # GIVEN: Staff member creates new template
-        self.browser.get(self.live_server_url + "/feedback/")
-        create_btn = self.wait.until(EC.presence_of_element_located((By.LINK_TEXT, "Create New Template")))
-        create_btn.click()
-        self.wait.until(EC.url_matches(r'/feedback/template/\d+/edit/'))
+        self.navigate_to_home()
+        self.create_new_template()
         
         # WHEN: They enter max marks of 100
-        max_marks = self.browser.find_element(By.NAME, "max_marks")
-        max_marks.clear()
-        max_marks.send_keys("100")
+        self.fill_template_fields(max_marks=100)
         
         # AND add categories totaling 90 marks (not 100)
-        cat_rows = self.browser.find_elements(By.CSS_SELECTOR, ".category-row")
-        cat_rows[0].find_element(By.CSS_SELECTOR, "input.cat-label").send_keys("Part A")
-        max_input1 = cat_rows[0].find_element(By.CSS_SELECTOR, "input.cat-max")
-        max_input1.clear()
-        max_input1.send_keys("40")
-        
-        add_btn = self.browser.find_element(By.ID, "add-category")
-        add_btn.click()
+        self.fill_category(0, "Part A", 40)
+        self.add_category_row()
+        self.fill_category(1, "Part B", 50)
         
         import time
-        time.sleep(0.3)
-        
-        cat_rows = self.browser.find_elements(By.CSS_SELECTOR, ".category-row")
-        cat_rows[1].find_element(By.CSS_SELECTOR, "input.cat-label").send_keys("Part B")
-        max_input2 = cat_rows[1].find_element(By.CSS_SELECTOR, "input.cat-max")
-        max_input2.clear()
-        max_input2.send_keys("50")
-        
         time.sleep(0.5)
         
         # THEN: They should see a warning alert
@@ -348,10 +229,8 @@ class TemplateBuilderFT(FunctionalTestBase):
         self.assertIn("100", warning_text, "Warning should show max marks (100)")
         
         # WHEN: They view the template summary
-        time.sleep(1)  # Wait for autosave
-        view_btn = self.browser.find_element(By.LINK_TEXT, "View Template")
-        self.browser.execute_script("arguments[0].click();", view_btn)
-        self.wait.until(EC.url_matches(r'/feedback/template/\d+/$'))
+        self.wait_for_autosave(1)
+        self.click_view_template()
         
         # THEN: The warning also appears on the summary page
         summary_warning = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".alert-warning")))
@@ -360,9 +239,7 @@ class TemplateBuilderFT(FunctionalTestBase):
         self.assertIn("100", summary_warning_text)
         
         # WHEN: They return to edit
-        edit_btn = self.browser.find_element(By.LINK_TEXT, "Edit Template")
-        edit_btn.click()
-        self.wait.until(EC.url_matches(r'/feedback/template/\d+/edit/'))
+        self.click_edit_template()
         
         # THEN: The warning is still visible on page load (bug fix test)
         edit_warning = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".alert-warning")))
@@ -378,10 +255,8 @@ class TemplateBuilderFT(FunctionalTestBase):
         AND: They cannot proceed without filling these mandatory fields
         """
         # GIVEN: Staff member creates new template
-        self.browser.get(self.live_server_url + "/feedback/")
-        create_btn = self.wait.until(EC.presence_of_element_located((By.LINK_TEXT, "Create New Template")))
-        create_btn.click()
-        self.wait.until(EC.url_matches(r'/feedback/template/\d+/edit/'))
+        self.navigate_to_home()
+        self.create_new_template()
         
         # THEN: Required fields should have the 'required' attribute
         module_title = self.browser.find_element(By.NAME, "module_title")
@@ -404,14 +279,8 @@ class TemplateBuilderFT(FunctionalTestBase):
         
         # WHEN: They try to view template without filling mandatory fields
         # (autosave should handle saving, but browser validation on inputs should guide user)
-        import time
-        time.sleep(2)  # Wait for autosave
+        self.wait_for_autosave()
         
         # THEN: They should see the template saves but with null values
         # (Model validation will happen on the backend, HTML5 validation is just UX hint)
-        view_btn = self.browser.find_element(By.ID, "view-template")
-        self.browser.execute_script("arguments[0].scrollIntoView(true);", view_btn)
-        self.browser.execute_script("arguments[0].click();", view_btn)
-        
-        # Navigate to summary page (will show empty/null values)
-        self.wait.until(EC.url_matches(r'/feedback/template/\d+/$'))
+        self.click_view_template()
