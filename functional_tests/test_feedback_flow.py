@@ -13,8 +13,7 @@ class FeedbackFT(FunctionalTestBase):
         THEN: They see all templates listed with View and Edit buttons
         """
         # GIVEN: Create some test templates
-        template1 = AssessmentTemplate.objects.create(
-            component=1,
+        template1 = self.create_test_template(
             title="Introduction to Programming",
             module_code="CS101",
             assessment_title="Assignment 1",
@@ -24,8 +23,7 @@ class FeedbackFT(FunctionalTestBase):
             ]
         )
         
-        template2 = AssessmentTemplate.objects.create(
-            component=1,
+        template2 = self.create_test_template(
             title="Database Systems",
             module_code="CS202",
             assessment_title="Final Exam",

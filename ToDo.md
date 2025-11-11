@@ -4,7 +4,7 @@
 - None currently
 
 ## Future Enhancements
-- Separate Rubric and Feedback Sheet view pages
+- Style feedback sheet
 - Ability to have non-mark category, e.g. for performance data
 - Create a marking spreadsheet from template
 - Import marking sheet (does this need a template? Same template as marking spreadsheet template?)
