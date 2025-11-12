@@ -4,7 +4,6 @@
 - None currently
 
 ## Future Enhancements
-- Add Grade to Total Mark and change to assessment mark
 - Pick a random grade from each category
 - Toggle class average on radar
 - General feedback text

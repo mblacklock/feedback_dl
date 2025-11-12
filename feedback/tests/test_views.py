@@ -448,6 +448,28 @@ class TemplateSeparateViewsTest(TestCase):
         # Should show total marks
         self.assertContains(resp, "Total")
         self.assertContains(resp, "50")
+
+    def test_feedback_sheet_view_passes_overall_grade_in_context(self):
+        """Feedback sheet view should calculate and pass overall_grade into context"""
+        template = AssessmentTemplate.objects.create(
+            component=1,
+            title="Software Engineering",
+            module_code="CS301",
+            assessment_title="CW1",
+            weighting=40,
+            max_marks=100,
+            categories=[
+                {"label": "Design", "max": 30},
+                {"label": "Testing", "max": 70}
+            ]
+        )
+
+        resp = self.client.get(f"/feedback/template/{template.pk}/feedback-sheet/")
+        self.assertEqual(resp.status_code, 200)
+
+        # Total category marks == max_marks, so percentage == 100% -> '1st'
+        self.assertIn('overall_grade', resp.context)
+        self.assertEqual(resp.context['overall_grade'], '1st')
     
     def test_rubric_url_pattern(self):
         """Rubric URL pattern resolves correctly"""

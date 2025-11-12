@@ -30,6 +30,14 @@ def _get_grade_band_for_percentage(percentage):
         return "Fail"
 
 
+def grade_for_percentage(percentage):
+    """Public helper that returns the UK grade band for a percentage.
+
+    Wrapper around the internal `_get_grade_band_for_percentage` for use in views.
+    """
+    return _get_grade_band_for_percentage(percentage)
+
+
 def _calculate_mark_for_grade(max_marks, target_percentage, expected_grade):
     """
     Calculate a mark value that actually falls within the expected grade band.

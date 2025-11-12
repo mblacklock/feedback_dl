@@ -89,7 +89,7 @@ function renderRadarChart(ctx, chart) {
 
 function renderHistogramChart(ctx, chart) {
     // Example student mark (percent). Use provided value if available.
-    const studentMark = (chart.student_mark !== undefined) ? chart.student_mark : 65;
+    const studentMark = (chart.student_mark !== undefined) ? chart.student_mark : 75;
 
     // Plugin draws a vertical line at the student's mark across the chart area.
     const studentLinePlugin = {

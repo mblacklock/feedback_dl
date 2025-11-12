@@ -87,12 +87,23 @@
                 
                 <div class="card bg-light">
                     <div class="card-body">
-                        <div class="row">
+                        <div class="row align-items-center">
                             <div class="col-md-6">
-                                <h5 class="fw-bold">Total Mark:</h5>
+                                <h5 class="fw-bold">Assessment Grade:</h5>
                             </div>
                             <div class="col-md-6 text-end">
-                                <h5 class="fw-bold">_____ / {{ total_marks }}</h5>
+                                <h5 class="fw-bold">
+                                    {% if overall_grade %}
+                                        <span id="assessment-grade" class="me-3">{{ overall_grade }}</span>
+                                        _____ / {{ total_marks }}
+                                    {% elif example_grade %}
+                                        <!-- Example display when template has no max_marks set -->
+                                        <span id="assessment-grade" class="me-3">{{ example_grade }} <small class="text-muted">(example)</small></span>
+                                        {{ example_awarded }} / {{ total_marks }}
+                                    {% else %}
+                                        _____ / {{ total_marks }}
+                                    {% endif %}
+                                </h5>
                             </div>
                         </div>
                     </div>

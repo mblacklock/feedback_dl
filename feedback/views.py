@@ -161,11 +161,39 @@ def template_feedback_sheet(request, pk):
             'total': total_category_marks,
             'max_marks': tpl.max_marks
         }
-    
+
+    # Calculate overall grade for the assessment (if max_marks is set)
+    overall_grade = None
+    try:
+        from feedback.utils import grade_for_percentage
+
+        if tpl.max_marks and tpl.max_marks > 0:
+            # When max_marks is explicitly set, calculate based on category totals vs max
+            percentage = (total_category_marks / tpl.max_marks) * 100
+            overall_grade = grade_for_percentage(percentage)
+        else:
+            # Example mode: this feedback sheet is illustrative and may not have max_marks set.
+            # Provide an example awarded mark and corresponding grade so the page shows a sample.
+            example_display_max = total_category_marks if total_category_marks > 0 else 0
+            example_awarded = None
+            example_grade = None
+            if example_display_max > 0:
+                # Pick a sensible example (75% of available marks) so the example grade is in the upper bands
+                example_awarded = int(example_display_max * 0.75)
+                example_percentage = (example_awarded / example_display_max) * 100
+                example_grade = grade_for_percentage(example_percentage)
+            # Expose example values to the template for display when no real overall_grade exists
+            # We'll attach them to the context variables below (example_awarded, example_grade)
+    except Exception:
+        overall_grade = None
+
     return render(request, "feedback/template_feedback_sheet.html", {
         "template": tpl,
         "categories_with_bands": categories_with_bands,
         "total_marks": total_category_marks,
+        "overall_grade": overall_grade,
+        "example_awarded": locals().get('example_awarded', None),
+        "example_grade": locals().get('example_grade', None),
         "charts": tpl.charts if tpl.charts else [],
         "marks_mismatch": marks_mismatch
     })
