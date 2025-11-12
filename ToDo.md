@@ -4,6 +4,7 @@
 - None currently
 
 ## Future Enhancements
+- Pass the actual marks to the charts (keep example class marks)
 - Toggle class average on radar
 - General feedback text
 - Style feedback sheet

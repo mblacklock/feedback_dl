@@ -6,10 +6,10 @@ class AssessmentTemplate(models.Model):
     component = models.IntegerField()
     title = models.CharField(max_length=200)
     module_code = models.CharField(max_length=50)
-    module_title = models.CharField(max_length=200, blank=True, default='')
+    module_title = models.CharField(max_length=200)
     assessment_title = models.CharField(max_length=200)
-    weighting = models.IntegerField(null=True, blank=True, help_text="Assessment weighting as percentage (e.g., 40 for 40%)")
-    max_marks = models.IntegerField(null=True, blank=True, help_text="Maximum marks for the assessment (e.g., 100)")
+    weighting = models.IntegerField(help_text="Assessment weighting as percentage (e.g., 40 for 40%)")
+    max_marks = models.IntegerField(help_text="Maximum marks for the assessment (e.g., 100)")
     categories = models.JSONField(default=list)
     charts = models.JSONField(
         default=list,
@@ -18,28 +18,13 @@ class AssessmentTemplate(models.Model):
     )
 
     def clean(self):
-        """Validate categories structure, bounds, and required fields."""
+        """Validate categories structure and bounds."""
         super().clean()
         
-        errors = []
-        
-        # Check required fields
-        if not self.module_title or not self.module_title.strip():
-            errors.append("Module title is required")
-        
-        if self.weighting is None:
-            errors.append("Weighting is required")
-        
-        if self.max_marks is None:
-            errors.append("Max marks is required")
-        
         if not self.categories:
-            errors.append("At least one category is required")
+            raise ValidationError("At least one category is required")
         
-        if errors:
-            raise ValidationError(errors)
-        
-        # Validate categories
+        errors = []
         VALID_TYPES = ["numeric", "grade"]
         VALID_SUBDIVISIONS = ["none", "high_low", "high_mid_low"]
         

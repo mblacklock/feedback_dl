@@ -3,6 +3,8 @@ from django.http import JsonResponse
 from feedback.models import AssessmentTemplate
 from feedback.utils import calculate_grade_bands, validate_subdivision
 
+import random
+
 def home(request):
     templates = AssessmentTemplate.objects.all().order_by('-id')
     return render(request, "feedback/home.html", {
@@ -137,6 +139,7 @@ def template_rubric(request, pk):
 
 def template_feedback_sheet(request, pk):
     """View example feedback sheet for students"""
+    """Marks are randomly generated"""
     tpl = AssessmentTemplate.objects.get(pk=pk)
     
     # Calculate grade bands for each category (for reference)
@@ -151,91 +154,79 @@ def template_feedback_sheet(request, pk):
             cat_data["bands"] = bands
             grouped_bands = _group_bands_by_main_grade(bands)
             cat_data["grouped_bands"] = grouped_bands
-            # Pick a random example grade for this category (example feedback sheet)
+            # Pick a deterministic example grade for this category using a RNG
+            # seeded from the template id so example sheets are repeatable per-template.
             try:
-                import random
-                chosen = random.choice(bands) if bands else None
+                rng = random.Random(tpl.pk)
+                chosen = rng.choice(bands) if bands else None
                 if chosen:
                     # store an example grade and marks for template display
-                    cat_data["example_awarded_grade"] = chosen.get("grade")
-                    cat_data["example_awarded_marks"] = chosen.get("marks")
+                    cat_data["awarded_grade"] = chosen.get("grade")
+                    cat_data["awarded_mark"] = chosen.get("marks")
                 else:
-                    cat_data["example_awarded_grade"] = None
-                    cat_data["example_awarded_marks"] = None
+                    cat_data["awarded_grade"] = None
+                    cat_data["awarded_mark"] = None
             except Exception:
-                cat_data["example_awarded_grade"] = None
-                cat_data["example_awarded_marks"] = None
-            
+                cat_data["awarded_grade"] = None
+                cat_data["awarded_mark"] = None           
         else:
             # For numeric categories, provide an example awarded mark for the sample sheet
+            cat_data["awarded_grade"] = None
             try:
-                import random
+                rng = random.Random(tpl.pk)
                 max_marks = int(cat.get("max", 0)) if cat.get("max") is not None else 0
                 if max_marks > 0:
-                    # pick a sensible example between 0 and max (e.g., random)
-                    cat_data["example_awarded_marks"] = random.randint(0, max_marks)
+                    # pick a deterministic example between 0 and max using seeded RNG
+                    cat_data["awarded_mark"] = rng.randint(0, max_marks)
                 else:
-                    cat_data["example_awarded_marks"] = None
+                    cat_data["awarded_mark"] = None
             except Exception:
-                cat_data["example_awarded_marks"] = None
+                cat_data["awarded_mark"] = None
         categories_with_bands.append(cat_data)
     
-    # Check if marks match
+    # Check if the sum of the category marks match the assessment max_marks
     marks_mismatch = None
-    if tpl.max_marks and total_category_marks != tpl.max_marks:
+    if total_category_marks != tpl.max_marks:
         marks_mismatch = {
             'total': total_category_marks,
             'max_marks': tpl.max_marks
         }
 
-    # Calculate overall grade for the assessment (if max_marks is set)
-    overall_grade = None
+    # Calculate overall grade for the assessment
     try:
         from feedback.utils import grade_for_percentage
 
-        if tpl.max_marks and tpl.max_marks > 0:
-            # When max_marks is explicitly set, calculate based on category totals vs max
-            percentage = (total_category_marks / tpl.max_marks) * 100
-            overall_grade = grade_for_percentage(percentage)
-        else:
-            # Example mode: this feedback sheet is illustrative and may not have max_marks set.
-            # Use the total of category marks as the example awarded value and show it
-            # as the example grade/total so the sheet reflects the summed categories.
-            example_display_max = total_category_marks if total_category_marks > 0 else 0
-            example_awarded = None
-            example_grade = None
-            if example_display_max > 0:
-                # Compute the example awarded total as the sum of per-category example
-                # awarded marks (these are set above when building categories_with_bands).
-                total_example_awarded = 0
-                for c in categories_with_bands:
-                    m = c.get("example_awarded_marks")
-                    try:
-                        if m is not None:
-                            total_example_awarded += int(m)
-                    except Exception:
-                        # ignore non-integer/example values
-                        continue
-
-                example_awarded = total_example_awarded
-                # Derive an example grade band from the percentage of the total available marks
+        display_max = total_category_marks if total_category_marks > 0 else 0 # use total of maxima forcategories
+        assessment_mark = None
+        if display_max > 0:
+            # Compute the total awarded mark as the sum of per-category awarded
+            total_awarded_mark = 0
+            for c in categories_with_bands:
+                m = c.get("awarded_mark")
                 try:
-                    example_percentage = (example_awarded / example_display_max) * 100
-                    example_grade = grade_for_percentage(example_percentage)
+                    if m is not None:
+                        total_awarded_mark += int(m)
                 except Exception:
-                    example_grade = None
-            # Expose example values to the template for display when no real overall_grade exists
-            # We'll attach them to the context variables below (example_awarded, example_grade)
+                    # ignore non-integer/example values
+                    continue
+
+            assessment_mark = total_awarded_mark
+            # Derive an example grade band from the percentage of the total available marks
+            try:
+                percentage = (assessment_mark / display_max) * 100
+                grade = grade_for_percentage(percentage)
+            except Exception:
+                grade = None
+            assessment_grade = grade
     except Exception:
-        overall_grade = None
+        assessment_grade = None
 
     return render(request, "feedback/template_feedback_sheet.html", {
         "template": tpl,
         "categories_with_bands": categories_with_bands,
         "total_marks": total_category_marks,
-        "overall_grade": overall_grade,
-        "example_awarded": locals().get('example_awarded', None),
-        "example_grade": locals().get('example_grade', None),
+        "assessment_grade": assessment_grade,
+        "assessment_awarded": assessment_mark,
         "charts": tpl.charts if tpl.charts else [],
         "marks_mismatch": marks_mismatch
     })

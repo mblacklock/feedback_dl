@@ -19,6 +19,8 @@
                 <h5 class="mb-0">{{ template.module_code }} - {{ template.title }}</h5>
             </div>
             {% include 'feedback/partials/marks_mismatch_warning.html' %}
+
+            {% comment %} Module and student information {% endcomment %}
             <div class="card-body">
                 <div class="row mb-3">
                     <div class="col-md-3">
@@ -55,6 +57,7 @@
                 
                 <h6 class="fw-bold mb-3">Assessment Feedback</h6>
                 
+                {% comment %} Rubric Category marks {% endcomment %}
                 {% for cat in categories_with_bands %}
                 <div class="card mb-3">
                     <div class="card-header d-flex justify-content-between align-items-center">
@@ -65,31 +68,19 @@
                         <div class="row mb-3">
                             <div class="col-md-2">
                                 {% if cat.type == 'grade' %}
-                                <p><strong>Grade Awarded:</strong></p>
-                                {% if cat.example_awarded_grade %}
+                                    <p><strong>Grade Awarded:</strong></p>
                                     <div class="d-flex justify-content-center mb-1">
                                         <span class="badge bg-light-subtle border border-light-subtle text-light-emphasis rounded-pill p-3">
-                                            {{ cat.example_awarded_grade }} ({{ cat.example_awarded_marks }} marks)
+                                            {{ cat.awarded_grade }} ({{ cat.awarded_mark }} marks)
                                         </span>
                                     </div>
                                 {% else %}
-                                    <p class="text-muted">[
-                                        {% if cat.bands %}
-                                            {% for band in cat.bands %}{{ band.grade }}{% if not forloop.last %}, {% endif %}{% endfor %}
-                                        {% endif %}] ([_] marks)
-                                    </p>
-                                {% endif %}
-                                {% else %}
-                                <p><strong>Mark Awarded:</strong></p>
-                                {% if cat.example_awarded_marks is not None %}
+                                    <p><strong>Mark Awarded:</strong></p>
                                     <div class="d-flex justify-content-center mb-1">
                                         <span class="badge bg-light-subtle border border-light-subtle text-light-emphasis rounded-pill p-3">
-                                            {{ cat.example_awarded_marks }} / {{ cat.max }} marks
+                                            {{ cat.awarded_mark }} / {{ cat.max }} marks
                                         </span>
                                     </div>
-                                {% else %}
-                                    <p class="text-muted">[0 - {{ cat.max }} marks]</p>
-                                {% endif %}
                                 {% endif %}
                             </div>
                             <div class="col-md-9">
@@ -109,13 +100,13 @@
                             </div>
                             <div class="col-md-6 text-end">
                                 <h5 class="fw-bold">
-                                    {% if overall_grade %}
-                                        <span id="assessment-grade" class="me-3">{{ overall_grade }}</span>
-                                        _____ / {{ total_marks }}
-                                    {% elif example_grade %}
-                                        <!-- Example display when template has no max_marks set -->
-                                        <span id="assessment-grade">{{ example_grade }}</span>
-                                        ( {{ example_awarded }} / {{ total_marks }} )
+                                    {% if assessment_grade %}
+                                        <span id="assessment-grade" class="me-3">{{ assessment_grade }}</span>
+                                        {% if assessment_awarded is not None %}
+                                            ( {{ assessment_awarded }} / {{ total_marks }} )
+                                        {% else %}
+                                            _____ / {{ total_marks }}
+                                        {% endif %}
                                     {% else %}
                                         _____ / {{ total_marks }}
                                     {% endif %}
