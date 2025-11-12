@@ -63,17 +63,33 @@
                     </div>
                     <div class="card-body">
                         <div class="row mb-3">
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 {% if cat.type == 'grade' %}
                                 <p><strong>Grade Awarded:</strong></p>
-                                <p class="text-muted">[
-                                    {% if cat.bands %}
-                                        {% for band in cat.bands %}{{ band.grade }}{% if not forloop.last %}, {% endif %}{% endfor %}
-                                    {% endif %}] ([_] marks)
-                                </p>
+                                {% if cat.example_awarded_grade %}
+                                    <div class="d-flex justify-content-center mb-1">
+                                        <span class="badge bg-light-subtle border border-light-subtle text-light-emphasis rounded-pill p-3">
+                                            {{ cat.example_awarded_grade }} ({{ cat.example_awarded_marks }} marks)
+                                        </span>
+                                    </div>
+                                {% else %}
+                                    <p class="text-muted">[
+                                        {% if cat.bands %}
+                                            {% for band in cat.bands %}{{ band.grade }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                                        {% endif %}] ([_] marks)
+                                    </p>
+                                {% endif %}
                                 {% else %}
                                 <p><strong>Mark Awarded:</strong></p>
-                                <p class="text-muted">[0 - {{ cat.max }} marks]</p>
+                                {% if cat.example_awarded_marks is not None %}
+                                    <div class="d-flex justify-content-center mb-1">
+                                        <span class="badge bg-light-subtle border border-light-subtle text-light-emphasis rounded-pill p-3">
+                                            {{ cat.example_awarded_marks }} / {{ cat.max }} marks
+                                        </span>
+                                    </div>
+                                {% else %}
+                                    <p class="text-muted">[0 - {{ cat.max }} marks]</p>
+                                {% endif %}
                                 {% endif %}
                             </div>
                             <div class="col-md-9">
@@ -98,8 +114,8 @@
                                         _____ / {{ total_marks }}
                                     {% elif example_grade %}
                                         <!-- Example display when template has no max_marks set -->
-                                        <span id="assessment-grade" class="me-3">{{ example_grade }} <small class="text-muted">(example)</small></span>
-                                        {{ example_awarded }} / {{ total_marks }}
+                                        <span id="assessment-grade">{{ example_grade }}</span>
+                                        ( {{ example_awarded }} / {{ total_marks }} )
                                     {% else %}
                                         _____ / {{ total_marks }}
                                     {% endif %}

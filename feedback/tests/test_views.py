@@ -472,6 +472,38 @@ class TemplateSeparateViewsTest(TestCase):
         # Total category marks == max_marks, so percentage == 100% -> '1st'
         self.assertIn('overall_grade', resp.context)
         self.assertEqual(resp.context['overall_grade'], '1st')
+
+    def test_feedback_sheet_example_awarded_is_sum_of_category_examples(self):
+        """When template has no max_marks, the view should expose example_awarded equal
+        to the sum of per-category example_awarded_marks set on each category in the
+        `categories_with_bands` context variable (unit-level, no HTML asserts).
+        """
+        template = AssessmentTemplate.objects.create(
+            component=1,
+            title="Example Sum Test",
+            module_code="CS999",
+            assessment_title="Example",
+            weighting=0,
+            max_marks=0,
+            categories=[
+                {"label": "Cat A", "max": 30, "type": "grade", "subdivision": "none"},
+                {"label": "Cat B", "max": 20, "type": "numeric"}
+            ]
+        )
+
+        resp = self.client.get(f"/feedback/template/{template.pk}/feedback-sheet/")
+
+        categories = resp.context['categories_with_bands']
+        example_awarded = resp.context['example_awarded']
+
+        # Sum up per-category example_awarded_marks (ignoring None values)
+        total = 0
+        for c in categories:
+            m = c.get('example_awarded_marks')
+            if m is not None:
+                total += int(m)
+
+        self.assertEqual(example_awarded, total)
     
     def test_rubric_url_pattern(self):
         """Rubric URL pattern resolves correctly"""

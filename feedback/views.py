@@ -151,7 +151,33 @@ def template_feedback_sheet(request, pk):
             cat_data["bands"] = bands
             grouped_bands = _group_bands_by_main_grade(bands)
             cat_data["grouped_bands"] = grouped_bands
+            # Pick a random example grade for this category (example feedback sheet)
+            try:
+                import random
+                chosen = random.choice(bands) if bands else None
+                if chosen:
+                    # store an example grade and marks for template display
+                    cat_data["example_awarded_grade"] = chosen.get("grade")
+                    cat_data["example_awarded_marks"] = chosen.get("marks")
+                else:
+                    cat_data["example_awarded_grade"] = None
+                    cat_data["example_awarded_marks"] = None
+            except Exception:
+                cat_data["example_awarded_grade"] = None
+                cat_data["example_awarded_marks"] = None
             
+        else:
+            # For numeric categories, provide an example awarded mark for the sample sheet
+            try:
+                import random
+                max_marks = int(cat.get("max", 0)) if cat.get("max") is not None else 0
+                if max_marks > 0:
+                    # pick a sensible example between 0 and max (e.g., random)
+                    cat_data["example_awarded_marks"] = random.randint(0, max_marks)
+                else:
+                    cat_data["example_awarded_marks"] = None
+            except Exception:
+                cat_data["example_awarded_marks"] = None
         categories_with_bands.append(cat_data)
     
     # Check if marks match
@@ -173,15 +199,31 @@ def template_feedback_sheet(request, pk):
             overall_grade = grade_for_percentage(percentage)
         else:
             # Example mode: this feedback sheet is illustrative and may not have max_marks set.
-            # Provide an example awarded mark and corresponding grade so the page shows a sample.
+            # Use the total of category marks as the example awarded value and show it
+            # as the example grade/total so the sheet reflects the summed categories.
             example_display_max = total_category_marks if total_category_marks > 0 else 0
             example_awarded = None
             example_grade = None
             if example_display_max > 0:
-                # Pick a sensible example (75% of available marks) so the example grade is in the upper bands
-                example_awarded = int(example_display_max * 0.75)
-                example_percentage = (example_awarded / example_display_max) * 100
-                example_grade = grade_for_percentage(example_percentage)
+                # Compute the example awarded total as the sum of per-category example
+                # awarded marks (these are set above when building categories_with_bands).
+                total_example_awarded = 0
+                for c in categories_with_bands:
+                    m = c.get("example_awarded_marks")
+                    try:
+                        if m is not None:
+                            total_example_awarded += int(m)
+                    except Exception:
+                        # ignore non-integer/example values
+                        continue
+
+                example_awarded = total_example_awarded
+                # Derive an example grade band from the percentage of the total available marks
+                try:
+                    example_percentage = (example_awarded / example_display_max) * 100
+                    example_grade = grade_for_percentage(example_percentage)
+                except Exception:
+                    example_grade = None
             # Expose example values to the template for display when no real overall_grade exists
             # We'll attach them to the context variables below (example_awarded, example_grade)
     except Exception:

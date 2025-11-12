@@ -4,7 +4,6 @@
 - None currently
 
 ## Future Enhancements
-- Pick a random grade from each category
 - Toggle class average on radar
 - General feedback text
 - Style feedback sheet
