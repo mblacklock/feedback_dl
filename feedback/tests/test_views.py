@@ -445,8 +445,10 @@ class TemplateSeparateViewsTest(TestCase):
         self.assertContains(resp, "Design")
         self.assertContains(resp, "Testing")
         
-        # Should show total marks
-        self.assertContains(resp, "Total")
+        # Should expose total_marks in the view context and show the numeric total
+        self.assertIn('total_marks', resp.context)
+        self.assertEqual(resp.context['total_marks'], 50)
+        # Still assert the numeric total is present in the rendered HTML
         self.assertContains(resp, "50")
 
     def test_feedback_sheet_view_passes_overall_grade_in_context(self):

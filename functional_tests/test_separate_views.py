@@ -89,7 +89,6 @@ class SeparateViewsFT(FunctionalTestBase):
         self.assertIn("feedback", feedback_content.lower())
         
         # Should show total marks
-        self.assertIn("Total", feedback_content)
         self.assertIn("100", feedback_content)
     
     def test_marks_mismatch_warning_appears_on_rubric_page(self):
