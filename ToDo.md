@@ -4,6 +4,10 @@
 - None currently
 
 ## Future Enhancements
+- Add Grade to Total Mark and change to assessment mark
+- Pick a random grade from each category
+- Toggle class average on radar
+- General feedback text
 - Style feedback sheet
 - Ability to have non-mark category, e.g. for performance data
 - General assessment feedback/freeform comments
@@ -16,10 +20,9 @@
 - Consider adding bulk import/export functionality for templates
 - Add template duplication feature (copy existing template as starting point)
 - Add search/filter functionality on home page for large numbers of templates
-- Consider adding template versioning or audit trail
 
 ## Technical Debt
-- None currently
+- Check duplication in unit tests
 
 ## Testing
 - All tests passing

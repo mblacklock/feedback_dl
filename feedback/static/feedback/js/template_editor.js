@@ -3,6 +3,7 @@
 let saveTimeout = null;
 let isSaving = false;
 let categoryIdCounter = 0;  // Counter to ensure unique IDs for radio buttons
+let refreshChartsTimeout = null; // Debounce timer for refreshing chart configs
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
@@ -116,6 +117,8 @@ function addCategoryRow(categoryData = null) {
     
     // Set up event handlers for this row
     setupRowEventHandlers(row);
+    // After adding a category row, refresh chart configs so any radar chart category lists include this row
+    debouncedRefreshCharts();
 }
 
 function setupRowEventHandlers(row) {
@@ -130,6 +133,10 @@ function setupRowEventHandlers(row) {
     // Auto-save on input changes
     labelInput.addEventListener('input', debouncedSave);
     labelInput.addEventListener('blur', saveNow);
+    // When a label is changed (on blur), refresh chart configs so chart category lists pick up new/renamed categories
+    labelInput.addEventListener('blur', function() {
+        debouncedRefreshCharts();
+    });
     maxMarksInput.addEventListener('input', debouncedSave);
     maxMarksInput.addEventListener('blur', saveNow);
     
@@ -179,6 +186,8 @@ function setupRowEventHandlers(row) {
     removeButton.addEventListener('click', function() {
         row.remove();
         debouncedSave();
+        // After removing a category, refresh charts so their category lists are updated
+        debouncedRefreshCharts();
     });
 }
 
@@ -663,6 +672,52 @@ function getCategoriesFromDOM() {
         }
     });
     return categories;
+}
+
+function getChartRowData(row) {
+    // Extract the current saved/selected data for this chart row so we can re-render
+    const typeSelect = row.querySelector('.chart-type');
+    const chartType = typeSelect ? typeSelect.value : 'radar';
+    const existingData = {};
+
+    if (chartType === 'radar') {
+        const selectedCategories = [];
+        const categoryShortNames = {};
+        row.querySelectorAll('.chart-category').forEach(cb => {
+            if (cb.checked) {
+                selectedCategories.push(cb.value);
+                const shortNameInput = cb.closest('.d-flex').querySelector('.category-short-name');
+                if (shortNameInput && shortNameInput.value.trim()) {
+                    categoryShortNames[cb.value] = shortNameInput.value.trim();
+                }
+            }
+        });
+        existingData.categories = selectedCategories;
+        existingData.category_short_names = categoryShortNames;
+    } else if (chartType === 'histogram') {
+        const dataSource = row.querySelector('.chart-data-source')?.value || 'overall';
+        existingData.dataSource = dataSource;
+    }
+
+    return existingData;
+}
+
+function refreshAllChartConfigs() {
+    // Re-render the chart configuration blocks for all chart rows so they reflect current categories
+    document.querySelectorAll('.chart-row').forEach(row => {
+        const chartType = row.querySelector('.chart-type')?.value || 'radar';
+        const existingData = getChartRowData(row);
+        renderChartConfig(row, chartType, existingData);
+    });
+}
+
+function debouncedRefreshCharts() {
+    if (refreshChartsTimeout) {
+        clearTimeout(refreshChartsTimeout);
+    }
+    refreshChartsTimeout = setTimeout(() => {
+        refreshAllChartConfigs();
+    }, 250);
 }
 
 function updateSelectAllCheckbox(configContainer) {
