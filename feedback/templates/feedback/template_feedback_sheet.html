@@ -16,44 +16,25 @@
         
         <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">{{ template.module_code }} - {{ template.title }}</h5>
+                <h5 class="mb-0">{{ template.title }}</h5>
             </div>
             {% include 'feedback/partials/marks_mismatch_warning.html' %}
 
             {% comment %} Module and student information {% endcomment %}
+            <div class="card border-0 bg-light">
+				<div class="card-body">
+					<h4 class="card-title d-flex justify-content-between align-items-center">
+						{{ template.module_code }} {{ template.module_title }}
+						<span>Feedback Report</span>
+					</h4>
+					<h4 class="card-subtitle mb-2 text-muted">Component {{ template.component|default:"N/A" }}: {{ template.assessment_title }}</h4>
+					<div class="alert alert-info"><small>These results are internally moderated but have not yet been confirmed by the Programme Assessment Board.</small></div>
+					<hr class="my-2">
+					<h5 class="card-title">Name: [Student Name]</h5>
+					<h6 class="card-title">Student Number: [Student ID]</h6>
+				</div>
+			</div>
             <div class="card-body">
-                <div class="row mb-3">
-                    <div class="col-md-3">
-                        <p><strong>Module Code:</strong> {{ template.module_code }}</p>
-                    </div>
-                    {% if template.module_title %}
-                    <div class="col-md-5">
-                        <p><strong>Module Title:</strong> {{ template.module_title }}</p>
-                    </div>
-                    {% endif %}
-                    <div class="col-md-2">
-                        <p><strong>Component:</strong> {{ template.component|default:"N/A" }}</p>
-                    </div>
-                    <div class="col-md-2">
-                        <p><strong>Assessment:</strong> {{ template.assessment_title }}</p>
-                    </div>
-                </div>
-                
-                <hr>
-                
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <p><strong>Student Name:</strong> <span class="text-muted">[Student Name]</span></p>
-                    </div>
-                    <div class="col-md-3">
-                        <p><strong>Student ID:</strong> <span class="text-muted">[Student ID]</span></p>
-                    </div>
-                    <div class="col-md-3">
-                        <p><strong>Date:</strong> <span class="text-muted">[Date]</span></p>
-                    </div>
-                </div>
-                
-                <hr>
                 
                 <h6 class="fw-bold mb-3">Assessment Feedback</h6>
                 
@@ -117,9 +98,11 @@
                 </div>
                 
             </div>
+            
+            {% include "feedback/partials/charts_display.html" %}
+   
         </div>
         
-        {% include "feedback/partials/charts_display.html" %}
         
         <div class="alert alert-info">
             <strong>Note:</strong> This is an example feedback sheet showing the structure. 
