@@ -4,7 +4,6 @@
 - None currently
 
 ## Future Enhancements
-- Pass the actual marks to the charts (keep example class marks)
 - Half page with charts on left?
 - Toggle class average on radar
 - General feedback text
