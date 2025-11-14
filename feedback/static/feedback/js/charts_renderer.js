@@ -15,6 +15,7 @@ function renderFeedbackCharts(charts, categories) {
         // and Chart.js will respect the container when maintainAspectRatio is true.
 
         if (chart.type === 'radar') {
+
             renderRadarChart(ctx, chart);
         } else if (chart.type === 'histogram') {
             renderHistogramChart(ctx, chart);
@@ -29,7 +30,7 @@ function renderRadarChart(ctx, chart) {
             ? chart.category_short_names[cat] 
             : cat;
     });
-    
+
     new Chart(ctx, {
         type: 'radar',
         data: {
@@ -37,7 +38,7 @@ function renderRadarChart(ctx, chart) {
             datasets: [
                 {
                     label: 'Your marks',
-                    data: chart.categories.map(() => Math.floor(Math.random() * 30) + 60), // Random 60-90%
+                    data: chart.awarded_cat_percentages,
                     borderColor: 'rgba(8, 163, 34, 0.5)',
                     backgroundColor: 'rgba(8, 163, 34, 0.4)'
                 },
@@ -50,13 +51,11 @@ function renderRadarChart(ctx, chart) {
             ]
         },
         options: {
-            // Fill the container's pixel dimensions (we use a fixed-height container)
             maintainAspectRatio: false,
             scales: {
                 r: {
                     beginAtZero: true,
                     max: 100,
-                    // Make category (point) labels larger for readability
                     pointLabels: {
                         font: {
                             size: 14
@@ -89,6 +88,7 @@ function renderRadarChart(ctx, chart) {
 
 function renderHistogramChart(ctx, chart) {
     // Example student mark (percent). Use provided value if available.
+    console.log(chart);
     const studentMark = (chart.student_mark !== undefined) ? chart.student_mark : 75;
 
     // Plugin draws a vertical line at the student's mark across the chart area.

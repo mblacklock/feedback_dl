@@ -221,6 +221,28 @@ def template_feedback_sheet(request, pk):
     except Exception:
         assessment_grade = None
 
+    # Add awarded_mark_percentage to each category
+    for category in categories_with_bands:
+        max_marks = category.get("max", 0)
+        awarded_mark = category.get("awarded_mark", 0)
+        if max_marks > 0:
+            category["awarded_mark_percentage"] = (awarded_mark / max_marks) * 100
+        else:
+            category["awarded_mark_percentage"] = 0
+
+    # Update charts to include categories_with_bands
+    charts = tpl.charts if tpl.charts else []
+    # Add assessment_mark to each chart
+    for chart in charts:
+        if chart['type'] == 'histogram':
+            chart['student_mark'] = assessment_mark
+    # Map awarded marks to radar chart categories while keeping labels
+    for chart in charts:
+        if chart['type'] == 'radar':
+            chart['awarded_cat_percentages'] = [
+                next((cat['awarded_mark_percentage'] for cat in categories_with_bands if cat['label'] == label), 0) for label in chart['categories']
+            ]
+
     return render(request, "feedback/template_feedback_sheet.html", {
         "template": tpl,
         "categories_with_bands": categories_with_bands,
