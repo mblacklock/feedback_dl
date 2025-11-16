@@ -29,7 +29,7 @@
                     <div class="btn-group" role="group">
                         <a href="{% url 'template_edit' template.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
                         <a href="{% url 'template_rubric' template.pk %}" class="btn btn-sm btn-outline-primary">Rubric</a>
-                        <a href="{% url 'template_feedback_sheet' template.pk %}" class="btn btn-sm btn-outline-success">Feedback Sheet</a>
+                        <a href="{% url 'template_feedback_sheet' template.pk %}" class="btn btn-sm btn-outline-success">Feedback Sheet</a> {% comment %}Comment out this line for rubric only mode{% endcomment %}
                         <button type="button" class="btn btn-sm btn-outline-danger delete-template" data-template-id="{{ template.pk }}" data-template-title="{{ template.title }}">Delete</button>
                     </div>
                 </div>

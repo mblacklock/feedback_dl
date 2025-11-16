@@ -7,7 +7,6 @@
 - Half page with charts on left?
 - Toggle class average on radar
 - General feedback text
-- Style feedback sheet
 - Ability to have non-mark category, e.g. for performance data
 - General assessment feedback/freeform comments
 - Create a marking spreadsheet from template
