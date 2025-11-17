@@ -15,6 +15,7 @@ class GradeBandDescriptionsFT(FunctionalTestBase):
         # GIVEN a staff member creates a new template
         self.navigate_to_home()
         self.create_new_template()
+        self.fill_template_fields()
         
         # WHEN they add a category with grade bands
         self.add_category_row()
@@ -67,6 +68,7 @@ class GradeBandDescriptionsFT(FunctionalTestBase):
         # GIVEN a staff member creates a template with grade bands
         self.navigate_to_home()
         self.create_new_template()
+        self.fill_template_fields()
         
         self.add_category_row()
         self.fill_category(0, "Analysis", 20, category_type='grade', subdivision='none')
@@ -104,6 +106,7 @@ class GradeBandDescriptionsFT(FunctionalTestBase):
         # GIVEN a staff member creates a template with grade bands and descriptions
         self.navigate_to_home()
         self.create_new_template()
+        self.fill_template_fields()
         
         self.add_category_row()
         self.fill_category(0, "Methodology", 20, category_type='grade', subdivision='none')

@@ -424,6 +424,7 @@ class TemplateSeparateViewsTest(TestCase):
             module_code="CS301",
             assessment_title="CW1",
             max_marks=50,
+            weighting=40,
             categories=[
                 {"label": "Design", "max": 30, "type": "grade", "subdivision": "none"},
                 {"label": "Testing", "max": 20, "type": "numeric"}
@@ -514,6 +515,8 @@ class TemplateSeparateViewsTest(TestCase):
             title="Test",
             module_code="CS101",
             assessment_title="Test",
+            weighting=50,
+            max_marks=100,
             categories=[]
         )
         
@@ -527,6 +530,8 @@ class TemplateSeparateViewsTest(TestCase):
             title="Test",
             module_code="CS101",
             assessment_title="Test",
+            weighting=50,
+            max_marks=100,
             categories=[]
         )
         

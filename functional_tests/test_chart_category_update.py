@@ -17,15 +17,7 @@ class ChartCategoryUpdateFT(FunctionalTestBase):
         self.create_new_template()
 
         # AND: fill required summary fields so autosave can proceed
-        self.fill_template_fields(
-            title="Chart Category Update",
-            module_code="CS999",
-            module_title="Chart Module",
-            assessment_title="Test",
-            weighting=10,
-            max_marks=100,
-            component=1
-        )
+        self.fill_template_fields()
 
         # Wait for autosave to stabilise
         self.wait_for_autosave()
@@ -75,15 +67,7 @@ class ChartCategoryUpdateFT(FunctionalTestBase):
         # GIVEN: a template builder with a radar chart and one category
         self.navigate_to_home()
         self.create_new_template()
-        self.fill_template_fields(
-            title="Chart Category Delete",
-            module_code="CS999",
-            module_title="Chart Module",
-            assessment_title="Test",
-            weighting=10,
-            max_marks=100,
-            component=1
-        )
+        self.fill_template_fields()
         self.wait_for_autosave()
 
         # Add radar chart

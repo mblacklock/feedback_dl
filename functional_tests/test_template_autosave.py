@@ -71,6 +71,7 @@ class TemplateAutoSaveFT(FunctionalTestBase):
         # GIVEN a staff member is on the edit page
         self.navigate_to_home()
         self.create_new_template()
+        self.fill_template_fields()
         
         # WHEN they add one more category (one already exists by default)
         self.add_category_row()
@@ -139,6 +140,7 @@ class TemplateAutoSaveFT(FunctionalTestBase):
         # GIVEN a staff member creates a template with a category
         self.navigate_to_home()
         self.create_new_template()
+        self.fill_template_fields()
         
         # WHEN they fill in first category details with NUMERIC type
         self.fill_category(0, "Introduction", 15, category_type='numeric')

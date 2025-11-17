@@ -21,15 +21,7 @@ class ChartsFT(FunctionalTestBase):
         self.create_new_template()
         
         # Fill in basic template info
-        self.fill_template_fields(
-            title="FEA Coursework",
-            module_code="KB5034",
-            module_title="Mechanics & FEA",
-            assessment_title="Exam",
-            component=2,
-            weighting=70,
-            max_marks=100
-        )
+        self.fill_template_fields()
         
         # Add categories
         self.add_category_row()
@@ -117,15 +109,7 @@ class ChartsFT(FunctionalTestBase):
         self.navigate_to_home()
         self.create_new_template()
         
-        self.fill_template_fields(
-            title="Test Template",
-            module_code="CS101",
-            module_title="Intro to CS",
-            assessment_title="Exam",
-            component=1,
-            weighting=50,
-            max_marks=100
-        )
+        self.fill_template_fields()
         
         # Add multiple categories
         self.add_category_row()
@@ -209,15 +193,7 @@ class ChartsFT(FunctionalTestBase):
         self.navigate_to_home()
         self.create_new_template()
         
-        self.fill_template_fields(
-            title="Test Template",
-            module_code="CS101",
-            module_title="Intro to CS",
-            assessment_title="Exam",
-            component=1,
-            weighting=50,
-            max_marks=100
-        )
+        self.fill_template_fields()
         
         # Add categories
         self.add_category_row()
@@ -261,11 +237,7 @@ class ChartsFT(FunctionalTestBase):
         self.navigate_to_home()
         self.create_new_template()
         
-        self.fill_template_fields(
-            title="Test Template",
-            module_code="CS101",
-            assessment_title="Assignment"
-        )
+        self.fill_template_fields()
         
         # Add categories with long names
         self.add_category_row()
@@ -345,11 +317,7 @@ class ChartsFT(FunctionalTestBase):
         self.navigate_to_home()
         self.create_new_template()
 
-        self.fill_template_fields(
-            title="Persistence Test",
-            module_code="CS200",
-            assessment_title="Assignment"
-        )
+        self.fill_template_fields()
 
         self.add_category_row()
         self.fill_category(0, "Design", 30)

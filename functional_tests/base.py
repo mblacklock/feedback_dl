@@ -87,43 +87,45 @@ class FunctionalTestBase(StaticLiveServerTestCase):
     
     # ===== Form Field Helpers =====
     
-    def fill_template_fields(self, title=None, module_code=None, module_title=None, 
-                            assessment_title=None, component=None, weighting=None, max_marks=None):
-        """Fill in template summary fields. Only fills fields that are provided."""
-        if title is not None:
-            title_field = self.wait.until(EC.presence_of_element_located((By.NAME, "title")))
-            title_field.clear()
-            title_field.send_keys(title)
-        
-        if module_code is not None:
-            module_code_field = self.browser.find_element(By.NAME, "module_code")
-            module_code_field.clear()
-            module_code_field.send_keys(module_code)
-        
-        if module_title is not None:
-            module_title_field = self.browser.find_element(By.NAME, "module_title")
-            module_title_field.clear()
-            module_title_field.send_keys(module_title)
-        
-        if assessment_title is not None:
-            assessment_field = self.browser.find_element(By.NAME, "assessment_title")
-            assessment_field.clear()
-            assessment_field.send_keys(assessment_title)
-        
-        if component is not None:
-            component_field = self.browser.find_element(By.NAME, "component")
-            component_field.clear()
-            component_field.send_keys(str(component))
-        
-        if weighting is not None:
-            weighting_field = self.browser.find_element(By.NAME, "weighting")
-            weighting_field.clear()
-            weighting_field.send_keys(str(weighting))
-        
-        if max_marks is not None:
-            max_marks_field = self.browser.find_element(By.NAME, "max_marks")
-            max_marks_field.clear()
-            max_marks_field.send_keys(str(max_marks))
+    def fill_template_fields(
+        self,
+        title="Test Template",
+        module_code="ABC123",
+        module_title="Sample Module",
+        assessment_title="Assessment Title",
+        component=1,
+        weighting=50,
+        max_marks=100,
+    ):
+        # Fill everything unconditionally
+        title_field = self.wait.until(EC.presence_of_element_located((By.NAME, "title")))
+        title_field.clear()
+        title_field.send_keys(title)
+
+        module_code_field = self.browser.find_element(By.NAME, "module_code")
+        module_code_field.clear()
+        module_code_field.send_keys(module_code)
+
+        module_title_field = self.browser.find_element(By.NAME, "module_title")
+        module_title_field.clear()
+        module_title_field.send_keys(module_title)
+
+        assessment_field = self.browser.find_element(By.NAME, "assessment_title")
+        assessment_field.clear()
+        assessment_field.send_keys(assessment_title)
+
+        component_field = self.browser.find_element(By.NAME, "component")
+        component_field.clear()
+        component_field.send_keys(str(component))
+
+        weighting_field = self.browser.find_element(By.NAME, "weighting")
+        weighting_field.clear()
+        weighting_field.send_keys(str(weighting))
+
+        max_marks_field = self.browser.find_element(By.NAME, "max_marks")
+        max_marks_field.clear()
+        max_marks_field.send_keys(str(max_marks))
+
     
     # ===== Category Helpers =====
     
