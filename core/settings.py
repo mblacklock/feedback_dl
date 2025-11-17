@@ -24,6 +24,7 @@ SECRET_KEY = 'django-insecure-@4egzz4rm--gqesxb#f013#7(h!2t226s(-70f5y0vxj$fmths
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
+RUBRIC_MODE = False
 
 ALLOWED_HOSTS = []
 
@@ -65,6 +66,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'core.context_processors.global_settings', # Added to include global settings in templates
             ],
         },
     },

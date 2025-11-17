@@ -12,7 +12,9 @@
             <div>
                 <span id="save-status" class="text-muted me-3"></span>
                 <a href="{% url 'template_rubric' template.id %}" class="btn btn-outline-primary me-2">View Rubric</a>
-                <a href="{% url 'template_feedback_sheet' template.id %}" class="btn btn-outline-success me-2">View Feedback Sheet</a> {% comment %}Comment out this line for rubric only mode{% endcomment %}
+                {% if not RUBRIC_MODE %}
+                    <a href="{% url 'template_feedback_sheet' template.id %}" class="btn btn-outline-success me-2">View Feedback Sheet</a>
+                {% endif %}
                 <a href="{% url 'home' %}" class="btn btn-outline-secondary">Back to Home</a>
             </div>
         </div>
@@ -87,26 +89,26 @@
                 </div>
             </div>
         </div>
-        {% comment %}Comment out the charts for rubric only mode{% endcomment %}
-        <div class="card mb-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Charts for Feedback Sheet</h5>
-                <button type="button" class="btn btn-sm btn-success" id="add-chart">
-                    <i class="bi bi-plus-circle"></i> Add Chart
-                </button>
-            </div>
-            <div class="card-body">
-                <p class="text-muted mb-3">
-                    Configure charts to display on the feedback sheet (using Chart.js).
-                    Radar charts show performance across multiple categories.
-                    Histograms show mark distribution for overall marks or specific categories.
-                </p>
-                <div id="charts">
-                    <!-- Chart rows will be added here by JavaScript -->
+        {% if not RUBRIC_MODE %}
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Charts for Feedback Sheet</h5>
+                    <button type="button" class="btn btn-sm btn-success" id="add-chart">
+                        <i class="bi bi-plus-circle"></i> Add Chart
+                    </button>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">
+                        Configure charts to display on the feedback sheet (using Chart.js).
+                        Radar charts show performance across multiple categories.
+                        Histograms show mark distribution for overall marks or specific categories.
+                    </p>
+                    <div id="charts">
+                        <!-- Chart rows will be added here by JavaScript -->
+                    </div>
                 </div>
             </div>
-        </div>
-        {% comment %}End Comment out the charts for rubric only mode{% endcomment %}
+        {% endif %}
     </div>
 </div>
 
