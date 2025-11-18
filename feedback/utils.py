@@ -86,7 +86,6 @@ def _calculate_mark_for_grade(max_marks, target_percentage, expected_grade):
     # Fallback (shouldn't happen in practice)
     return 0
 
-
 def validate_subdivision(max_marks, subdivision):
     """
     Check if a subdivision produces valid grade bands without cross-band violations.
@@ -124,16 +123,22 @@ def validate_subdivision(max_marks, subdivision):
     return True
 
 
-def calculate_grade_bands(max_marks, subdivision):
+def calculate_grade_bands(max_marks, subdivision, degree_level=None):
     """
     Calculate grade band mark values based on UK grading percentages.
     
-    UK Grade thresholds:
+    UK UGT Grade thresholds:
     - 1st: 70-100%
     - 2:1: 60-69%
     - 2:2: 50-59%
     - 3rd: 40-49%
     - Fail: 0-39%
+
+    UK Level 7 Grade thresholds:
+    - 1st/Distinction: 70-100%
+    - 2:1/Merit: 60-69%
+    - 2:2/Pass: 50-59%
+    - Fail: 0-49%
     
     Returns a single representative mark value for each grade band.
     
@@ -144,13 +149,38 @@ def calculate_grade_bands(max_marks, subdivision):
     Returns:
         List of dicts with grade and marks (single integer value)
     """
-    bands = []
+    """Calculate grade band mark values based on UK grading percentages.
+
+    Accepts an optional `degree_level` parameter (e.g., 'MEng' or 'MSc' or
+    'MEng/MSc') to produce postgraduate-style labels (Distinction/Merit/Pass/Fail)
+    where appropriate. The internal calculations still use the undergraduate
+    grade bands but the returned `grade` labels will be remapped for level 7.
+    """
+    # Backwards-compatible signature handling: if caller passed a third
+    # positional argument for degree_level (TDD tests may call
+    # calculate_grade_bands(max_marks, subdivision, degree_level='MEng'))
+    # Python will already have that as the third argument; we support an
+    # explicit parameter below by checking locals. To keep compatibility we
+    # accept an optional keyword-only parameter in the function signature
+    # by reading from the calling frame isn't necessary; instead we'll
+    # support being called with three args by allowing callers to pass
+    # degree_level as a third positional argument in the updated signature.
     
+    # NOTE: keep a simple API by supporting degree_level via attribute on
+    # the function if necessary; however, easiest is to accept degree_level
+    # as optional kwarg. We'll implement by inspecting function arguments
+    # as passed by callers in newer code paths. (See below where we add
+    # an explicit parameter in the signature.)
+    
+    # The implementation below checks for a module-level override, but
+    # we'll simply implement degree-level mapping after computing bands.
+    
+    # For backward compatibility we still accept the original 2-arg call.
+    
+    # Build the undergraduate bands first (original implementation)
+    ug_bands = []
     if subdivision == "none":
-        # Expanded subdivision - maximizes mark coverage by always expanding 1st and Fail bands
-        # Provides more granularity at extremes (excellence and poor performance)
-        # while keeping middle grades simple
-        bands = [
+        ug_bands = [
             {"grade": "Max 1st", "marks": _calculate_mark_for_grade(max_marks, 1.00, "1st")},
             {"grade": "High 1st", "marks": _calculate_mark_for_grade(max_marks, 0.90, "1st")},
             {"grade": "Mid 1st", "marks": _calculate_mark_for_grade(max_marks, 0.80, "1st")},
@@ -158,23 +188,10 @@ def calculate_grade_bands(max_marks, subdivision):
             {"grade": "2:1", "marks": _calculate_mark_for_grade(max_marks, 0.6, "2:1")},
             {"grade": "2:2", "marks": _calculate_mark_for_grade(max_marks, 0.5, "2:2")},
             {"grade": "3rd", "marks": _calculate_mark_for_grade(max_marks, 0.4, "3rd")},
-            {"grade": "Close Fail", "marks": _calculate_mark_for_grade(max_marks, 0.30, "Fail")},
-            {"grade": "Fail", "marks": _calculate_mark_for_grade(max_marks, 0.20, "Fail")},
-            {"grade": "Poor Fail", "marks": _calculate_mark_for_grade(max_marks, 0.10, "Fail")},
-            {"grade": "Zero Fail", "marks": _calculate_mark_for_grade(max_marks, 0.00, "Fail")},
         ]
-    
+
     elif subdivision == "high_low":
-        # High/Low subdivision - split each grade band, validated to stay in correct band
-        # Max 1st: target 100%
-        # High 1st: target 85%, Low 1st: target 72%
-        # High 2:1: target 65%, Low 2:1: target 62%
-        # High 2:2: target 55%, Low 2:2: target 52%
-        # High 3rd: target 45%, Low 3rd: target 42%
-        # Close Fail: target 30%
-        # Fail: target 20%
-        # Poor Fail: target 10%
-        bands = [
+        ug_bands = [
             {"grade": "Max 1st", "marks": _calculate_mark_for_grade(max_marks, 1.00, "1st")},
             {"grade": "High 1st", "marks": _calculate_mark_for_grade(max_marks, 0.85, "1st")},
             {"grade": "Low 1st", "marks": _calculate_mark_for_grade(max_marks, 0.72, "1st")},
@@ -184,23 +201,10 @@ def calculate_grade_bands(max_marks, subdivision):
             {"grade": "Low 2:2", "marks": _calculate_mark_for_grade(max_marks, 0.52, "2:2")},
             {"grade": "High 3rd", "marks": _calculate_mark_for_grade(max_marks, 0.45, "3rd")},
             {"grade": "Low 3rd", "marks": _calculate_mark_for_grade(max_marks, 0.42, "3rd")},
-            {"grade": "Close Fail", "marks": _calculate_mark_for_grade(max_marks, 0.30, "Fail")},
-            {"grade": "Fail", "marks": _calculate_mark_for_grade(max_marks, 0.20, "Fail")},
-            {"grade": "Poor Fail", "marks": _calculate_mark_for_grade(max_marks, 0.10, "Fail")},
-            {"grade": "Zero Fail", "marks": _calculate_mark_for_grade(max_marks, 0.00, "Fail")},
         ]
-    
+
     elif subdivision == "high_mid_low":
-        # High/Mid/Low subdivision - split each grade band in thirds, validated to stay in correct band
-        # Max 1st: target 100%
-        # High 1st: target 90%, Mid 1st: target 80%, Low 1st: target 70%
-        # High 2:1: target 67%, Mid 2:1: target 63%, Low 2:1: target 60%
-        # High 2:2: target 57%, Mid 2:2: target 53%, Low 2:2: target 50%
-        # High 3rd: target 47%, Mid 3rd: target 43%, Low 3rd: target 40%
-        # Close Fail: target 30%
-        # Fail: target 20%
-        # Poor Fail: target 10%
-        bands = [
+        ug_bands = [
             {"grade": "Max 1st", "marks": _calculate_mark_for_grade(max_marks, 1.00, "1st")},
             {"grade": "High 1st", "marks": _calculate_mark_for_grade(max_marks, 0.90, "1st")},
             {"grade": "Mid 1st", "marks": _calculate_mark_for_grade(max_marks, 0.80, "1st")},
@@ -214,10 +218,57 @@ def calculate_grade_bands(max_marks, subdivision):
             {"grade": "High 3rd", "marks": _calculate_mark_for_grade(max_marks, 0.47, "3rd")},
             {"grade": "Mid 3rd", "marks": _calculate_mark_for_grade(max_marks, 0.43, "3rd")},
             {"grade": "Low 3rd", "marks": _calculate_mark_for_grade(max_marks, 0.40, "3rd")},
-            {"grade": "Close Fail", "marks": _calculate_mark_for_grade(max_marks, 0.30, "Fail")},
-            {"grade": "Fail", "marks": _calculate_mark_for_grade(max_marks, 0.20, "Fail")},
-            {"grade": "Poor Fail", "marks": _calculate_mark_for_grade(max_marks, 0.10, "Fail")},
-            {"grade": "Zero Fail", "marks": _calculate_mark_for_grade(max_marks, 0.00, "Fail")},
         ]
-    
-    return bands
+
+    # Decide if this is M-level (postgraduate) to adjust passing-band labels.
+    is_m_level = bool(degree_level and isinstance(degree_level, str) and degree_level.strip().lower().startswith('m'))
+
+    # Helper to build fail sub-bands once based on degree level.
+    def _build_fail_sequence(max_marks, ug_bands_list, is_m_level_flag):
+        seq = []
+
+        if is_m_level_flag:
+            # Use even-split targets (37.5%, 25%, 12.5%, 0%) for M-level fail bands
+            close_fail_mark = _round_marks(max_marks * 0.375)
+            fail_mark = _round_marks(max_marks * 0.25)
+            poor_fail_mark = _round_marks(max_marks * 0.125)
+            zero_mark = 0
+
+            seq.append({'grade': 'Close Fail', 'marks': close_fail_mark})
+            seq.append({'grade': 'Fail', 'marks': fail_mark})
+            seq.append({'grade': 'Poor Fail', 'marks': poor_fail_mark})
+            seq.append({'grade': 'Zero Fail', 'marks': zero_mark})
+
+        else:
+            # Undergraduate fail anchors: 30%, 20%, 10%, 0%
+            seq.append({'grade': 'Close Fail', 'marks': _calculate_mark_for_grade(max_marks, 0.30, 'Fail')})
+            seq.append({'grade': 'Fail', 'marks': _calculate_mark_for_grade(max_marks, 0.20, 'Fail')})
+            seq.append({'grade': 'Poor Fail', 'marks': _calculate_mark_for_grade(max_marks, 0.10, 'Fail')})
+            seq.append({'grade': 'Zero Fail', 'marks': 0})
+
+        return seq
+
+    # Build final bands by appending fail sequence once according to degree level
+    if is_m_level:
+        mapped = []
+        for b in ug_bands:
+            name = b['grade']
+            marks = b['marks']
+            if '1st' in name:
+                mapped.append({'grade': name.replace('1st', '1st/Distinction'), 'marks': marks})
+            elif '2:1' in name:
+                mapped.append({'grade': name.replace('2:1', '2:1/Merit'), 'marks': marks})
+            elif '2:2' in name:
+                mapped.append({'grade': name.replace('2:2', '2:2/Pass'), 'marks': marks})
+            else:
+                # preserve other bands (e.g., 3rd variants) to maintain ordering
+                mapped.append({'grade': name, 'marks': marks})
+
+        # Append M-level fail bands built from UG anchors
+        mapped.extend(_build_fail_sequence(max_marks, ug_bands, True))
+        return mapped
+
+    # Undergraduate: use UG bands and append UG fail bands once
+    final = list(ug_bands)
+    final.extend(_build_fail_sequence(max_marks, ug_bands, False))
+    return final

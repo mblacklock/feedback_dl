@@ -17,11 +17,36 @@ document.addEventListener('DOMContentLoaded', function() {
         addCategoryRow();
     }
     
-    // Set up auto-save for summary fields
+    // Set up auto-save for summary fields (listen for input and change events)
     document.querySelectorAll('.auto-save').forEach(field => {
         field.addEventListener('input', debouncedSave);
+        field.addEventListener('change', debouncedSave);
         field.addEventListener('blur', saveNow);
     });
+
+    // If there's a degree level selector, make changes to it update grade band previews
+    const degreeEl = document.getElementById('degree_level');
+    if (degreeEl) {
+        degreeEl.addEventListener('change', function() {
+            // Update previews for every category row to reflect the new degree level
+            document.querySelectorAll('.category-row').forEach(row => {
+                // Only update if this row uses grade bands
+                const typeRadio = row.querySelector('input[type="radio"]:checked');
+                if (typeRadio && typeRadio.value === 'grade') {
+                    updateGradeBandsPreview(row);
+                }
+            });
+            // Use debouncedSave to match behavior of other `.auto-save` fields
+            // and also trigger a blur so the immediate `saveNow()` handler runs
+            // (many inputs rely on blur to persist immediately).
+            debouncedSave();
+            try {
+                degreeEl.blur();
+            } catch (e) {
+                // ignore if blur not supported in this environment
+            }
+        });
+    }
     
     // Check if max marks match on page load
     checkMaxMarksMatch();
@@ -333,6 +358,8 @@ function saveNow() {
         weighting: document.getElementById('weighting').value ? parseInt(document.getElementById('weighting').value) : null,
         max_marks: document.getElementById('max_marks').value ? parseInt(document.getElementById('max_marks').value) : null,
         component: parseInt(document.getElementById('component').value),
+        // Persist the selected degree level so reloads reflect the chosen setting
+        degree_level: (document.getElementById('degree_level') ? document.getElementById('degree_level').value : (window.templateData && window.templateData.degree_level ? window.templateData.degree_level : 'BEng')),
         categories: [],
         charts: []
     };
@@ -371,6 +398,7 @@ function saveNow() {
         });
         
         // If numeric type and no visible descriptions, preserve original descriptions from data
+        // (so they can be restored later)
         if (type === 'numeric' && Object.keys(descriptions).length === 0) {
             try {
                 const originalData = JSON.parse(row.dataset.originalCategoryData || '{}');
@@ -514,8 +542,12 @@ function updateGradeBandsPreview(row) {
         }
     });
     
-    // Fetch grade bands HTML from server
-    fetch(`/feedback/grade-bands-preview/?max_marks=${maxMarks}&subdivision=${subdivision}`)
+        // Read current degree level if present
+        const degreeEl = document.getElementById('degree_level');
+        const degreeLevel = degreeEl ? degreeEl.value : (window.templateData && window.templateData.degree_level ? window.templateData.degree_level : 'BEng');
+
+        // Fetch grade bands HTML from server (include degree_level)
+        fetch(`/feedback/grade-bands-preview/?max_marks=${maxMarks}&subdivision=${subdivision}&degree_level=${encodeURIComponent(degreeLevel)}`)
         .then(response => response.json())
         .then(data => {
             if (data.html) {
@@ -858,3 +890,4 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+

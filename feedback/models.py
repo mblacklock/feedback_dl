@@ -16,6 +16,12 @@ class AssessmentTemplate(models.Model):
         blank=True,
         help_text="Chart configurations for feedback sheet (e.g., histograms, radar charts)"
     )
+    degree_level = models.CharField(
+        max_length=10,
+        choices=[('BEng', 'BEng'), ('MEng/MSc', 'MEng/MSc')],
+        default='BEng',
+        help_text='Degree level (BEng or MEng/MSc)'
+    )
 
     def clean(self):
         """Validate categories structure and bounds."""

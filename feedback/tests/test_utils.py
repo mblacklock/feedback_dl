@@ -44,3 +44,25 @@ class GradeBandUtilsTests(TestCase):
         """Test that 'high_mid_low' subdivision is valid for 10+ marks (allows duplicates)."""
         self.assertTrue(validate_subdivision(10, "high_mid_low"))
         self.assertTrue(validate_subdivision(20, "high_mid_low"))
+
+    def test_calculate_grade_bands_for_level7_uses_50_percent_pass(self):
+        """
+        Level 7 (MEng/MSc) should use a 50% pass threshold and labels
+        Distinction/Merit/Pass/Fail. This test asserts the utility will
+        produce bands containing 'Merit'/'Pass' and a pass threshold at 50
+        for a 100-mark category when degree_level='MEng'.
+        """
+        # TDD: expected API `calculate_grade_bands(max_marks, subdivision, degree_level=...)`
+        bands = calculate_grade_bands(100, 'none', degree_level='MEng')
+
+        # Ensure returned structure is a list of dicts with grade and marks
+        self.assertIsInstance(bands, list)
+        self.assertGreater(len(bands), 0)
+        self.assertTrue(all('grade' in b and 'marks' in b for b in bands))
+
+        grades = ' '.join(b['grade'] for b in bands)
+        marks_text = ' '.join(str(b['marks']) for b in bands)
+
+        # Level 7 bands should include Merit/Pass labels and a 50 mark representative
+        self.assertTrue(('Merit' in grades) or ('Pass' in grades))
+        self.assertIn('50', marks_text)

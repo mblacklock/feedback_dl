@@ -251,6 +251,41 @@ class TemplateUpdateViewTests(TestCase):
         # Template should be updated
         template.refresh_from_db()
         self.assertEqual(template.module_title, "Finite Element Analysis")
+
+    def test_post_update_saves_degree_level_field(self):
+        """POST /feedback/template/<pk>/update/ saves the degree_level field."""
+        import json
+        template = AssessmentTemplate.objects.create(
+            component=1,
+            title="Test Template",
+            module_code="KB5031",
+            module_title="Test Module",
+            assessment_title="Test",
+            weighting=40,
+            max_marks=100,
+            categories=[{"label": "Test", "max": 10}]
+        )
+
+        url = reverse("template_update", args=[template.pk])
+        data = {
+            "title": "Test Template",
+            "module_code": "KB5031",
+            "assessment_title": "Test",
+            "component": 1,
+            "degree_level": "MEng/MSc",
+            "categories": template.categories
+        }
+
+        resp = self.client.post(url, json.dumps(data), content_type="application/json")
+
+        # Should return 200 with success
+        self.assertEqual(resp.status_code, 200)
+        result = json.loads(resp.content)
+        self.assertEqual(result["status"], "saved")
+
+        # Template should be updated
+        template.refresh_from_db()
+        self.assertEqual(template.degree_level, "MEng/MSc")
     
     def test_post_update_saves_component_field(self):
         """POST /feedback/template/<pk>/update/ saves the component field."""
@@ -328,6 +363,23 @@ class GradeBandsPreviewTests(TestCase):
         self.assertIn("1st", html)
         self.assertIn("card", html)
         self.assertIn("grade-description", html)
+
+    def test_grade_bands_preview_respects_degree_level_parameter(self):
+        """
+        The grade bands preview endpoint should accept a `degree_level` parameter
+        (e.g., 'MEng') and render level-appropriate band labels/marks (e.g.,
+        Merit/Pass and a 50 mark pass threshold for 100 marks).
+        """
+        url = reverse("grade_bands_preview")
+        res = self.client.get(url, {"max_marks": "100", "subdivision": "none", "degree_level": "MEng"})
+        self.assertEqual(res.status_code, 200)
+        import json
+        data = json.loads(res.content)
+        html = data.get('html', '')
+
+        # Expect level-7 labels and a 50 mark representative
+        self.assertTrue(('Merit' in html) or ('Pass' in html))
+        self.assertIn('50', html)
     
     def test_grade_bands_preview_returns_correct_grades_for_none_subdivision(self):
         """Preview endpoint returns HTML with correct grades for 'none' subdivision."""

@@ -409,6 +409,32 @@ class AssessmentTemplateModelTests(TestCase):
         with self.assertRaises(ValidationError):
             tpl.full_clean()
 
+    def test_degree_level_default_and_persistence(self):
+        """`degree_level` defaults to 'BEng', can be changed to 'MEng/MSc', and invalid values are rejected."""
+        tpl = AssessmentTemplate.objects.create(
+            component=1,
+            title="Degree Level Template",
+            module_code="KB7001",
+            module_title="Degree Level Module",
+            assessment_title="Degree Test",
+            weighting=50,
+            max_marks=100,
+            categories=[{"label": "All", "max": 100}],
+        )
+        # Default should be BEng
+        self.assertEqual(tpl.degree_level, "BEng")
+
+        # Change to the MEng/MSc choice and persist
+        tpl.degree_level = "MEng/MSc"
+        tpl.save()
+        tpl.refresh_from_db()
+        self.assertEqual(tpl.degree_level, "MEng/MSc")
+
+        # Invalid value should be rejected by model validation
+        tpl.degree_level = "INVALID"
+        with self.assertRaises(ValidationError):
+            tpl.full_clean()
+
 
 class ChartConfigTests(TestCase):
     """Tests for chart configuration on AssessmentTemplate."""

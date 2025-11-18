@@ -51,7 +51,7 @@
                 </div>
                 
                 <div class="row mb-3">
-                    <div class="col-md-8">
+                    <div class="col-md-6">
                         <label for="assessment_title" class="form-label">Assessment Title <span class="text-danger">*</span></label>
                         <input type="text" class="form-control auto-save" id="assessment_title" name="assessment_title" 
                                value="{{ template.assessment_title }}" placeholder="e.g., Coursework 1: Truss Analysis">
@@ -65,6 +65,14 @@
                         <label for="max_marks" class="form-label">Max Marks <span class="text-danger">*</span></label>
                         <input type="number" class="form-control auto-save" id="max_marks" name="max_marks" 
                                value="{{ template.max_marks|default:'' }}" placeholder="e.g., 100" min="1" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="degree_level" class="form-label">Degree Level</label>
+                        <select id="degree_level" name="degree_level" class="form-control auto-save">
+                            <option value="BEng" {% if template.degree_level|default:'BEng' == 'BEng' %}selected{% endif %}>BEng</option>
+                            <option value="MEng/MSc" {% if template.degree_level == 'MEng/MSc' %}selected{% endif %}>MEng/MSc</option>
+                        </select>
+                        <small class="form-text text-muted">Select BEng or MEng/MSc for grade band labels.</small>
                     </div>
                 </div>
             </div>
@@ -117,7 +125,8 @@
 window.templateData = {
     id: {{ template.id }},
     categories: {{ categories_json|safe }},
-    charts: {{ template.charts|default:"[]"|safe }}
+    charts: {{ template.charts|default:"[]"|safe }},
+    degree_level: "{{ template.degree_level|default:'BEng' }}"
 };
 </script>
 {% endblock %}
