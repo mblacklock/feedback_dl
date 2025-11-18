@@ -48,7 +48,7 @@ class GradeBandUtilsTests(TestCase):
     def test_calculate_grade_bands_for_level7_uses_50_percent_pass(self):
         """
         Level 7 (MEng/MSc) should use a 50% pass threshold and labels
-        Distinction/Merit/Pass/Fail. This test asserts the utility will
+        Dist/Merit/Pass/Fail. This test asserts the utility will
         produce bands containing 'Merit'/'Pass' and a pass threshold at 50
         for a 100-mark category when degree_level='MEng'.
         """

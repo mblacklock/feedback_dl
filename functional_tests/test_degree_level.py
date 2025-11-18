@@ -15,7 +15,7 @@ class DegreeLevelFT(FunctionalTestBase):
         WHEN: They view the grade bands preview for a 100-mark category
         THEN: Default (BEng) bands include '3rd' and a 40 mark band
         WHEN: They switch the degree level to MEng/MSc
-        THEN: The grade bands update to Distinction/Merit/Pass/Fail and include a 50 mark pass threshold, but do not include a 40 mark
+        THEN: The grade bands update to Dist/Merit/Pass/Fail and include a 50 mark pass threshold, but do not include a 40 mark
         """
         # Arrange: create template and add a grade category
         self.navigate_to_home()
@@ -99,9 +99,9 @@ class DegreeLevelFT(FunctionalTestBase):
                 g1u = d.find_element(By.CSS_SELECTOR, '#categories .category-row:nth-of-type(2) .grade-bands-grid')
                 t0 = g0u.text
                 t1 = g1u.text
-                # Both previews should include M-level terms such as 'Merit' or 'Distinction'
-                return (('Merit' in t0 or 'Pass' in t0 or 'Distinction' in t0) and
-                        ('Merit' in t1 or 'Pass' in t1 or 'Distinction' in t1))
+                # Both previews should include M-level terms such as 'Merit' or 'Dist'
+                return (('Merit' in t0 or 'Pass' in t0 or 'Dist' in t0) and
+                        ('Merit' in t1 or 'Pass' in t1 or 'Dist' in t1))
             except Exception:
                 return False
 
@@ -111,8 +111,8 @@ class DegreeLevelFT(FunctionalTestBase):
         updated_g0 = self.get_grade_bands_grid(row_index=0)
         updated_g1 = self.get_grade_bands_grid(row_index=1)
 
-        self.assertTrue(('Merit' in updated_g0.text) or ('Distinction' in updated_g0.text) or ('Pass' in updated_g0.text))
-        self.assertTrue(('Merit' in updated_g1.text) or ('Distinction' in updated_g1.text) or ('Pass' in updated_g1.text))
+        self.assertTrue(('Merit' in updated_g0.text) or ('Dist' in updated_g0.text) or ('Pass' in updated_g0.text))
+        self.assertTrue(('Merit' in updated_g1.text) or ('Dist' in updated_g1.text) or ('Pass' in updated_g1.text))
 
 
     def test_degree_level_change_persists_after_reload(self):
@@ -172,4 +172,4 @@ class DegreeLevelFT(FunctionalTestBase):
         # Also assert the grade bands preview now shows M-level labels (e.g., Merit/Pass)
         updated_grid = self.get_grade_bands_grid(row_index=0)
         updated_text = updated_grid.text
-        self.assertTrue(('Merit' in updated_text) or ('Pass' in updated_text) or ('Distinction' in updated_text))
+        self.assertTrue(('Merit' in updated_text) or ('Pass' in updated_text) or ('Dist' in updated_text))

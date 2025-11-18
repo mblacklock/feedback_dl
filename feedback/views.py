@@ -275,17 +275,17 @@ def _group_bands_by_main_grade(bands):
     """Group bands by main grade.
 
     Supports both undergraduate main grades ("1st", "2:1", "2:2", "3rd", "Fail")
-    and postgraduate main grades ("Distinction", "Merit", "Pass", "Fail"). The
+    and postgraduate main grades ("Dist", "Merit", "Pass", "Fail"). The
     function inspects band labels to decide which set to use.
-    'Maximum 1st' is grouped with other '1st' bands (or 'Distinction' bands when
+    'Maximum 1st' is grouped with other '1st' bands (or 'Dist' bands when
     remapped).
     """
     # Determine if bands appear to be postgraduate-labelled
-    pg_indicators = ('Distinction', 'Merit', 'Pass')
+    pg_indicators = ('Dist', 'Merit', 'Pass')
     use_pg = any(any(ind in band['grade'] for ind in pg_indicators) for band in bands)
 
     if use_pg:
-        main_grades = ["Distinction", "Merit", "Pass", "Fail"]
+        main_grades = ["Dist", "Merit", "Pass", "Fail"]
     else:
         main_grades = ["1st", "2:1", "2:2", "3rd", "Fail"]
     grouped = {}
@@ -580,17 +580,17 @@ def _group_bands_by_main_grade(bands):
     """Group bands by main grade.
 
     Supports both undergraduate main grades ("1st", "2:1", "2:2", "3rd", "Fail")
-    and postgraduate main grades ("Distinction", "Merit", "Pass", "Fail"). The
+    and postgraduate main grades ("Dist", "Merit", "Pass", "Fail"). The
     function inspects band labels to decide which set to use.
-    'Maximum 1st' is grouped with other '1st' bands (or 'Distinction' bands when
+    'Maximum 1st' is grouped with other '1st' bands (or 'Dist' bands when
     remapped).
     """
     # Determine if bands appear to be postgraduate-labelled
-    pg_indicators = ('Distinction', 'Merit', 'Pass')
+    pg_indicators = ('Dist', 'Merit', 'Pass')
     use_pg = any(any(ind in band['grade'] for ind in pg_indicators) for band in bands)
 
     if use_pg:
-        main_grades = ["Distinction", "Merit", "Pass", "Fail"]
+        main_grades = ["Dist", "Merit", "Pass", "Fail"]
     else:
         main_grades = ["1st", "2:1", "2:2", "3rd", "Fail"]
     grouped = {}

@@ -135,7 +135,7 @@ def calculate_grade_bands(max_marks, subdivision, degree_level=None):
     - Fail: 0-39%
 
     UK Level 7 Grade thresholds:
-    - 1st/Distinction: 70-100%
+    - 1st/Dist: 70-100%
     - 2:1/Merit: 60-69%
     - 2:2/Pass: 50-59%
     - Fail: 0-49%
@@ -152,7 +152,7 @@ def calculate_grade_bands(max_marks, subdivision, degree_level=None):
     """Calculate grade band mark values based on UK grading percentages.
 
     Accepts an optional `degree_level` parameter (e.g., 'MEng' or 'MSc' or
-    'MEng/MSc') to produce postgraduate-style labels (Distinction/Merit/Pass/Fail)
+    'MEng/MSc') to produce postgraduate-style labels (Dist/Merit/Pass/Fail)
     where appropriate. The internal calculations still use the undergraduate
     grade bands but the returned `grade` labels will be remapped for level 7.
     """
@@ -255,7 +255,7 @@ def calculate_grade_bands(max_marks, subdivision, degree_level=None):
             name = b['grade']
             marks = b['marks']
             if '1st' in name:
-                mapped.append({'grade': name.replace('1st', '1st/Distinction'), 'marks': marks})
+                mapped.append({'grade': name.replace('1st', '1st/Dist'), 'marks': marks})
             elif '2:1' in name:
                 mapped.append({'grade': name.replace('2:1', '2:1/Merit'), 'marks': marks})
             elif '2:2' in name:
