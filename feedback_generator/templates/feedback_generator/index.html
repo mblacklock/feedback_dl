@@ -329,7 +329,7 @@
 
                 saveRow() {
                     const isNew = this.editingRow.id === null;
-                    const url = isNew ? '/add_row/' : '/edit_row/';
+                    const url = isNew ? '{% url "add_row" %}' : '{% url "edit_row" %}';
 
                     fetch(url, {
                         method: 'POST',
@@ -357,7 +357,7 @@
                 deleteRow() {
                     if (!confirm('Are you sure you want to delete this criterion? This cannot be undone.')) return;
 
-                    fetch('/delete_row/', {
+                    fetch('{% url "delete_row" %}', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
