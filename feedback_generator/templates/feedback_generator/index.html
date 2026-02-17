@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Exam Feedback Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <script src="//unpkg.com/alpinejs" defer></script>
     <style>
         :root {
@@ -353,9 +354,40 @@
                         if (firstTabBtn) {
                             this.activeTab = parseInt(firstTabBtn.dataset.id);
                         }
+
+                        // Initialize Sortable
+                        this.$nextTick(() => {
+                            const tabsContainer = document.getElementById('tabs-container');
+                            new Sortable(tabsContainer, {
+                                animation: 150,
+                                ghostClass: 'bg-blue-100',
+                                onEnd: (evt) => {
+                                    this.saveOrder();
+                                }
+                            });
+                        });
                     } catch (e) {
                         console.error('Error parsing row IDs:', e);
                     }
+                },
+
+                saveOrder() {
+                    const tabsContainer = document.getElementById('tabs-container');
+                    const newOrder = Array.from(tabsContainer.children)
+                        .filter(el => el.dataset.id) // Filter out the "New" button if it doesn't have data-id
+                        .map(el => parseInt(el.dataset.id));
+
+                    fetch('{% url "reorder_questions" %}', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ order: newOrder })
+                    })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.status !== 'success') {
+                                alert('Error reordering: ' + data.message);
+                            }
+                        });
                 },
 
                 openEditModal(id, label, positive, negative) {
@@ -565,15 +597,17 @@
         <div>
             <h1>Assessment Feedback</h1>
 
-            <div class="tabs">
+            <div class="tabs" id="tabs-container">
                 {% for q in questions %}
                 <button class="tab-btn" :class="{ 'active': activeTab === {{ q.id }} }" @click="activeTab = {{ q.id }}"
                     data-id="{{ q.id }}">
                     {{ q.text }}
                 </button>
                 {% endfor %}
-                <button class="tab-btn" @click="openAddQuestionModal()" style="border: 1px dashed #94a3b8;">+
-                    New</button>
+            </div>
+            <div style="margin-bottom: 1rem;">
+                <button class="tab-btn" @click="openAddQuestionModal()" style="border: 1px dashed #94a3b8;">+ New
+                    Tab</button>
             </div>
 
             {% for q in questions %}

@@ -115,3 +115,18 @@ def edit_question(request):
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
     return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=405)
+
+@csrf_exempt
+def reorder_questions(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            order_data = data.get('order', []) # Expect list of IDs in new order
+            
+            for index, question_id in enumerate(order_data):
+                Question.objects.filter(id=question_id).update(order=index)
+                
+            return JsonResponse({'status': 'success', 'message': 'Questions reordered successfully'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+    return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=405)
