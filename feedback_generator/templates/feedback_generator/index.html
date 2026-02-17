@@ -25,6 +25,35 @@
             line-height: 1.5;
         }
 
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            background: #e2e8f0;
+            color: #64748b;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover {
+            background: #cbd5e1;
+            color: #334155;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -296,35 +325,73 @@
                 finalFeedback: '',
                 showNotification: false,
                 rowIds: [],
+                activeTab: null, // question ID
 
                 // Edit State
                 showModal: false,
+                modalType: 'row', // 'row' or 'question'
                 editingRow: {
                     id: null,
                     label: '',
                     positive: '',
                     negative: ''
                 },
+                editingQuestion: {
+                    id: null,
+                    text: ''
+                },
+
 
                 init() {
                     console.log('Feedback app initializing...');
                     try {
                         const rowIdsText = document.getElementById('row-ids-data').textContent;
                         this.rowIds = JSON.parse(rowIdsText);
-                        console.log('Loaded row IDs:', this.rowIds);
+
+                        // Initialize active tab to first question if available
+                        const firstTabBtn = document.querySelector('.tab-btn[data-id]');
+                        if (firstTabBtn) {
+                            this.activeTab = parseInt(firstTabBtn.dataset.id);
+                        }
                     } catch (e) {
                         console.error('Error parsing row IDs:', e);
                     }
                 },
 
                 openEditModal(id, label, positive, negative) {
+                    this.modalType = 'row';
                     this.editingRow = { id, label, positive, negative };
                     this.showModal = true;
                 },
 
                 openAddModal() {
+                    if (!this.activeTab) {
+                        alert("Please create or select a Question first.");
+                        return;
+                    }
+                    this.modalType = 'row';
                     this.editingRow = { id: null, label: '', positive: '', negative: '' };
                     this.showModal = true;
+                },
+
+                openAddQuestionModal() {
+                    this.modalType = 'question';
+                    this.editingQuestion = { id: null, text: '' };
+                    this.showModal = true;
+                },
+
+                openEditQuestionModal(id, text) {
+                    this.modalType = 'question';
+                    this.editingQuestion = { id: id, text: text };
+                    this.showModal = true;
+                },
+
+                save() {
+                    if (this.modalType === 'row') {
+                        this.saveRow();
+                    } else {
+                        this.saveQuestion();
+                    }
                 },
 
                 saveRow() {
@@ -338,6 +405,7 @@
                         },
                         body: JSON.stringify({
                             id: this.editingRow.id,
+                            question_id: this.activeTab,
                             label: this.editingRow.label,
                             text_positive: this.editingRow.positive,
                             text_negative: this.editingRow.negative
@@ -352,6 +420,39 @@
                             }
                         })
                         .catch(err => alert('Network error: ' + err));
+                },
+
+                saveQuestion() {
+                    const isNew = this.editingQuestion.id === null;
+                    const url = isNew ? '{% url "add_question" %}' : '{% url "edit_question" %}';
+
+                    fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            id: this.editingQuestion.id,
+                            text: this.editingQuestion.text
+                        })
+                    })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.status === 'success') window.location.reload();
+                            else alert(data.message);
+                        });
+                },
+
+                deleteQuestion() {
+                    if (!confirm("Delete this question and ALL its criteria?")) return;
+                    fetch('{% url "delete_question" %}', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ id: this.activeTab })
+                    })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.status === 'success') window.location.reload();
+                            else alert(data.message);
+                        });
                 },
 
                 deleteRow() {
@@ -418,33 +519,73 @@
     <!-- Modal -->
     <div class="modal-overlay" x-show="showModal" x-transition.opacity style="display: none;">
         <div class="modal-content" x-transition.scale>
-            <h2 x-text="editingRow.id ? 'Edit Feedback' : 'Add New Criteria'"></h2>
-            <div class="form-group">
-                <label>Label (Title)</label>
-                <input type="text" x-model="editingRow.label" class="form-input" placeholder="e.g. Introduction">
-            </div>
-            <div class="form-group">
-                <label>Positive Feedback</label>
-                <textarea x-model="editingRow.positive" rows="4"></textarea>
-            </div>
-            <div class="form-group">
-                <label>Negative Feedback</label>
-                <textarea x-model="editingRow.negative" rows="4"></textarea>
-            </div>
-            <div class="modal-actions">
-                <button x-show="editingRow.id" class="btn btn-danger" @click="deleteRow"
-                    style="margin-right: auto;">Delete</button>
-                <button class="btn btn-secondary" @click="showModal = false">Cancel</button>
-                <button class="btn" @click="saveRow">Save Changes</button>
-            </div>
+            <template x-if="modalType === 'row'">
+                <div>
+                    <h2 x-text="editingRow.id ? 'Edit Feedback' : 'Add New Criteria'"></h2>
+                    <div class="form-group">
+                        <label>Label (Title)</label>
+                        <input type="text" x-model="editingRow.label" class="form-input"
+                            placeholder="e.g. Introduction">
+                    </div>
+                    <div class="form-group">
+                        <label>Positive Feedback</label>
+                        <textarea x-model="editingRow.positive" rows="4"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Negative Feedback</label>
+                        <textarea x-model="editingRow.negative" rows="4"></textarea>
+                    </div>
+                    <div class="modal-actions">
+                        <button x-show="editingRow.id" class="btn btn-danger" @click="deleteRow"
+                            style="margin-right: auto;">Delete</button>
+                        <button class="btn btn-secondary" @click="showModal = false">Cancel</button>
+                        <button class="btn" @click="save">Save Changes</button>
+                    </div>
+                </div>
+            </template>
+
+            <template x-if="modalType === 'question'">
+                <div>
+                    <h2 x-text="editingQuestion.id ? 'Rename Question' : 'Add New Question'"></h2>
+                    <div class="form-group">
+                        <label>Question Text</label>
+                        <input type="text" x-model="editingQuestion.text" class="form-input"
+                            placeholder="e.g. Analysis">
+                    </div>
+                    <div class="modal-actions">
+                        <button class="btn btn-secondary" @click="showModal = false">Cancel</button>
+                        <button class="btn" @click="save">Save Question</button>
+                    </div>
+                </div>
+            </template>
         </div>
     </div>
 
     <div class="container">
         <div>
             <h1>Assessment Feedback</h1>
-            <div class="criteria-list">
-                {% for row in rows %}
+
+            <div class="tabs">
+                {% for q in questions %}
+                <button class="tab-btn" :class="{ 'active': activeTab === {{ q.id }} }" @click="activeTab = {{ q.id }}"
+                    data-id="{{ q.id }}">
+                    {{ q.text }}
+                </button>
+                {% endfor %}
+                <button class="tab-btn" @click="openAddQuestionModal()" style="border: 1px dashed #94a3b8;">+
+                    New</button>
+            </div>
+
+            {% for q in questions %}
+            <div class="criteria-list" x-show="activeTab === {{ q.id }}">
+                <div
+                    style="padding: 1rem; border-bottom: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 0.5rem;">
+                    <button class="btn btn-secondary" style="width: auto; padding: 0.25rem 0.5rem; font-size: 0.8rem;"
+                        @click="openEditQuestionModal({{ q.id }}, '{{ q.text|escapejs }}')">Rename Tab</button>
+                    <button class="btn btn-danger" style="width: auto; padding: 0.25rem 0.5rem; font-size: 0.8rem;"
+                        @click="deleteQuestion">Delete Tab</button>
+                </div>
+                {% for row in q.rows.all|dictsort:"order" %}
                 <div class="row" id="row-{{ row.id }}">
                     <div class="row-header">
                         <div class="row-label">{{ row.label|default:"Criteria" }}</div>
@@ -490,6 +631,7 @@
                 </div>
                 {% endfor %}
             </div>
+            {% endfor %}
 
             <button class="btn btn-secondary" style="margin-top: 1rem; width: 100%;" @click="openAddModal()">
                 + Add New Criteria

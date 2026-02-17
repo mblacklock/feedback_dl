@@ -6,4 +6,7 @@ urlpatterns = [
     path('edit_row/', views.edit_row, name='edit_row'),
     path('add_row/', views.add_row, name='add_row'),
     path('delete_row/', views.delete_row, name='delete_row'),
+    path('add_question/', views.add_question, name='add_question'),
+    path('edit_question/', views.edit_question, name='edit_question'),
+    path('delete_question/', views.delete_question, name='delete_question'),
 ]
