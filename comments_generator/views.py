@@ -14,7 +14,7 @@ def index(request):
     rows = FeedbackRow.objects.all().order_by('question__order', 'order')
     row_ids = list(rows.values_list('id', flat=True))
     
-    return render(request, 'feedback_generator/index.html', {
+    return render(request, 'comments_generator/index.html', {
         'questions': questions,
         'row_ids': json.dumps(row_ids)
     })
