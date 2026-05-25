@@ -141,14 +141,14 @@ class DegreeLevelFT(FunctionalTestBase):
             self.fail('Degree level selector (id="degree_level") not found or selection failed')
 
         # Wait for the server-side persistence by polling the DB for the template
-        # Extract the template PK from the current URL (/feedback/template/<pk>/edit/)
+        # Extract the template PK from the current URL (/rubric-generator/template/<pk>/edit/)
         import re, time
-        m = re.search(r'/feedback/template/(\d+)/edit/', self.browser.current_url)
+        m = re.search(r'/rubric-generator/template/(\d+)/edit/', self.browser.current_url)
         if not m:
             self.fail('Could not determine template id from URL')
         tpl_pk = int(m.group(1))
 
-        from feedback.models import AssessmentTemplate
+        from rubric_generator.models import AssessmentTemplate
 
         saved = False
         for _ in range(20):

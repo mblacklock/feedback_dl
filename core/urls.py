@@ -19,6 +19,6 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path("feedback/", include("feedback.urls")),
+    path("rubric-generator/", include("rubric_generator.urls")),
     path("feedback-generator/", include("feedback_generator.urls")),
 ]

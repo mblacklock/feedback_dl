@@ -30,7 +30,7 @@ INSTALLED_APPS = [
 ]
 
 INSTALLED_APPS += [
-    'feedback',
+    'rubric_generator',
     'feedback_generator'
 ]
 

@@ -2,7 +2,7 @@
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from .base import FunctionalTestBase
-from feedback.models import AssessmentTemplate
+from rubric_generator.models import AssessmentTemplate
 
 
 class SeparateViewsFT(FunctionalTestBase):
@@ -103,7 +103,7 @@ class SeparateViewsFT(FunctionalTestBase):
         template.save()
         
         # WHEN: Staff visits the rubric page
-        self.browser.get(self.live_server_url + f'/feedback/template/{template.id}/rubric/')
+        self.browser.get(self.live_server_url + f'/rubric-generator/template/{template.id}/rubric/')
         
         # THEN: They see a warning
         warning = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '.alert-warning')))
@@ -123,7 +123,7 @@ class SeparateViewsFT(FunctionalTestBase):
         template.save()
         
         # WHEN: Staff visits the feedback sheet page
-        self.browser.get(self.live_server_url + f'/feedback/template/{template.id}/feedback-sheet/')
+        self.browser.get(self.live_server_url + f'/rubric-generator/template/{template.id}/feedback-sheet/')
         
         # THEN: They see a warning
         warning = self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '.alert-warning')))

@@ -2,7 +2,7 @@
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from .base import FunctionalTestBase
-from feedback.models import AssessmentTemplate
+from rubric_generator.models import AssessmentTemplate
 
 
 class FeedbackFT(FunctionalTestBase):
@@ -77,7 +77,7 @@ class FeedbackFT(FunctionalTestBase):
         rubric_buttons[0].click()
         
         # THEN: They are taken to the rubric page
-        self.wait.until(EC.url_contains(f"/feedback/template/{template2.pk}/rubric/"))
+        self.wait.until(EC.url_contains(f"/rubric-generator/template/{template2.pk}/rubric/"))
         self.assertIn("Database Systems", self.browser.page_source)
         
         # WHEN: They go back to home
@@ -90,7 +90,7 @@ class FeedbackFT(FunctionalTestBase):
         edit_buttons[1].click()
         
         # THEN: They are taken to the template edit page
-        self.wait.until(EC.url_contains(f"/feedback/template/{template1.pk}/edit/"))
+        self.wait.until(EC.url_contains(f"/rubric-generator/template/{template1.pk}/edit/"))
         self.assertIn("Introduction to Programming", self.browser.page_source)
     
     def test_home_page_shows_empty_state_when_no_templates(self):

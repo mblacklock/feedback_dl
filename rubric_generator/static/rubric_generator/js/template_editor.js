@@ -458,7 +458,7 @@ function saveNow() {
                      getCookie('csrftoken');
         
     // Send to server
-    fetch(`/feedback/template/${window.templateData.id}/update/`, {
+    fetch(`/rubric-generator/template/${window.templateData.id}/update/`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -547,7 +547,7 @@ function updateGradeBandsPreview(row) {
         const degreeLevel = degreeEl ? degreeEl.value : (window.templateData && window.templateData.degree_level ? window.templateData.degree_level : 'BEng');
 
         // Fetch grade bands HTML from server (include degree_level)
-        fetch(`/feedback/grade-bands-preview/?max_marks=${maxMarks}&subdivision=${subdivision}&degree_level=${encodeURIComponent(degreeLevel)}`)
+        fetch(`/rubric-generator/grade-bands-preview/?max_marks=${maxMarks}&subdivision=${subdivision}&degree_level=${encodeURIComponent(degreeLevel)}`)
         .then(response => response.json())
         .then(data => {
             if (data.html) {

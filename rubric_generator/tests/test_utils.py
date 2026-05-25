@@ -1,5 +1,5 @@
 from django.test import TestCase
-from feedback.utils import calculate_grade_bands, validate_subdivision
+from rubric_generator.utils import calculate_grade_bands, validate_subdivision
 
 
 class GradeBandUtilsTests(TestCase):

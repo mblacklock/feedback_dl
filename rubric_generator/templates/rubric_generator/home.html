@@ -1,4 +1,4 @@
-{% extends "feedback/base.html" %}
+{% extends "rubric_generator/base.html" %}
 
 {% block title %}{{ page_title }}{% endblock %}
 
@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (confirm(`Are you sure you want to delete "${templateTitle}"?`)) {
                 // Send DELETE request via AJAX
-                fetch(`/feedback/template/${templateId}/delete/`, {
+                fetch(`/rubric-generator/template/${templateId}/delete/`, {
                     method: 'POST',
                     headers: {
                         'X-CSRFToken': csrftoken,

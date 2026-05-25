@@ -1,22 +1,22 @@
 from django.test import TestCase
 from django.urls import resolve, reverse
-from feedback.views import home
-from feedback.models import AssessmentTemplate
+from rubric_generator.views import home
+from rubric_generator.models import AssessmentTemplate
 
 class HomeViewTest(TestCase):
     def test_root_url_resolves_to_home_view(self):
-        match = resolve("/feedback/")
+        match = resolve("/rubric-generator/")
         assert match.func == home
 
     def test_home_renders_template_with_title(self):
-        resp = self.client.get("/feedback/")
+        resp = self.client.get("/rubric-generator/")
         assert resp.status_code == 200
         assert b"Feedback Templates" in resp.content
         assert b"<title>Feedback</title>" in resp.content
     
     def test_home_shows_empty_state_when_no_templates(self):
         """Home page shows empty state when no templates exist"""
-        resp = self.client.get("/feedback/")
+        resp = self.client.get("/rubric-generator/")
         assert resp.status_code == 200
         assert b"No templates yet" in resp.content
         assert b"Create your first feedback template" in resp.content
@@ -45,7 +45,7 @@ class HomeViewTest(TestCase):
             categories=[{"label": "Quality", "max": 20}, {"label": "Style", "max": 10}]
         )
         
-        resp = self.client.get("/feedback/")
+        resp = self.client.get("/rubric-generator/")
         assert resp.status_code == 200
         
         # Check for template titles
@@ -67,10 +67,10 @@ class HomeViewTest(TestCase):
         assert b"2 categories" in resp.content
         
         # Check for View and Edit buttons
-        assert f'/feedback/template/{template1.pk}/'.encode() in resp.content
-        assert f'/feedback/template/{template1.pk}/edit/'.encode() in resp.content
-        assert f'/feedback/template/{template2.pk}/'.encode() in resp.content
-        assert f'/feedback/template/{template2.pk}/edit/'.encode() in resp.content
+        assert f'/rubric-generator/template/{template1.pk}/'.encode() in resp.content
+        assert f'/rubric-generator/template/{template1.pk}/edit/'.encode() in resp.content
+        assert f'/rubric-generator/template/{template2.pk}/'.encode() in resp.content
+        assert f'/rubric-generator/template/{template2.pk}/edit/'.encode() in resp.content
         
         # Check for Delete buttons with data-template-id attributes
         assert f'data-template-id="{template1.pk}"'.encode() in resp.content
@@ -79,7 +79,7 @@ class HomeViewTest(TestCase):
 
 class TemplateDeleteViewTests(TestCase):
     def test_post_delete_removes_template_and_returns_json(self):
-        """POST /feedback/template/<pk>/delete/ removes the template and returns JSON."""
+        """POST /rubric-generator/template/<pk>/delete/ removes the template and returns JSON."""
         import json
         template = AssessmentTemplate.objects.create(
             component=1,
@@ -104,7 +104,7 @@ class TemplateDeleteViewTests(TestCase):
         self.assertEqual(AssessmentTemplate.objects.filter(pk=template.pk).count(), 0)
     
     def test_get_delete_not_allowed(self):
-        """GET /feedback/template/<pk>/delete/ is not allowed (only POST)."""
+        """GET /rubric-generator/template/<pk>/delete/ is not allowed (only POST)."""
         template = AssessmentTemplate.objects.create(
             component=1,
             title="To Delete",
@@ -124,7 +124,7 @@ class TemplateDeleteViewTests(TestCase):
 
 class TemplateUpdateViewTests(TestCase):
     def test_get_edit_page_shows_home_button(self):
-        """GET /feedback/template/<pk>/edit/ shows Back to Home button."""
+        """GET /rubric-generator/template/<pk>/edit/ shows Back to Home button."""
         template = AssessmentTemplate.objects.create(
             component=1,
             title="Test Template",
@@ -142,13 +142,13 @@ class TemplateUpdateViewTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         # Check for Back to Home button
         self.assertContains(resp, 'Back to Home')
-        self.assertContains(resp, 'href="/feedback/"')
+        self.assertContains(resp, 'href="/rubric-generator/"')
         # Check for View Rubric and View Feedback Sheet buttons
         self.assertContains(resp, 'View Rubric')
         self.assertContains(resp, 'View Feedback Sheet')
     
     def test_post_update_saves_weighting_field(self):
-        """POST /feedback/template/<pk>/update/ saves the weighting field."""
+        """POST /rubric-generator/template/<pk>/update/ saves the weighting field."""
         import json
         template = AssessmentTemplate.objects.create(
             component=1,
@@ -183,7 +183,7 @@ class TemplateUpdateViewTests(TestCase):
         self.assertEqual(template.weighting, 50)
     
     def test_post_update_saves_max_marks_field(self):
-        """POST /feedback/template/<pk>/update/ saves the max_marks field."""
+        """POST /rubric-generator/template/<pk>/update/ saves the max_marks field."""
         import json
         template = AssessmentTemplate.objects.create(
             component=1,
@@ -218,7 +218,7 @@ class TemplateUpdateViewTests(TestCase):
         self.assertEqual(template.max_marks, 100)
     
     def test_post_update_saves_module_title_field(self):
-        """POST /feedback/template/<pk>/update/ saves the module_title field."""
+        """POST /rubric-generator/template/<pk>/update/ saves the module_title field."""
         import json
         template = AssessmentTemplate.objects.create(
             component=1,
@@ -253,7 +253,7 @@ class TemplateUpdateViewTests(TestCase):
         self.assertEqual(template.module_title, "Finite Element Analysis")
 
     def test_post_update_saves_degree_level_field(self):
-        """POST /feedback/template/<pk>/update/ saves the degree_level field."""
+        """POST /rubric-generator/template/<pk>/update/ saves the degree_level field."""
         import json
         template = AssessmentTemplate.objects.create(
             component=1,
@@ -288,7 +288,7 @@ class TemplateUpdateViewTests(TestCase):
         self.assertEqual(template.degree_level, "MEng/MSc")
     
     def test_post_update_saves_component_field(self):
-        """POST /feedback/template/<pk>/update/ saves the component field."""
+        """POST /rubric-generator/template/<pk>/update/ saves the component field."""
         import json
         template = AssessmentTemplate.objects.create(
             component=1,
@@ -324,7 +324,7 @@ class TemplateUpdateViewTests(TestCase):
 
 class TemplateBuilderViewTests(TestCase):
     def test_get_new_template_creates_template_and_redirects_to_edit(self):
-        """GET /feedback/template/new/ creates a template and redirects to edit page."""
+        """GET /rubric-generator/template/new/ creates a template and redirects to edit page."""
         url = reverse("template_new")
         res = self.client.get(url, follow=False)
         self.assertEqual(res.status_code, 302)
@@ -346,7 +346,7 @@ class TemplateBuilderViewTests(TestCase):
 
 class GradeBandsPreviewTests(TestCase):
     def test_grade_bands_preview_returns_html_for_valid_params(self):
-        """GET /feedback/grade-bands-preview/ returns rendered HTML."""
+        """GET /rubric-generator/grade-bands-preview/ returns rendered HTML."""
         url = reverse("grade_bands_preview")
         res = self.client.get(url, {"max_marks": "30", "subdivision": "high_low"})
         self.assertEqual(res.status_code, 200)
@@ -446,7 +446,7 @@ class TemplateSeparateViewsTest(TestCase):
             ]
         )
         
-        resp = self.client.get(f"/feedback/template/{template.pk}/rubric/")
+        resp = self.client.get(f"/rubric-generator/template/{template.pk}/rubric/")
         self.assertEqual(resp.status_code, 200)
         
         # Should show module info
@@ -483,7 +483,7 @@ class TemplateSeparateViewsTest(TestCase):
             ]
         )
         
-        resp = self.client.get(f"/feedback/template/{template.pk}/feedback-sheet/")
+        resp = self.client.get(f"/rubric-generator/template/{template.pk}/feedback-sheet/")
         self.assertEqual(resp.status_code, 200)
         
         # Should show module info
@@ -519,7 +519,7 @@ class TemplateSeparateViewsTest(TestCase):
             ]
         )
 
-        resp = self.client.get(f"/feedback/template/{template.pk}/feedback-sheet/")
+        resp = self.client.get(f"/rubric-generator/template/{template.pk}/feedback-sheet/")
 
         self.assertIn('assessment_grade', resp.context)
 
@@ -542,7 +542,7 @@ class TemplateSeparateViewsTest(TestCase):
         )
 
         # First request
-        resp = self.client.get(f"/feedback/template/{template.pk}/feedback-sheet/")
+        resp = self.client.get(f"/rubric-generator/template/{template.pk}/feedback-sheet/")
         categories = resp.context['categories_with_bands']
         assessment_awarded = resp.context['assessment_awarded']
 
@@ -556,7 +556,7 @@ class TemplateSeparateViewsTest(TestCase):
         self.assertEqual(assessment_awarded, total)
 
         # Second request: deterministic behaviour should produce same assessment_awarded
-        resp2 = self.client.get(f"/feedback/template/{template.pk}/feedback-sheet/")
+        resp2 = self.client.get(f"/rubric-generator/template/{template.pk}/feedback-sheet/")
         assessment_awarded_2 = resp2.context['assessment_awarded']
         self.assertEqual(assessment_awarded_2, assessment_awarded)
     
@@ -573,7 +573,7 @@ class TemplateSeparateViewsTest(TestCase):
         )
         
         url = reverse('template_rubric', kwargs={'pk': template.pk})
-        self.assertEqual(url, f"/feedback/template/{template.pk}/rubric/")
+        self.assertEqual(url, f"/rubric-generator/template/{template.pk}/rubric/")
     
     def test_feedback_sheet_url_pattern(self):
         """Feedback sheet URL pattern resolves correctly"""
@@ -588,14 +588,14 @@ class TemplateSeparateViewsTest(TestCase):
         )
         
         url = reverse('template_feedback_sheet', kwargs={'pk': template.pk})
-        self.assertEqual(url, f"/feedback/template/{template.pk}/feedback-sheet/")
+        self.assertEqual(url, f"/rubric-generator/template/{template.pk}/feedback-sheet/")
 
 
 class ChartViewTests(TestCase):
     """Tests for chart configuration in template views"""
     
     def test_template_update_accepts_charts_field(self):
-        """POST /feedback/template/<pk>/update/ can save charts"""
+        """POST /rubric-generator/template/<pk>/update/ can save charts"""
         import json
         template = AssessmentTemplate.objects.create(
             component=1,
@@ -696,7 +696,7 @@ class ChartViewTests(TestCase):
             ]
         )
         
-        resp = self.client.get(f"/feedback/template/{template.pk}/feedback-sheet/")
+        resp = self.client.get(f"/rubric-generator/template/{template.pk}/feedback-sheet/")
         self.assertEqual(resp.status_code, 200)
         
         # Check charts are in context
@@ -718,7 +718,7 @@ class ChartViewTests(TestCase):
             charts=[]
         )
         
-        resp = self.client.get(f"/feedback/template/{template.pk}/feedback-sheet/")
+        resp = self.client.get(f"/rubric-generator/template/{template.pk}/feedback-sheet/")
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(len(resp.context["charts"]), 0)
     
@@ -802,7 +802,7 @@ class ChartViewTests(TestCase):
             ]
         )
         
-        resp = self.client.get(f"/feedback/template/{template.pk}/feedback-sheet/")
+        resp = self.client.get(f"/rubric-generator/template/{template.pk}/feedback-sheet/")
         self.assertEqual(resp.status_code, 200)
         
         # Check short names are in context

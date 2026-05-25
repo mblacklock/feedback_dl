@@ -1,6 +1,6 @@
 from django.test import TestCase
 from django.core.exceptions import ValidationError
-from feedback.models import AssessmentTemplate
+from rubric_generator.models import AssessmentTemplate
 
 
 class AssessmentTemplateModelTests(TestCase):
@@ -247,7 +247,7 @@ class AssessmentTemplateModelTests(TestCase):
 
     def test_calculate_grade_bands_no_subdivision(self):
         """Test grade band calculation with no subdivision (expanded to maximize mark coverage)."""
-        from feedback.utils import calculate_grade_bands
+        from rubric_generator.utils import calculate_grade_bands
         
         # For 30 marks: now includes expanded 1st and Fail bands (11 total)
         bands = calculate_grade_bands(30, "none")
@@ -264,7 +264,7 @@ class AssessmentTemplateModelTests(TestCase):
 
     def test_calculate_grade_bands_high_low_subdivision(self):
         """Test grade band calculation with high/low subdivision."""
-        from feedback.utils import calculate_grade_bands
+        from rubric_generator.utils import calculate_grade_bands
         
         # For 20 marks with high/low: each grade split within its band
         # Now includes expanded extremes: Max 1st + Close/Poor/Zero Fail
@@ -281,7 +281,7 @@ class AssessmentTemplateModelTests(TestCase):
 
     def test_calculate_grade_bands_high_mid_low_subdivision(self):
         """Test grade band calculation with high/mid/low subdivision."""
-        from feedback.utils import calculate_grade_bands
+        from rubric_generator.utils import calculate_grade_bands
         
         # For 30 marks with high/mid/low: each grade split in thirds
         # Now includes expanded extremes: Max 1st + Close/Poor/Zero Fail
@@ -307,7 +307,7 @@ class AssessmentTemplateModelTests(TestCase):
         - But 8/12 = 66.7% which is 2:1, not 1st
         - Should find 9/12 = 75% (valid 1st class) instead of going to 0
         """
-        from feedback.utils import calculate_grade_bands
+        from rubric_generator.utils import calculate_grade_bands
         
         bands = calculate_grade_bands(12, "none")
         self.assertEqual(len(bands), 11)

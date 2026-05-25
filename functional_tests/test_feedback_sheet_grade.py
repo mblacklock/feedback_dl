@@ -10,7 +10,7 @@ class FeedbackSheetGradeFT(FunctionalTestBase):
 
     def test_feedback_sheet_shows_overall_grade_next_to_total(self):
         # Create a template via ORM such that total category marks equal max_marks
-        from feedback.models import AssessmentTemplate
+        from rubric_generator.models import AssessmentTemplate
         template = AssessmentTemplate.objects.create(
             component=1,
             title="Grade Display",
@@ -27,7 +27,7 @@ class FeedbackSheetGradeFT(FunctionalTestBase):
         )
 
         # Visit the feedback sheet page
-        self.browser.get(f"{self.live_server_url}/feedback/template/{template.pk}/feedback-sheet/")
+        self.browser.get(f"{self.live_server_url}/rubric-generator/template/{template.pk}/feedback-sheet/")
 
         # Wait for the assessment-grade element we render to the left of the total mark
         grade_el = self.wait.until(EC.presence_of_element_located((By.ID, "assessment-grade")))
@@ -45,7 +45,7 @@ class FeedbackSheetGradeFT(FunctionalTestBase):
         Functional test: a grade-type category displays an example grade and marks,
         and a numeric category displays an example awarded mark out of its max.
         """
-        from feedback.models import AssessmentTemplate
+        from rubric_generator.models import AssessmentTemplate
 
         template = AssessmentTemplate.objects.create(
             component=1,
@@ -63,7 +63,7 @@ class FeedbackSheetGradeFT(FunctionalTestBase):
         )
 
         # Visit the feedback sheet page
-        self.browser.get(f"{self.live_server_url}/feedback/template/{template.pk}/feedback-sheet/")
+        self.browser.get(f"{self.live_server_url}/rubric-generator/template/{template.pk}/feedback-sheet/")
 
         # Wait for the page to render the assessment-grade element (used as a safe ready-check)
         self.wait.until(EC.presence_of_element_located((By.ID, "assessment-grade")))

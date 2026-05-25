@@ -35,7 +35,7 @@ class FunctionalTestBase(StaticLiveServerTestCase):
     
     def navigate_to_home(self):
         """Navigate to the feedback home page."""
-        self.browser.get(f"{self.live_server_url}/feedback/")
+        self.browser.get(f"{self.live_server_url}/rubric-generator/")
     
     def create_new_template(self):
         """Click 'Create New Template' button and wait for edit page."""
@@ -79,15 +79,15 @@ class FunctionalTestBase(StaticLiveServerTestCase):
 
     def wait_for_edit_page(self):
         """Wait for the template edit page to load."""
-        self.wait.until(EC.url_matches(r'/feedback/template/\d+/edit/'))
+        self.wait.until(EC.url_matches(r'/rubric-generator/template/\d+/edit/'))
     
     def wait_for_rubric_page(self):
         """Wait for the template rubric page to load."""
-        self.wait.until(EC.url_matches(r'/feedback/template/\d+/rubric/'))
+        self.wait.until(EC.url_matches(r'/rubric-generator/template/\d+/rubric/'))
     
     def wait_for_feedback_sheet_page(self):
         """Wait for the template feedback sheet page to load."""
-        self.wait.until(EC.url_matches(r'/feedback/template/\d+/feedback-sheet/'))
+        self.wait.until(EC.url_matches(r'/rubric-generator/template/\d+/feedback-sheet/'))
     
     def click_view_rubric(self):
         """Click 'View Rubric' button and wait for rubric page."""
@@ -316,7 +316,7 @@ class FunctionalTestBase(StaticLiveServerTestCase):
         Returns:
             AssessmentTemplate instance
         """
-        from feedback.models import AssessmentTemplate
+        from rubric_generator.models import AssessmentTemplate
         
         defaults = {
             "component": 1,
@@ -393,7 +393,7 @@ class FunctionalTestBase(StaticLiveServerTestCase):
     
     def navigate_to_home(self):
         """Navigate to the feedback home page."""
-        self.browser.get(f"{self.live_server_url}/feedback/")
+        self.browser.get(f"{self.live_server_url}/rubric-generator/")
     
     def create_new_template(self):
         """Click 'Create New Template' button and wait for edit page."""
@@ -432,15 +432,15 @@ class FunctionalTestBase(StaticLiveServerTestCase):
     
     def wait_for_edit_page(self):
         """Wait for the template edit page to load."""
-        self.wait.until(EC.url_matches(r'/feedback/template/\d+/edit/'))
+        self.wait.until(EC.url_matches(r'/rubric-generator/template/\d+/edit/'))
     
     def wait_for_rubric_page(self):
         """Wait for the template rubric page to load."""
-        self.wait.until(EC.url_matches(r'/feedback/template/\d+/rubric/'))
+        self.wait.until(EC.url_matches(r'/rubric-generator/template/\d+/rubric/'))
     
     def wait_for_feedback_sheet_page(self):
         """Wait for the feedback sheet page to load."""
-        self.wait.until(EC.url_matches(r'/feedback/template/\d+/feedback-sheet/'))
+        self.wait.until(EC.url_matches(r'/rubric-generator/template/\d+/feedback-sheet/'))
     
     def click_view_rubric(self):
         """Click 'View Rubric' button and wait for rubric page."""
@@ -669,7 +669,7 @@ class FunctionalTestBase(StaticLiveServerTestCase):
         Returns:
             AssessmentTemplate instance
         """
-        from feedback.models import AssessmentTemplate
+        from rubric_generator.models import AssessmentTemplate
         
         defaults = {
             "component": 1,

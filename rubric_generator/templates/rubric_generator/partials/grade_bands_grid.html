@@ -1,4 +1,4 @@
-{% load feedback_filters %}
+{% load rubric_generator_filters %}
 <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 {% if 'Dist' in grouped_bands %}row-cols-lg-4{% else %}row-cols-lg-5{% endif %} g-0 grade-bands-grid">
     {% for main_grade, band_list in grouped_bands.items %}
         <div class="col">

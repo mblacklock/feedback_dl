@@ -1,5 +1,5 @@
-{% extends "feedback/base.html" %}
-{% load feedback_filters %}
+{% extends "rubric_generator/base.html" %}
+{% load rubric_generator_filters %}
 
 {% block title %}Feedback Sheet: {{ template.title }}{% endblock %}
 
@@ -18,7 +18,7 @@
             <div class="card-header bg-primary text-white">
                 <h5 class="mb-0">{{ template.title }}</h5>
             </div>
-            {% include 'feedback/partials/marks_mismatch_warning.html' %}
+            {% include 'rubric_generator/partials/marks_mismatch_warning.html' %}
 
             {% comment %} Module and student information {% endcomment %}
             <div class="card border-0 bg-light">
@@ -99,7 +99,7 @@
                 
             </div>
             
-            {% include "feedback/partials/charts_display.html" %}
+            {% include "rubric_generator/partials/charts_display.html" %}
    
         </div>
         
@@ -116,7 +116,7 @@
 {% if charts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 {% load static %}
-<script src="{% static 'feedback/js/charts_renderer.js' %}"></script>
+<script src="{% static 'rubric_generator/js/charts_renderer.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const charts = {{ charts|safe }};
