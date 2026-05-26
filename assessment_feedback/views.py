@@ -4,11 +4,44 @@ import zipfile
 import openpyxl
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, Http404
+from django.template.loader import render_to_string
 from django.utils.text import slugify
 
 from core.utils.grade_bands import calculate_grade_bands, grade_for_percentage
 from core.utils.charts import generate_radar_chart, generate_cohort_histogram
 from core.utils.pdf_renderer import render_html_to_pdf
+
+
+def build_pdf_layout_rows(layout):
+    """
+    Convert the flat layout list into a list of "rows" suitable for
+    PDF table-cell rendering.
+
+    Each row is a dict with:
+      - 'type': 'full' | 'half-pair' | 'half-single'
+      - 'blocks': list of 1 or 2 block dicts (only enabled blocks)
+
+    Consecutive half-width enabled blocks are paired together.
+    A lone half-width block (no following half) gets type 'half-single'.
+    Full-width blocks always get their own row.
+    """
+    enabled = [b for b in layout if b.get("enabled")]
+    rows = []
+    i = 0
+    while i < len(enabled):
+        block = enabled[i]
+        if block["width"] == "full":
+            rows.append({"type": "full", "blocks": [block]})
+            i += 1
+        else:  # half
+            # Look ahead for a second consecutive half block
+            if i + 1 < len(enabled) and enabled[i + 1]["width"] == "half":
+                rows.append({"type": "half-pair", "blocks": [block, enabled[i + 1]]})
+                i += 2
+            else:
+                rows.append({"type": "half-single", "blocks": [block]})
+                i += 1
+    return rows
 
 
 def upload_file(request):
@@ -57,9 +90,10 @@ def upload_file(request):
             # 1. Infer Name & ID
             for h in headers:
                 hl = h.lower()
-                if "name" in hl or "student" in hl and not inferred_mappings["col_student_name"]:
+                # Fix: parenthesise correctly so both conditions check the guard
+                if (("name" in hl or "student" in hl) and not inferred_mappings["col_student_name"]):
                     inferred_mappings["col_student_name"] = h
-                elif ("id" in hl or "number" in hl or "code" in hl) and not inferred_mappings["col_student_id"]:
+                elif (("id" in hl or "number" in hl or "code" in hl) and not inferred_mappings["col_student_id"]):
                     inferred_mappings["col_student_id"] = h
             
             # Fallback if names/ids not matched
@@ -68,11 +102,19 @@ def upload_file(request):
             if not inferred_mappings["col_student_id"] and len(headers) > 1:
                 inferred_mappings["col_student_id"] = headers[1]
                 
+            # Columns known to be non-category (text/comment columns)
+            comment_keywords = ("comment", "feedback", "notes", "remarks", "text")
+
             # 2. Infer Categories & Comments
             # We look for numeric columns as category candidates
             candidate_categories = []
             for h in headers:
                 if h == inferred_mappings["col_student_name"] or h == inferred_mappings["col_student_id"]:
+                    continue
+
+                # Skip columns that are clearly comment/text columns
+                hl = h.lower()
+                if any(kw in hl for kw in comment_keywords):
                     continue
                 
                 # Check if values in this column are predominantly numeric
@@ -85,12 +127,13 @@ def upload_file(request):
                         try:
                             float(val)
                             numeric_count += 1
-                        except ValueError:
+                        except (ValueError, TypeError):
                             pass
                 
                 # If mostly numeric, it is a grading category!
                 if total_valid > 0 and (numeric_count / total_valid) >= 0.7:
                     candidate_categories.append(h)
+
             
             # Build category configurations with max marks & comments mappings
             for cat in candidate_categories:
@@ -201,12 +244,72 @@ def confirm_mappings(request):
         request.session["mappings"] = mappings
         request.session.modified = True
         
-        return redirect("process_feedback")
+        return redirect("configure_layout")
         
     return render(request, "assessment_feedback/confirm.html", {
         "headers": headers,
         "mappings": mappings,
         "sample_rows": uploaded_data[:3]
+    })
+
+
+def configure_layout(request):
+    """
+    Step 2.5: PDF Layout Builder Configuration Page
+    Allows academics to add/remove content blocks, control their positioning (ordering),
+    and set their grid widths (half vs. full).
+    """
+    headers = request.session.get("headers")
+    mappings = request.session.get("mappings")
+    uploaded_data = request.session.get("uploaded_data")
+    
+    if not headers or not mappings or not uploaded_data:
+        return redirect("upload_file")
+        
+    default_layout = [
+        {"id": "category_marks", "name": "Category Marks", "width": "full", "enabled": True},
+        {"id": "feedback", "name": "Feedback Comments", "width": "full", "enabled": True},
+        {"id": "radar_chart", "name": "Radar Chart", "width": "half", "enabled": True},
+        {"id": "histogram", "name": "Histogram Chart", "width": "half", "enabled": True},
+    ]
+    layout = request.session.get("layout", default_layout)
+    
+    if request.method == "POST":
+        block_order = request.POST.get("block_order", "").split(",")
+        if not any(block_order):
+            block_order = [b["id"] for b in default_layout]
+            
+        updated_layout = []
+        name_map = {
+            "category_marks": "Category Marks",
+            "feedback": "Feedback Comments",
+            "radar_chart": "Radar Chart",
+            "histogram": "Histogram Chart",
+        }
+        
+        for bid in block_order:
+            bid = bid.strip()
+            if bid in name_map:
+                enabled = request.POST.get(f"enabled_{bid}") == "true"
+                width = request.POST.get(f"width_{bid}", "full")
+                if width not in ["half", "full"]:
+                    width = "full"
+                    
+                updated_layout.append({
+                    "id": bid,
+                    "name": name_map[bid],
+                    "width": width,
+                    "enabled": enabled
+                })
+                
+        if updated_layout:
+            request.session["layout"] = updated_layout
+            request.session.modified = True
+            
+        return redirect("process_feedback")
+        
+    return render(request, "assessment_feedback/configure_layout.html", {
+        "layout": layout
     })
 
 
@@ -222,6 +325,15 @@ def process_feedback(request):
     
     if not uploaded_data or not mappings:
         return redirect("upload_file")
+        
+    layout = request.session.get("layout")
+    if not layout:
+        layout = [
+            {"id": "category_marks", "name": "Category Marks", "width": "full", "enabled": True},
+            {"id": "feedback", "name": "Feedback Comments", "width": "full", "enabled": True},
+            {"id": "radar_chart", "name": "Radar Chart", "width": "half", "enabled": True},
+            {"id": "histogram", "name": "Histogram Chart", "width": "half", "enabled": True},
+        ]
         
     col_name = mappings["col_student_name"]
     col_id = mappings["col_student_id"]
@@ -334,7 +446,9 @@ def process_feedback(request):
                 "overall_grade": overall_grade,
                 "radar_base64": radar_base64,
                 "hist_base64": hist_base64,
-                "degree_level": degree_level
+                "degree_level": degree_level,
+                "layout": layout,
+                "layout_rows": build_pdf_layout_rows(layout),
             }
             
             # Render PDF in-memory using WeasyPrint
@@ -356,5 +470,4 @@ def render_html_to_pdf_template(request, context):
     Renders the beautiful glassmorphic feedback sheet directly
     to a compiled raw HTML string in context.
     """
-    from django.template.loader import render_to_string
     return render_to_string("assessment_feedback/feedback_pdf.html", context, request=request)

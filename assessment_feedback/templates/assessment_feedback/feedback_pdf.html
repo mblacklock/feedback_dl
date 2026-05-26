@@ -8,7 +8,7 @@
             size: A4;
             margin: 18mm;
         }
-        
+
         body {
             font-family: 'Inter', sans-serif;
             color: #1e293b;
@@ -67,27 +67,6 @@
             padding: 4px 8px;
         }
 
-        .category-card {
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            page-break-inside: avoid;
-        }
-
-        .category-header {
-            background-color: #f1f5f9;
-            border-bottom: 1px solid #e2e8f0;
-            padding: 10px 15px;
-            font-weight: 700;
-            font-family: 'Outfit', sans-serif;
-            font-size: 11pt;
-            color: #334155;
-        }
-
-        .category-body {
-            padding: 15px;
-        }
-
         .score-badge {
             background-color: #eff6ff;
             color: #1e40af;
@@ -100,7 +79,7 @@
         }
 
         .overall-card {
-            background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+            background-color: #1e3a8a;
             color: white;
             border-radius: 8px;
             padding: 20px;
@@ -122,8 +101,8 @@
         }
 
         .overall-grade {
-            background-color: rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.25);
+            background-color: #3b5fcf;
+            border: 1px solid #93c5fd;
             border-radius: 30px;
             padding: 4px 14px;
             font-weight: 700;
@@ -132,44 +111,22 @@
             margin-top: 5px;
         }
 
-        /* Charts section break onto new page for maximum clarity */
-        .charts-section {
-            page-break-before: always;
-            margin-top: 10px;
-        }
-
-        .charts-container {
-            display: table;
-            width: 100%;
-            margin-top: 20px;
-        }
-
-        .charts-row {
-            display: table-row;
-        }
-
-        .chart-cell {
-            display: table-cell;
-            width: 50%;
+        .block-chart-box {
             text-align: center;
-            vertical-align: middle;
-            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px;
+            background-color: #f8fafc;
         }
 
         .chart-title {
             font-size: 10pt;
             font-weight: 700;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
             color: #475569;
             font-family: 'Outfit', sans-serif;
         }
 
-        .chart-svg {
-            width: 480px;
-            height: auto;
-            max-height: 220px;
-        }
-        
         .disclaimer {
             font-size: 8pt;
             color: #64748b;
@@ -182,7 +139,7 @@
 </head>
 <body>
 
-    <!-- Step 1: Main Header Info -->
+    <!-- Header -->
     <div class="header-container">
         <div class="header-title">Student Performance Report</div>
         <div class="header-meta">Assessment Feedback Report Summary</div>
@@ -210,37 +167,58 @@
         </div>
     </div>
 
-    <!-- Step 2: Rubric Categories Performance -->
-    <h3 class="fw-bold" style="margin-top: 25px; margin-bottom: 15px; font-family: 'Outfit', sans-serif; color: #1e3a8a;">Criteria Performance</h3>
-    
-    {% for cat in categories %}
-    <div class="category-card">
-        <div class="category-header">
-            {{ cat.label }}
-        </div>
-        <div class="category-body">
-            <div style="margin-bottom: 12px;">
-                <strong>Awarded Mark:</strong> 
-                <span class="score-badge">
-                    {% if cat.is_grade %}
-                        {{ cat.grade_awarded }} ({{ cat.mark|floatformat:1 }} / {{ cat.max_marks }} marks)
-                    {% else %}
-                        {{ cat.mark|floatformat:1 }} / {{ cat.max_marks }} marks
-                    {% endif %}
-                </span>
-            </div>
-            <div>
-                <strong>Commentary / Feedback:</strong>
-                <p style="color: #475569; font-size: 9.5pt; margin-top: 6px; margin-bottom: 0;">
-                    {{ cat.feedback_comment|default:"No comments provided for this criterion." }}
-                </p>
-            </div>
-        </div>
+    <!-- Dynamic Layout Blocks -->
+    <!-- Real HTML <table> elements used because xhtml2pdf ignores CSS floats and
+         is unreliable with CSS display:table on divs. Native <table> is the
+         most reliable two-column layout in xhtml2pdf. -->
+    <div style="margin-top: 20px;">
+        {% for row in layout_rows %}
+
+            {% if row.type == "full" %}
+                <!-- Full-width single block -->
+                <div style="margin-bottom: 20px;">
+                    {% with block=row.blocks.0 %}
+                        {% include "assessment_feedback/_pdf_block.html" %}
+                    {% endwith %}
+                </div>
+
+            {% elif row.type == "half-pair" %}
+                <!-- Two half-width blocks side by side using a real HTML table -->
+                <table width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 20px;">
+                    <tr>
+                        <td width="50%" valign="top" style="padding-right: 8px;">
+                            {% with block=row.blocks.0 %}
+                                {% include "assessment_feedback/_pdf_block.html" %}
+                            {% endwith %}
+                        </td>
+                        <td width="50%" valign="top" style="padding-left: 8px;">
+                            {% with block=row.blocks.1 %}
+                                {% include "assessment_feedback/_pdf_block.html" %}
+                            {% endwith %}
+                        </td>
+                    </tr>
+                </table>
+
+            {% elif row.type == "half-single" %}
+                <!-- Single half-width block with empty second column -->
+                <table width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 20px;">
+                    <tr>
+                        <td width="50%" valign="top" style="padding-right: 8px;">
+                            {% with block=row.blocks.0 %}
+                                {% include "assessment_feedback/_pdf_block.html" %}
+                            {% endwith %}
+                        </td>
+                        <td width="50%"></td>
+                    </tr>
+                </table>
+            {% endif %}
+
+        {% endfor %}
     </div>
-    {% endfor %}
+
 
     <!-- Overall Summary -->
-    <div class="overall-card">
+    <div class="overall-card" style="page-break-inside: avoid;">
         <div class="student-details-grid">
             <div class="student-details-row">
                 <div class="student-details-cell">
@@ -254,34 +232,9 @@
             </div>
         </div>
     </div>
-    
+
     <div class="disclaimer">
         These results are generated in-memory and are internally moderated. Official grades are confirmed by the Programme Assessment Board.
-    </div>
-
-    <!-- Step 3: Graphical Performance Breakdowns -->
-    <div class="charts-section">
-        <div class="header-container">
-            <div class="header-title">Graphical Insights</div>
-            <div class="header-meta">Individual Performance vs. Cohort Benchmarks</div>
-        </div>
-        
-        <div class="charts-container">
-            <div class="charts-row">
-                <div class="chart-cell">
-                    <div class="chart-title">Student vs. Class Average Radar</div>
-                    <img src="data:image/svg+xml;base64,{{ radar_base64 }}" class="chart-svg">
-                </div>
-                <div class="chart-cell">
-                    <div class="chart-title">Cohort Mark Distribution</div>
-                    <img src="data:image/svg+xml;base64,{{ hist_base64 }}" class="chart-svg">
-                </div>
-            </div>
-        </div>
-        
-        <div class="disclaimer" style="margin-top: 80px;">
-            Radar chart displays category performance normalized as percentages. Histogram bins cohort final grades.
-        </div>
     </div>
 
 </body>
