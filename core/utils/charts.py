@@ -140,3 +140,61 @@ def generate_cohort_histogram(scores, student_score, max_score=100, subdivision=
     plt.close(fig)
     
     return buf.getvalue().decode('utf-8')
+
+
+def generate_module_comparison_chart(labels, student_percentages, average_percentages):
+    """
+    Generate a high-fidelity vector grouped bar chart comparing a student's percentage marks
+    against the class average percentages for both assessment components.
+    
+    Args:
+        labels: List of component label strings (e.g. ['Assessment 1', 'Assessment 2'])
+        student_percentages: Student percentages for the components
+        average_percentages: Class average percentages for the components
+        
+    Returns:
+        str: SVG XML string representing the vector chart
+    """
+    if not labels:
+        return ""
+        
+    fig, ax = plt.subplots(figsize=(5.5, 3.2))
+    
+    x = np.arange(len(labels))
+    width = 0.30  # width of the bars
+    
+    student_color = '#4361ee'  # Indigo/Blue
+    average_color = '#ff006e'  # Harmonious Pink/Red
+    grid_color = '#cbd5e1'
+    text_color = '#1e293b'
+    
+    # Plot bars
+    ax.bar(x - width/2, student_percentages, width, label='Your Score', color=student_color, alpha=0.9, edgecolor='none', zorder=3)
+    ax.bar(x + width/2, average_percentages, width, label='Class Average', color=average_color, alpha=0.5, edgecolor='none', zorder=3)
+    
+    # Styling
+    ax.set_ylabel('Percentage (%)', color=text_color, fontweight='semibold', size=9.5)
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, color=text_color, size=9, fontweight='semibold')
+    ax.set_ylim(0, 100)
+    
+    # Grid lines
+    ax.grid(True, axis='y', color=grid_color, linestyle=':', linewidth=0.8, zorder=0)
+    ax.set_axisbelow(True)
+    
+    # Spines
+    for spine in ['top', 'right', 'left']:
+        ax.spines[spine].set_visible(False)
+    ax.spines['bottom'].set_color('#cbd5e1')
+    
+    ax.tick_params(axis='both', which='both', length=0, colors='#475569', labelsize=8.5)
+    
+    # Legend
+    plt.legend(loc='upper right', fontsize=8.5, frameon=True, facecolor='white', edgecolor='#e2e8f0')
+    
+    buf = io.BytesIO()
+    plt.savefig(buf, format='svg', bbox_inches='tight', transparent=True)
+    plt.close(fig)
+    
+    return buf.getvalue().decode('utf-8')
+
