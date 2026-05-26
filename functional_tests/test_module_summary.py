@@ -57,7 +57,7 @@ class ModuleSummaryFT(FunctionalTestBase):
         # WHEN: They upload their MCRF Excel spreadsheet
         file_input.send_keys(self.fixture_path)
         
-        # AND: Click the Upload/Analyze button
+        # AND: Click the Upload/Analyse button
         upload_btn = self.browser.find_element(By.CSS_SELECTOR, "button[type='submit']")
         self.browser.execute_script("arguments[0].scrollIntoView(true);", upload_btn)
         self.browser.execute_script("arguments[0].click();", upload_btn)
