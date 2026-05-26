@@ -31,7 +31,8 @@ INSTALLED_APPS = [
 
 INSTALLED_APPS += [
     'rubric_generator',
-    'comments_generator'
+    'comments_generator',
+    'assessment_feedback'
 ]
 
 MIDDLEWARE = [

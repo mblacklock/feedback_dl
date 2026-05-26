@@ -21,4 +21,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path("rubric-generator/", include("rubric_generator.urls")),
     path("comments-generator/", include("comments_generator.urls")),
+    path("assessment-feedback/", include("assessment_feedback.urls")),
 ]

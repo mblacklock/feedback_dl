@@ -1,0 +1,188 @@
+{% extends "rubric_generator/base.html" %}
+
+{% block title %}Confirm Mappings{% endblock %}
+
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: #f8fafc;
+        color: #1e293b;
+    }
+    
+    h1, h2, h3, h4 {
+        font-family: 'Outfit', sans-serif;
+    }
+
+    .main-card {
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        margin-bottom: 40px;
+    }
+    
+    .gradient-header {
+        background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+        border-radius: 20px 20px 0 0;
+        padding: 30px;
+        color: white;
+    }
+
+    .mapping-table th {
+        background-color: #f1f5f9;
+        font-weight: 600;
+        color: #475569;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        border: none;
+    }
+
+    .mapping-table td {
+        vertical-align: middle;
+        border-bottom: 1px solid #f1f5f9;
+        padding: 16px 12px;
+    }
+
+    .btn-generate {
+        background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 14px 40px;
+        font-weight: 700;
+        transition: all 0.25s ease;
+        box-shadow: 0 4px 15px rgba(67, 97, 238, 0.25);
+    }
+
+    .btn-generate:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
+        color: white;
+    }
+
+    .badge-inferred {
+        background-color: #ecfdf5;
+        color: #059669;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border: 1px solid #a7f3d0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row py-5">
+    <div class="col-lg-10 mx-auto">
+        <div class="card main-card">
+            <div class="gradient-header text-center">
+                <h2 class="fw-bold mb-2">Confirm Data Mapping</h2>
+                <p class="mb-0 opacity-75">We analyzed your columns. Confirm that student IDs, names, marks, and comments match their designated targets.</p>
+            </div>
+            
+            <div class="card-body p-5">
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    <!-- Section 1: Core Student Details -->
+                    <h4 class="fw-bold mb-4">1. Core Identifiers</h4>
+                    <div class="row g-4 mb-5">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-secondary">Student Name Column</label>
+                            <select name="col_student_name" class="form-select rounded-3" required id="col_student_name">
+                                {% for h in headers %}
+                                    <option value="{{ h }}" {% if h == mappings.col_student_name %}selected{% endif %}>{{ h }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Used for identifying student names on individual PDFs.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-secondary">Student ID Column</label>
+                            <select name="col_student_id" class="form-select rounded-3" required id="col_student_id">
+                                {% for h in headers %}
+                                    <option value="{{ h }}" {% if h == mappings.col_student_id %}selected{% endif %}>{{ h }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Used for PDF filenames and records layout.</div>
+                        </div>
+                    </div>
+
+                    <!-- Section 2: Degree configurations -->
+                    <h4 class="fw-bold mb-4">2. Grading Layout Configuration</h4>
+                    <div class="row g-4 mb-5">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-secondary">Degree Level</label>
+                            <select name="degree_level" class="form-select rounded-3" required>
+                                <option value="BEng" {% if mappings.degree_level == 'BEng' %}selected{% endif %}>Undergraduate (BEng - Fail < 40%)</option>
+                                <option value="MEng" {% if mappings.degree_level == 'MEng' %}selected{% endif %}>Postgraduate (MEng/MSc - Fail < 50%)</option>
+                            </select>
+                            <div class="form-text">Affects UK grade thresholds and failure labels.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-secondary">Grade Band Subdivision</label>
+                            <select name="subdivision" class="form-select rounded-3" required>
+                                <option value="none" {% if mappings.subdivision == 'none' %}selected{% endif %}>No subdivisions (e.g. 1st, 2:1, 2:2, 3rd)</option>
+                                <option value="high_low" {% if mappings.subdivision == 'high_low' %}selected{% endif %}>High/Low (e.g. High 2:1, Low 2:1)</option>
+                                <option value="high_mid_low" {% if mappings.subdivision == 'high_mid_low' %}selected{% endif %}>High/Mid/Low (e.g. High 2:1, Mid 2:1, Low 2:1)</option>
+                            </select>
+                            <div class="form-text">Determines grading subdivision for any grade-based categories.</div>
+                        </div>
+                    </div>
+
+                    <!-- Section 3: Assessment Categories -->
+                    <h4 class="fw-bold mb-4">3. Grading Categories & Commentary Columns</h4>
+                    <div class="table-responsive mb-5">
+                        <table class="table mapping-table">
+                            <thead>
+                                <tr>
+                                    <th>Grading Category (Excel Header)</th>
+                                    <th>Rubric Type</th>
+                                    <th>Max Marks</th>
+                                    <th>Weighting (Optional %)</th>
+                                    <th>Matched Comments/Feedback Column</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cat in mappings.categories %}
+                                <tr>
+                                    <td class="fw-bold">{{ cat.column }}</td>
+                                    <td>
+                                        <select name="type_{{ forloop.counter0 }}" class="form-select form-select-sm rounded-3">
+                                            <option value="numeric" {% if cat.type == 'numeric' %}selected{% endif %}>Numeric Score</option>
+                                            <option value="grade" {% if cat.type == 'grade' %}selected{% endif %}>UK Grade Rubric</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <input type="number" name="max_{{ forloop.counter0 }}" class="form-control form-control-sm rounded-3" value="{{ cat.max_marks }}" style="width: 80px;">
+                                    </td>
+                                    <td>
+                                        <input type="number" name="weight_{{ forloop.counter0 }}" class="form-control form-control-sm rounded-3" value="{{ cat.weight|default:'' }}" placeholder="None" style="width: 80px;">
+                                    </td>
+                                    <td>
+                                        <select name="comments_{{ forloop.counter0 }}" class="form-select form-select-sm rounded-3">
+                                            <option value="">-- No Comment Column --</option>
+                                            {% for h in headers %}
+                                                <option value="{{ h }}" {% if h == cat.comments_column %}selected{% endif %}>{{ h }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-generate btn-lg w-100 btn-generate">Generate Feedback PDFs</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
