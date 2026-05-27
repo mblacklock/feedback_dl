@@ -45,6 +45,26 @@ _ALL_GRADE_STRINGS = (
 )
 
 
+def clean_category_title(title):
+    """
+    Remove denominator notations from the category title.
+    E.g. "Design /30" -> "Design"
+         "Implementation (40)" -> "Implementation"
+         "Testing 30" -> "Testing"
+         "Design (30%)" -> "Design"
+    """
+    cleaned = title
+    # Remove "/30" or similar
+    cleaned = re.sub(r'/\d+', '', cleaned)
+    # Remove "(40%)" or "(40)" or similar
+    cleaned = re.sub(r'\(\d+%\)', '', cleaned)
+    cleaned = re.sub(r'\(\d+\)', '', cleaned)
+    # Remove trailing digits at word boundaries
+    cleaned = re.sub(r'\b\d+\b\s*$', '', cleaned)
+    # Strip whitespace and trailing punctuation/special characters
+    return cleaned.strip()
+
+
 def infer_rubric_type(column_values):
     """
     Given a list of raw cell values from one column, return:
@@ -217,9 +237,14 @@ def upload_file(request):
             
             # Build category configurations with max marks, comments, and rubric detection
             for cat in candidate_categories:
-                # Infer max marks (denominator) from header (e.g. Design /30 or Design (30))
+                # Infer max marks (denominator) from header (e.g. Design /30, Design (30), Design 30)
                 max_marks = 100  # default fallback
                 denom_match = re.search(r'/(\d+)', cat)
+                if not denom_match:
+                    denom_match = re.search(r'\((\d+)\)', cat)
+                if not denom_match:
+                    denom_match = re.search(r'\b(\d+)$', cat)
+
                 if denom_match:
                     max_marks = int(denom_match.group(1))
                 else:
@@ -584,12 +609,12 @@ def process_feedback(request):
                 student_pct = (mark_val / max_marks) * 100 if max_marks > 0 else 0
                 avg_pct = (category_averages[col] / max_marks) * 100 if max_marks > 0 else 0
 
-                radar_labels.append(col)
+                radar_labels.append(clean_category_title(col))
                 student_radar_percentages.append(student_pct)
                 avg_radar_percentages.append(avg_pct)
 
                 student_categories_data.append({
-                    "label": col,
+                    "label": clean_category_title(col),
                     "mark": mark_val,
                     "max_marks": max_marks,
                     "grade_awarded": grade_awarded,

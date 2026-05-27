@@ -84,13 +84,15 @@ class AssessmentFeedbackViewsTest(TestCase):
         categories = mappings["categories"]
         category_columns = [c["column"] for c in categories]
 
-        # All three mark columns must be found
+        # All mark columns must be found
         self.assertIn("Design /30", category_columns,
                       msg=f"Expected 'Design /30' in categories, got: {category_columns}")
-        self.assertIn("Implementation /40", category_columns,
-                      msg=f"Expected 'Implementation /40' in categories, got: {category_columns}")
-        self.assertIn("Testing /30", category_columns,
-                      msg=f"Expected 'Testing /30' in categories, got: {category_columns}")
+        self.assertIn("Implementation (40)", category_columns,
+                      msg=f"Expected 'Implementation (40)' in categories, got: {category_columns}")
+        self.assertIn("Testing 30", category_columns,
+                      msg=f"Expected 'Testing 30' in categories, got: {category_columns}")
+        self.assertIn("Analysis", category_columns,
+                      msg=f"Expected 'Analysis' in categories, got: {category_columns}")
 
         # Comment columns must NOT appear as categories
         self.assertNotIn("Design Comments", category_columns)
@@ -100,13 +102,14 @@ class AssessmentFeedbackViewsTest(TestCase):
         # Max marks must be correctly parsed from column headers
         by_col = {c["column"]: c for c in categories}
         self.assertEqual(by_col["Design /30"]["max_marks"], 30)
-        self.assertEqual(by_col["Implementation /40"]["max_marks"], 40)
-        self.assertEqual(by_col["Testing /30"]["max_marks"], 30)
+        self.assertEqual(by_col["Implementation (40)"]["max_marks"], 40)
+        self.assertEqual(by_col["Testing 30"]["max_marks"], 30)
+        self.assertEqual(by_col["Analysis"]["max_marks"], 100)
 
         # Comments columns must be correctly mapped
         self.assertEqual(by_col["Design /30"]["comments_column"], "Design Comments")
-        self.assertEqual(by_col["Implementation /40"]["comments_column"], "Implementation Comments")
-        self.assertEqual(by_col["Testing /30"]["comments_column"], "Testing Comments")
+        self.assertEqual(by_col["Implementation (40)"]["comments_column"], "Implementation Comments")
+        self.assertEqual(by_col["Testing 30"]["comments_column"], "Testing Comments")
 
     def test_confirm_mappings_get_renders_mappings(self):
         """GET /assessment-feedback/confirm/ renders confirmation mapping layout"""
@@ -568,25 +571,25 @@ class AssessmentFeedbackViewsTest(TestCase):
 
         # All four grading columns must be found
         self.assertIn("Design /30", by_col, msg=f"Missing Design /30, found: {found}")
-        self.assertIn("Implementation /40", by_col, msg=f"Missing Implementation /40, found: {found}")
-        self.assertIn("Testing /30", by_col, msg=f"Missing Testing /30, found: {found}")
+        self.assertIn("Implementation (40)", by_col, msg=f"Missing Implementation (40), found: {found}")
+        self.assertIn("Testing 30", by_col, msg=f"Missing Testing 30, found: {found}")
         self.assertIn("Analysis", by_col, msg=f"Missing Analysis, found: {found}")
 
         # Numeric columns must have type 'numeric'
         self.assertEqual(by_col["Design /30"]["type"], "numeric")
-        self.assertEqual(by_col["Implementation /40"]["type"], "numeric")
+        self.assertEqual(by_col["Implementation (40)"]["type"], "numeric")
 
         # Rubric columns must have type 'grade'
-        self.assertEqual(by_col["Testing /30"]["type"], "grade",
-                         msg="Testing /30 contains grade strings, should be type='grade'")
+        self.assertEqual(by_col["Testing 30"]["type"], "grade",
+                         msg="Testing 30 contains grade strings, should be type='grade'")
         self.assertEqual(by_col["Analysis"]["type"], "grade",
                          msg="Analysis contains grade strings, should be type='grade'")
 
-        # Testing /30 contains "High 2:1", "Low 2:2" → high_low subdivision
-        self.assertEqual(by_col["Testing /30"]["subdivision"], "high_low")
+        # Testing 30 contains "High 2:1", "Low 2:2" → high_low subdivision
+        self.assertEqual(by_col["Testing 30"]["subdivision"], "high_low")
 
         # Rubric columns must have rubric_marks pre-computed
-        self.assertGreater(len(by_col["Testing /30"]["rubric_marks"]), 0)
+        self.assertGreater(len(by_col["Testing 30"]["rubric_marks"]), 0)
         self.assertGreater(len(by_col["Analysis"]["rubric_marks"]), 0)
 
     def test_mixed_fixture_analysis_column_max_marks_fallback(self):
@@ -710,6 +713,16 @@ class AssessmentFeedbackViewsTest(TestCase):
                          msg=f"API Low 1st should be 7/10, got {bands.get('Low 1st')}")
         self.assertEqual(bands.get("Mid 1st"),  8,
                          msg=f"API Mid 1st should be 8/10, got {bands.get('Mid 1st')}")
+
+    def test_clean_category_title_removes_various_mark_denominators(self):
+        """Verify that clean_category_title successfully removes denominator / percentage notations
+        leaving only the pristine category title name."""
+        from assessment_feedback.views import clean_category_title
+        self.assertEqual(clean_category_title("Design /30"), "Design")
+        self.assertEqual(clean_category_title("Implementation (40)"), "Implementation")
+        self.assertEqual(clean_category_title("Testing 30"), "Testing")
+        self.assertEqual(clean_category_title("Design (30%)"), "Design")
+        self.assertEqual(clean_category_title("Normal Title"), "Normal Title")
 
 
 
