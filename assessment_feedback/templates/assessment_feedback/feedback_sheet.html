@@ -2,160 +2,261 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Feedback Sheet</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assessment Feedback — {{ student_name }}</title>
     <style>
-        @page {
-            size: A4;
-            margin: 18mm;
-        }
-
-        body {
-            font-family: Arial, Helvetica, sans-serif;
-            color: #1a1a2e;
-            font-size: 10pt;
-            line-height: 1.3;
-            margin: 0;
-            background-color: #ffffff;
-        }
-
-        p {
+        *, *::before, *::after {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
 
-        .section-heading {
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 8pt;
-            font-weight: bold;
-            color: #888888;
-            border-bottom: 1px solid #dddddd;
-            padding-bottom: 3px;
-            margin-bottom: 8px;
-            margin-top: 0;
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            color: #1a1a2e;
+            font-size: 14px;
+            line-height: 1.5;
+            background: #f0f0f0;
+            padding: 32px 16px;
         }
 
-        .chart-title {
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 8pt;
-            font-weight: bold;
-            color: #888888;
+        .page {
+            max-width: 780px;
+            margin: 0 auto;
+            background: #ffffff;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.10);
+        }
+
+        /* ── Header ── */
+        .header {
+            background: #1a1a2e;
+            padding: 24px 32px 20px;
+            border-bottom: 4px solid #c8a951;
+        }
+
+        .header-module {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: #c8a951;
             margin-bottom: 6px;
         }
 
-        .score-badge {
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 9pt;
-            font-weight: bold;
-            color: #1a1a2e;
+        .header-title {
+            font-family: Georgia, 'Times New Roman', serif;
+            font-size: 26px;
+            font-weight: normal;
+            color: #ffffff;
+            margin-bottom: 5px;
+            line-height: 1.2;
         }
 
-        .disclaimer {
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 7.5pt;
-            color: #aaaaaa;
+        .header-sub {
+            font-size: 11px;
+            color: #8892b0;
+            letter-spacing: 0.03em;
+        }
+
+        /* ── Student bar ── */
+        .student-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 32px;
+            border-bottom: 1px solid #e8e8e8;
+            background: #fafafa;
+        }
+
+        .student-name {
+            font-family: Georgia, 'Times New Roman', serif;
+            font-size: 18px;
+            font-weight: bold;
+            color: #1a1a2e;
+            margin-bottom: 3px;
+        }
+
+        .student-meta {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .grade-pill {
+            background: #1a1a2e;
+            border: 1px solid #c8a951;
+            padding: 8px 20px;
             text-align: center;
-            margin-top: 14px;
-            padding-top: 8px;
-            border-top: 1px solid #eeeeee;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .grade-pill-score {
+            font-size: 16px;
+            font-weight: 700;
+            color: #c8a951;
+            line-height: 1.2;
+        }
+
+        .grade-pill-band {
+            font-size: 11px;
+            font-weight: 700;
+            color: #c8a951;
+            letter-spacing: 0.06em;
+        }
+
+        /* ── Content area ── */
+        .content {
+            padding: 24px 32px;
+        }
+
+        {% include "assessment_feedback/css/feedback_blocks.css" %}
+
+        /* ── Layout rows ── */
+        .block-full {
+            margin-bottom: 20px;
+        }
+
+        .half-pair {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .half-pair > .half {
+            flex: 1;
+            min-width: 0;
+        }
+
+        /* ── Overall summary ── */
+        .overall-card {
+            display: flex;
+            margin-top: 20px;
+            border-top: 4px solid #c8a951;
+        }
+
+        .overall-cell {
+            flex: 1;
+            background: #1a1a2e;
+            padding: 16px 24px;
+        }
+
+        .overall-cell + .overall-cell {
+            border-left: 1px solid #2e2e4a;
+        }
+
+        .overall-label {
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: #8892b0;
+            margin-bottom: 6px;
+        }
+
+        .overall-score {
+            font-size: 28px;
+            font-weight: 700;
+            color: #ffffff;
+            line-height: 1;
+        }
+
+        .overall-grade {
+            font-size: 24px;
+            font-weight: 700;
+            color: #c8a951;
+            line-height: 1;
+        }
+
+        /* ── Disclaimer ── */
+        .disclaimer {
+            font-size: 10px;
+            color: #bbb;
+            text-align: center;
+            padding: 14px 32px;
+            border-top: 1px solid #eee;
         }
     </style>
 </head>
 <body>
+<div class="page">
 
-    <!-- ═══ HEADER ═══ -->
-    <table width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 14px;">
-        <tr>
-            <td bgcolor="#1a1a2e" style="padding: 14px 20px 12px 20px;">
-                <p style="margin: 0 0 3px 0; font-family: Arial, Helvetica, sans-serif; font-size: 8.5pt; color: #c8a951; font-weight: bold;">{{ module_code }} &middot; {{ module_title }}</p>
-                <p style="margin: 0 0 3px 0; font-family: Georgia, 'Times New Roman', serif; font-size: 20pt; color: #ffffff; font-weight: normal;">Assessment Feedback Report</p>
-                <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 8.5pt; color: #a0a8c0;">{{ assessment_title }} &nbsp;&middot;&nbsp; {{ academic_year }} &nbsp;&middot;&nbsp; These results are internally moderated</p>
-            </td>
-        </tr>
-        <tr>
-            <td bgcolor="#c8a951" style="height: 4px; font-size: 1pt;">&nbsp;</td>
-        </tr>
-    </table>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-module">{{ module_code }} &middot; {{ module_title }}</div>
+        <div class="header-title">Assessment Feedback Report</div>
+        <div class="header-sub">{{ assessment_title }} &nbsp;&middot;&nbsp; {{ academic_year }} &nbsp;&middot;&nbsp; These results are internally moderated</div>
+    </div>
 
-    <!-- ═══ STUDENT BAR ═══ -->
-    <table width="100%" cellspacing="0" cellpadding="0" style="border: 1px solid #dddddd; margin-bottom: 14px;" bgcolor="#fafafa">
-        <tr>
-            <td style="padding: 8px 14px;" valign="middle">
-                <p style="margin: 0 0 2px 0; font-family: Georgia, 'Times New Roman', serif; font-size: 13pt; font-weight: bold; color: #1a1a2e;">{{ student_name }}</p>
-                <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 9pt; color: #666666;">Student Number: {{ student_id }} &nbsp;&middot;&nbsp; {{ degree_level }}</p>
-            </td>
-            <td style="padding: 8px 14px; text-align: right;" valign="middle" width="150">
-                <table cellspacing="0" cellpadding="0" align="right">
-                    <tr>
-                        <td bgcolor="#1a1a2e" style="padding: 6px 14px; border: 1px solid #c8a951; text-align: center;">
-                            <p style="margin: 0 0 2px 0; font-family: Arial, Helvetica, sans-serif; font-size: 12pt; font-weight: bold; color: #c8a951;">{{ total_score|floatformat:1 }} / {{ total_max_marks }}</p>
-                            <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 9pt; font-weight: bold; color: #c8a951;">{{ overall_grade }}</p>
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-    </table>
+    <!-- Student bar -->
+    <div class="student-bar">
+        <div>
+            <div class="student-name">{{ student_name }}</div>
+            <div class="student-meta">Student Number: {{ student_id }} &nbsp;&middot;&nbsp; {{ degree_level }}</div>
+        </div>
+        <div class="grade-pill">
+            <div class="grade-pill-score">{{ total_score|floatformat:1 }} / {{ total_max_marks }}</div>
+            <div class="grade-pill-band">{{ overall_grade }}</div>
+        </div>
+    </div>
 
-    <!-- ═══ DYNAMIC LAYOUT BLOCKS ═══ -->
-    <div>
+    <!-- Dynamic layout blocks -->
+    <div class="content">
         {% for row in layout_rows %}
 
             {% if row.type == "full" %}
-                <div style="margin-bottom: 12px;">
+                <div class="block-full">
                     {% with block=row.blocks.0 %}
                         {% include "assessment_feedback/_feedback_block.html" %}
                     {% endwith %}
                 </div>
 
             {% elif row.type == "half-pair" %}
-                <table width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 12px;">
-                    <tr>
-                        <td width="50%" valign="top" style="padding-right: 8px;">
-                            {% with block=row.blocks.0 %}
-                                {% include "assessment_feedback/_feedback_block.html" %}
-                            {% endwith %}
-                        </td>
-                        <td width="50%" valign="top" style="padding-left: 8px;">
-                            {% with block=row.blocks.1 %}
-                                {% include "assessment_feedback/_feedback_block.html" %}
-                            {% endwith %}
-                        </td>
-                    </tr>
-                </table>
+                <div class="half-pair">
+                    <div class="half">
+                        {% with block=row.blocks.0 %}
+                            {% include "assessment_feedback/_feedback_block.html" %}
+                        {% endwith %}
+                    </div>
+                    <div class="half">
+                        {% with block=row.blocks.1 %}
+                            {% include "assessment_feedback/_feedback_block.html" %}
+                        {% endwith %}
+                    </div>
+                </div>
 
             {% elif row.type == "half-single" %}
-                <table width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 12px;">
-                    <tr>
-                        <td width="50%" valign="top" style="padding-right: 8px;">
-                            {% with block=row.blocks.0 %}
-                                {% include "assessment_feedback/_feedback_block.html" %}
-                            {% endwith %}
-                        </td>
-                        <td width="50%"></td>
-                    </tr>
-                </table>
+                <div class="half-pair">
+                    <div class="half">
+                        {% with block=row.blocks.0 %}
+                            {% include "assessment_feedback/_feedback_block.html" %}
+                        {% endwith %}
+                    </div>
+                    <div class="half"></div>
+                </div>
+
             {% endif %}
 
         {% endfor %}
+
+        <!-- Overall summary -->
+        <div class="overall-card">
+            <div class="overall-cell">
+                <div class="overall-label">Overall Assessment Mark</div>
+                <div class="overall-score">{{ total_score|floatformat:1 }} / {{ total_max_marks }}</div>
+            </div>
+            <div class="overall-cell">
+                <div class="overall-label">Awarded UK Grade</div>
+                <div class="overall-grade">{{ overall_grade }}</div>
+            </div>
+        </div>
+
     </div>
 
-    <!-- ═══ OVERALL SUMMARY ═══ -->
-    <table width="100%" cellspacing="0" cellpadding="0" style="margin-top: 14px; margin-bottom: 14px; border-top: 4px solid #c8a951;">
-        <tr>
-            <td bgcolor="#1a1a2e" style="padding: 10px 16px;" valign="middle" width="50%">
-                <p style="margin: 0 0 4px 0; font-family: Arial, Helvetica, sans-serif; font-size: 7.5pt; color: #a0a8c0; font-weight: bold;">OVERALL ASSESSMENT MARK</p>
-                <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 20pt; font-weight: bold; color: #ffffff; line-height: 1.1;">{{ total_score|floatformat:1 }} / {{ total_max_marks }}</p>
-            </td>
-            <td bgcolor="#1a1a2e" style="padding: 10px 16px;" valign="middle" width="50%">
-                <p style="margin: 0 0 4px 0; font-family: Arial, Helvetica, sans-serif; font-size: 7.5pt; color: #a0a8c0; font-weight: bold;">AWARDED UK GRADE</p>
-                <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 18pt; font-weight: bold; color: #c8a951; line-height: 1.1;">{{ overall_grade }}</p>
-            </td>
-        </tr>
-    </table>
-
+    <!-- Disclaimer -->
     <div class="disclaimer">
         These results are internally moderated and have not yet been confirmed by the Programme Assessment Board.
     </div>
 
+</div>
 </body>
 </html>

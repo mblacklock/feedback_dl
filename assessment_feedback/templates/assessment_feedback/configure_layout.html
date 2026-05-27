@@ -3,28 +3,18 @@
 {% block title %}Configure Feedback Sheet Layout{% endblock %}
 
 {% block extra_css %}
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
-    body {
-        font-family: 'Inter', sans-serif;
-        background-color: #f8fafc;
-        color: #1e293b;
-    }
-    
-    h1, h2, h3, h4, h5 {
-        font-family: 'Outfit', sans-serif;
-    }
-
+    {% include "assessment_feedback/css/feedback_blocks.css" %}
+</style>
+<style>
+    /* ── Page & card chrome ── */
     .main-card {
-        border: none;
         border-radius: 20px;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
         background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
         border: 1px solid rgba(255, 255, 255, 0.4);
     }
-    
+
     .gradient-header {
         background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
         border-radius: 20px 20px 0 0;
@@ -33,7 +23,6 @@
         border-bottom: 4px solid #c8a951;
     }
 
-    /* ═══ Left Control Panel ═══ */
     .control-pane {
         position: sticky;
         top: 24px;
@@ -67,7 +56,7 @@
         border-color: #c8a951;
     }
 
-    /* ═══ Right Simulated Feedback Sheet ═══ */
+    /* ── Simulated sheet chrome ── */
     .simulated-sheet {
         background: white;
         border-radius: 12px;
@@ -76,7 +65,6 @@
         border: 1px solid #e2e8f0;
     }
 
-    /* Sheet Header mimicking template */
     .sheet-header-box {
         background: #1a1a2e;
         padding: 18px 24px;
@@ -85,7 +73,6 @@
         border-bottom: 4px solid #c8a951;
     }
 
-    /* Student Bar mimicking template */
     .sheet-student-bar {
         border: 1px solid #dddddd;
         margin-bottom: 16px;
@@ -103,9 +90,29 @@
         padding: 8px 16px;
         text-align: center;
         font-weight: bold;
+        border-radius: 4px;
     }
 
-    /* ═══ Drag & Drop Grid Containers ═══ */
+    .sheet-summary-box {
+        margin-top: 16px;
+        margin-bottom: 12px;
+        border-top: 4px solid #c8a951;
+        background-color: #1a1a2e;
+        color: white;
+        display: flex;
+        width: 100%;
+    }
+
+    .sheet-disclaimer {
+        font-size: 10px;
+        color: #aaaaaa;
+        text-align: center;
+        margin-top: 14px;
+        padding-top: 8px;
+        border-top: 1px solid #eeeeee;
+    }
+
+    /* ── Drag & drop block chrome ── */
     .sheet-blocks-container {
         display: flex;
         flex-wrap: wrap;
@@ -122,13 +129,8 @@
         margin-bottom: 12px;
     }
 
-    .draggable-block.width-half {
-        width: 50%;
-    }
-
-    .draggable-block.width-full {
-        width: 100%;
-    }
+    .draggable-block.width-half { width: 50%; }
+    .draggable-block.width-full { width: 100%; }
 
     .draggable-block:hover {
         border-color: #cbd5e1;
@@ -147,7 +149,37 @@
         border-style: solid;
     }
 
-    /* Block Config Overlay Header */
+    .draggable-block.disabled .block-preview-content {
+        opacity: 0.25;
+        pointer-events: none;
+    }
+
+    .draggable-block.disabled {
+        border-color: #e2e8f0;
+        background-color: #f8fafc;
+    }
+
+    .excluded-overlay {
+        display: none;
+        position: absolute;
+        top: 48px;
+        left: 8px;
+        right: 8px;
+        bottom: 8px;
+        background: rgba(248, 250, 252, 0.65);
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #64748b;
+        border-radius: 8px;
+        border: 1px dashed #cbd5e1;
+        z-index: 5;
+    }
+
+    .draggable-block.disabled .excluded-overlay { display: flex; }
+
+    /* ── Block editor bar ── */
     .block-editor-bar {
         display: flex;
         align-items: center;
@@ -170,15 +202,9 @@
         gap: 6px;
     }
 
-    .drag-icon {
-        font-size: 1.1rem;
-        color: #64748b;
-    }
+    .drag-icon { font-size: 1.1rem; color: #64748b; }
 
-    .block-editor-controls {
-        display: flex;
-        align-items: center;
-    }
+    .block-editor-controls { display: flex; align-items: center; }
 
     .width-selector-mini {
         display: flex;
@@ -202,61 +228,6 @@
         background: white;
         color: #1a1a2e;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-    }
-
-    /* Disabled exclusions overlay styling */
-    .draggable-block.disabled .block-preview-content {
-        opacity: 0.25;
-        pointer-events: none;
-    }
-
-    .draggable-block.disabled {
-        border-color: #e2e8f0;
-        background-color: #f8fafc;
-    }
-
-    .excluded-overlay {
-        display: none;
-        position: absolute;
-        top: 48px;
-        left: 8px;
-        right: 8px;
-        bottom: 8px;
-        background: rgba(248, 250, 252, 0.65);
-        backdrop-filter: blur(1px);
-        -webkit-backdrop-filter: blur(1px);
-        align-items: center;
-        justify-content: center;
-        font-size: 0.9rem;
-        font-weight: 600;
-        color: #64748b;
-        border-radius: 8px;
-        border: 1px dashed #cbd5e1;
-        z-index: 5;
-    }
-
-    .draggable-block.disabled .excluded-overlay {
-        display: flex;
-    }
-
-    /* Overall Summary footer in simulated sheet */
-    .sheet-summary-box {
-        margin-top: 16px;
-        margin-bottom: 12px;
-        border-top: 4px solid #c8a951;
-        background-color: #1a1a2e;
-        color: white;
-        display: flex;
-        width: 100%;
-    }
-
-    .sheet-disclaimer {
-        font-size: 7.5pt;
-        color: #aaaaaa;
-        text-align: center;
-        margin-top: 14px;
-        padding-top: 8px;
-        border-top: 1px solid #eeeeee;
     }
 </style>
 {% endblock %}

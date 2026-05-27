@@ -2,68 +2,55 @@
 Partial: _feedback_block.html
 Renders a single layout block by its block.id.
 Expects: block, categories, radar_base64, hist_base64
+Depends on: feedback_blocks.css
 {% endcomment %}
 
 {% if block.id == "category_marks" %}
 
-    <!-- ── Category Marks Block ── -->
-    <p class="section-heading">Criterion Marks</p>
-    <table width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse;">
-        <tr bgcolor="#f0f0f0">
-            <td style="padding: 5px 8px; font-family: Arial, Helvetica, sans-serif; font-size: 8pt; font-weight: bold; color: #555555; border-bottom: 1px solid #dddddd;">Criterion</td>
-            <td style="padding: 5px 8px; font-family: Arial, Helvetica, sans-serif; font-size: 8pt; font-weight: bold; color: #555555; border-bottom: 1px solid #dddddd; text-align: right;">Mark</td>
-            <td style="padding: 5px 8px; font-family: Arial, Helvetica, sans-serif; font-size: 8pt; font-weight: bold; color: #555555; border-bottom: 1px solid #dddddd; text-align: right;">Grade Band</td>
-        </tr>
-        {% for cat in categories %}
-        <tr>
-            <td style="padding: 5px 8px; font-family: Arial, Helvetica, sans-serif; font-size: 9.5pt; font-weight: bold; color: #1a1a2e; border-bottom: 1px solid #f0f0f0;">{{ cat.label }}</td>
-            <td style="padding: 5px 8px; font-family: Arial, Helvetica, sans-serif; font-size: 9.5pt; color: #1a1a2e; border-bottom: 1px solid #f0f0f0; text-align: right;">{{ cat.mark|floatformat:1 }} / {{ cat.max_marks }}</td>
-            <td style="padding: 5px 8px; font-family: Arial, Helvetica, sans-serif; font-size: 9pt; font-weight: bold; color: #c8a951; border-bottom: 1px solid #f0f0f0; text-align: right;">
-                {% if cat.is_grade %}{{ cat.grade_awarded }}{% else %}&mdash;{% endif %}
-            </td>
-        </tr>
-        {% endfor %}
+    <div class="section-heading">Criterion Marks</div>
+    <table class="marks-table">
+        <thead>
+            <tr>
+                <th>Criterion</th>
+                <th class="right">Mark</th>
+                <th class="right">Grade Band</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cat in categories %}
+            <tr>
+                <td class="label">{{ cat.label }}</td>
+                <td class="right">{{ cat.mark|floatformat:1 }} / {{ cat.max_marks }}</td>
+                <td class="band">{% if cat.is_grade %}{{ cat.grade_awarded }}{% else %}&mdash;{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
     </table>
 
 {% elif block.id == "feedback" %}
 
-    <!-- ── Feedback Comments Block ── -->
-    <p class="section-heading">Feedback Comments</p>
+    <div class="section-heading">Feedback Comments</div>
     {% for cat in categories %}
-    <table width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 6px; border: 1px solid #e8e8e8;">
-        <tr bgcolor="#f5f5f5">
-            <td style="padding: 5px 8px; font-family: Arial, Helvetica, sans-serif; font-size: 9.5pt; font-weight: bold; color: #1a1a2e; border-bottom: 1px solid #e8e8e8;">{{ cat.label }}</td>
-        </tr>
-        <tr>
-            <td style="padding: 5px 8px; font-family: Georgia, 'Times New Roman', serif; font-size: 9.5pt; color: #444444; line-height: 1.5;">
-                {{ cat.feedback_comment|default:"No comments provided for this criterion." }}
-            </td>
-        </tr>
-    </table>
+    <div class="feedback-item">
+        <div class="feedback-item-header">{{ cat.label }}</div>
+        <div class="feedback-item-body">
+            {{ cat.feedback_comment|default:"No comments provided for this criterion." }}
+        </div>
+    </div>
     {% endfor %}
 
 {% elif block.id == "radar_chart" %}
 
-    <!-- ── Radar Chart Block ── -->
-    <table width="100%" cellspacing="0" cellpadding="0">
-        <tr>
-            <td bgcolor="#fafafa" style="border: 1px solid #dddddd; padding: 8px; text-align: center;">
-                <p class="chart-title">Criterion Radar — Student vs Class Average</p>
-                <img src="data:image/svg+xml;base64,{{ radar_base64 }}" style="width: 100%; max-width: 260px; height: auto;">
-            </td>
-        </tr>
-    </table>
+    <div class="chart-box">
+        <div class="chart-box-title">Criterion Radar — Student vs Class Average</div>
+        <img src="data:image/svg+xml;base64,{{ radar_base64 }}" alt="Radar chart">
+    </div>
 
 {% elif block.id == "histogram" %}
 
-    <!-- ── Histogram Block ── -->
-    <table width="100%" cellspacing="0" cellpadding="0">
-        <tr>
-            <td bgcolor="#fafafa" style="border: 1px solid #dddddd; padding: 8px; text-align: center;">
-                <p class="chart-title">Cohort Mark Distribution</p>
-                <img src="data:image/svg+xml;base64,{{ hist_base64 }}" style="width: 100%; max-width: 260px; height: auto;">
-            </td>
-        </tr>
-    </table>
+    <div class="chart-box">
+        <div class="chart-box-title">Cohort Mark Distribution</div>
+        <img src="data:image/svg+xml;base64,{{ hist_base64 }}" alt="Histogram">
+    </div>
 
 {% endif %}

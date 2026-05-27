@@ -1,0 +1,112 @@
+/* ============================================================
+   feedback_blocks.css
+   Shared styles for _feedback_block.html partial.
+   Linked in both feedback_sheet.html and configure_layout.html
+   so the WYSIWYG preview matches the generated output exactly.
+   ============================================================ */
+
+/* ── Section heading ── */
+.section-heading {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #999;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 5px;
+    margin-bottom: 12px;
+}
+
+/* ── Criterion marks table ── */
+.marks-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.marks-table thead tr {
+    background: #f5f5f5;
+}
+
+.marks-table th {
+    padding: 7px 12px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #777;
+    border-bottom: 1px solid #e0e0e0;
+    text-align: left;
+}
+
+.marks-table th.right { text-align: right; }
+
+.marks-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #f0f0f0;
+    color: #1a1a2e;
+}
+
+.marks-table td.right { text-align: right; }
+
+.marks-table td.label { font-weight: 700; }
+
+.marks-table td.band {
+    font-weight: 700;
+    color: #c8a951;
+    text-align: right;
+}
+
+.marks-table tbody tr:last-child td { border-bottom: none; }
+
+/* ── Feedback blocks ── */
+.feedback-item {
+    border: 1px solid #ebebeb;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    overflow: hidden;
+}
+
+.feedback-item-header {
+    background: #f5f5f5;
+    padding: 7px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #1a1a2e;
+    border-bottom: 1px solid #ebebeb;
+}
+
+.feedback-item-body {
+    padding: 8px 12px;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 13px;
+    color: #444;
+    line-height: 1.6;
+}
+
+/* ── Chart blocks ── */
+.chart-box {
+    border: 1px solid #e8e8e8;
+    border-radius: 6px;
+    padding: 12px;
+    text-align: center;
+    background: #fafafa;
+    height: 100%;
+}
+
+.chart-box-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #999;
+    margin-bottom: 8px;
+}
+
+.chart-box img {
+    width: 100%;
+    max-width: 280px;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
