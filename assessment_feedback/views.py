@@ -107,10 +107,10 @@ def rubric_mark_from_label(grade_label, rubric_marks):
     return 0
 
 
-def build_pdf_layout_rows(layout):
+def build_feedback_sheet_layout_rows(layout):
     """
     Convert the flat layout list into a list of "rows" suitable for
-    PDF table-cell rendering.
+    Feedback Sheet table-cell rendering.
 
     Each row is a dict with:
       - 'type': 'full' | 'half-pair' | 'half-single'
@@ -642,7 +642,7 @@ def process_feedback(request):
                 "hist_base64": hist_base64,
                 "degree_level": degree_level,
                 "layout": layout,
-                "layout_rows": build_pdf_layout_rows(layout),
+                "layout_rows": build_feedback_sheet_layout_rows(layout),
                 # Fallback header configurations
                 "module_code": mappings.get("module_code", "COMP101"),
                 "module_title": mappings.get("module_title", "Module Performance"),
@@ -651,7 +651,7 @@ def process_feedback(request):
             }
             
             # Render HTML template in-memory
-            html_content = render_html_to_pdf_template(request, context)
+            html_content = render_feedback_sheet_template(request, context)
             
             # Add to ZIP archive
             filename = f"{slugify(student_id)}_{slugify(student_name)}.html"
@@ -663,9 +663,9 @@ def process_feedback(request):
     return response
 
 
-def render_html_to_pdf_template(request, context):
+def render_feedback_sheet_template(request, context):
     """
     Renders the beautiful glassmorphic feedback sheet directly
     to a compiled raw HTML string in context.
     """
-    return render_to_string("assessment_feedback/feedback_pdf.html", context, request=request)
+    return render_to_string("assessment_feedback/feedback_sheet.html", context, request=request)

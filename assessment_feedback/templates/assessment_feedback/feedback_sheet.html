@@ -103,7 +103,7 @@
             {% if row.type == "full" %}
                 <div style="margin-bottom: 12px;">
                     {% with block=row.blocks.0 %}
-                        {% include "assessment_feedback/_pdf_block.html" %}
+                        {% include "assessment_feedback/_feedback_block.html" %}
                     {% endwith %}
                 </div>
 
@@ -112,12 +112,12 @@
                     <tr>
                         <td width="50%" valign="top" style="padding-right: 8px;">
                             {% with block=row.blocks.0 %}
-                                {% include "assessment_feedback/_pdf_block.html" %}
+                                {% include "assessment_feedback/_feedback_block.html" %}
                             {% endwith %}
                         </td>
                         <td width="50%" valign="top" style="padding-left: 8px;">
                             {% with block=row.blocks.1 %}
-                                {% include "assessment_feedback/_pdf_block.html" %}
+                                {% include "assessment_feedback/_feedback_block.html" %}
                             {% endwith %}
                         </td>
                     </tr>
@@ -128,7 +128,7 @@
                     <tr>
                         <td width="50%" valign="top" style="padding-right: 8px;">
                             {% with block=row.blocks.0 %}
-                                {% include "assessment_feedback/_pdf_block.html" %}
+                                {% include "assessment_feedback/_feedback_block.html" %}
                             {% endwith %}
                         </td>
                         <td width="50%"></td>

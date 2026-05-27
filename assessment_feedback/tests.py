@@ -322,9 +322,9 @@ class AssessmentFeedbackViewsTest(TestCase):
         self.assertFalse(radar["enabled"])
 
     def test_process_feedback_respects_layout_exclusions(self):
-        """Disabled layout blocks are omitted from the generated PDF context.
+        """Disabled layout blocks are omitted from the generated Feedback Sheet context.
 
-        We patch render_to_string to capture the context passed to the PDF
+        We patch render_to_string to capture the context passed to the Feedback Sheet
         template and assert that disabled blocks are absent.
         """
         from unittest.mock import patch
@@ -342,7 +342,7 @@ class AssessmentFeedbackViewsTest(TestCase):
         session["layout"] = custom_layout
         session.save()
 
-        # Capture the context passed to the PDF template
+        # Capture the context passed to the Feedback Sheet template
         captured_layouts = []
 
         original_render = __import__(
@@ -350,7 +350,7 @@ class AssessmentFeedbackViewsTest(TestCase):
         ).render_to_string
 
         def mock_render_to_string(template_name, context=None, request=None):
-            if template_name == "assessment_feedback/feedback_pdf.html":
+            if template_name == "assessment_feedback/feedback_sheet.html":
                 captured_layouts.append(context.get("layout", []))
             return original_render(template_name, context, request=request)
 
