@@ -299,18 +299,8 @@
 
         {% if preview_student %}
         <div class="simulated-sheet">
-            <!-- Simulated Header mimicking feedback_sheet.html -->
-            <div class="sheet-header-box">
-                <p style="margin: 0 0 3px 0; font-family: Arial, Helvetica, sans-serif; font-size: 8.5pt; color: #c8a951; font-weight: bold; text-transform: uppercase;">
-                    {{ preview_student.module_code }} &middot; {{ preview_student.module_title }}
-                </p>
-                <h2 style="margin: 0 0 3px 0; font-family: Georgia, 'Times New Roman', serif; font-size: 20pt; color: white; font-weight: normal;">
-                    Assessment Feedback Report
-                </h2>
-                <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 8.5pt; color: #a0a8c0;">
-                    {{ preview_student.assessment_title }} &nbsp;&middot;&nbsp; {{ preview_student.academic_year }} &nbsp;&middot;&nbsp; Internally moderated results
-                </p>
-            </div>
+            <!-- Simulated Header -->
+            {% include "assessment_feedback/_feedback_header.html" with module_code=preview_student.module_code module_title=preview_student.module_title assessment_title=preview_student.assessment_title academic_year=preview_student.academic_year %}
 
             <!-- Simulated Student Banner mimicking feedback_sheet.html -->
             <div class="sheet-student-bar">
