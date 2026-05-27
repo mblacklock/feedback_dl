@@ -78,6 +78,22 @@
         font-weight: 600;
         border: 1px solid #a7f3d0;
     }
+
+    .rubric-bands-container {
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e1 #f1f5f9;
+    }
+    .rubric-bands-container::-webkit-scrollbar {
+        height: 5px;
+    }
+    .rubric-bands-container::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 4px;
+    }
+    .rubric-bands-container::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+    }
 </style>
 {% endblock %}
 
@@ -194,24 +210,29 @@
 
                                 <tr id="rubric-panel-{{ forloop.counter0 }}"
                                     class="rubric-panel {% if cat.type != 'grade' %}d-none{% endif %}"
-                                    data-idx="{{ forloop.counter0 }}"
-                                    data-col="{{ cat.column }}"
+                                    data-idx="{{ forloop.counter0 }}" data-col="{{ cat.column }}"
                                     data-subdivision="{{ cat.subdivision|default:'none' }}">
                                     <td colspan="5" class="p-0">
-                                        <div style="background:#f8fafc; border-left:3px solid #4361ee; padding:16px 20px;">
-                                            <p class="text-muted small fw-semibold mb-2" style="text-transform:uppercase;letter-spacing:.05em;">
+                                        <div
+                                            style="background:#f8fafc; border-left:3px solid #4361ee; padding:16px 20px;">
+                                            <p class="text-muted small fw-semibold mb-2"
+                                                style="text-transform:uppercase;letter-spacing:.05em;">
                                                 Grade Band → Numeric Mark Mapping
-                                                <span class="text-secondary fw-normal ms-2">— edit to override auto-calculated values</span>
+                                                <span class="text-secondary fw-normal ms-2">— edit to override
+                                                    auto-calculated values</span>
                                             </p>
-                                            <div class="rubric-bands-container" style="display:flex;flex-wrap:wrap;gap:8px;">
+                                            <div class="rubric-bands-container"
+                                                style="display:flex;flex-wrap:nowrap;overflow-x:auto;gap:8px;padding-bottom:8px;">
                                                 {% for band in cat.rubric_marks %}
-                                                <div style="background:white;border:1px solid #e2e8f0;border-radius:10px;padding:8px 12px;min-width:130px;">
-                                                    <div style="font-size:.75rem;font-weight:600;color:#64748b;margin-bottom:4px;">{{ band.grade }}</div>
+                                                <div
+                                                    style="background:white;border:1px solid #e2e8f0;border-radius:8px;padding:6px 10px;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:max-content;text-align:center;">
+                                                    <div
+                                                        style="font-size:.7rem;font-weight:600;color:#64748b;white-space:nowrap;">
+                                                        {{ band.grade }}</div>
                                                     <input type="number"
                                                         name="rubric_mark_{{ forloop.parentloop.counter0 }}_{{ forloop.counter0 }}"
-                                                        value="{{ band.marks }}"
-                                                        class="form-control form-control-sm"
-                                                        style="width:80px;font-weight:700;color:#1e3a8a;">
+                                                        value="{{ band.marks }}" class="form-control form-control-sm"
+                                                        style="width:55px;font-weight:700;color:#1e3a8a;text-align:center;padding:2px;height:26px;margin:0;">
                                                 </div>
                                                 {% endfor %}
                                             </div>
@@ -225,7 +246,8 @@
                     </div>
 
                     <div class="text-center">
-                        <button type="submit" class="btn btn-generate btn-lg w-100 btn-generate">Build Feedback Sheet Layout</button>
+                        <button type="submit" class="btn btn-generate btn-lg w-100 btn-generate">Build Feedback Sheet
+                            Layout</button>
                     </div>
                 </form>
             </div>
@@ -237,9 +259,9 @@
     // Pre-computed rubric bands (original max_marks, all subdivisions).
     // Used ONLY to populate an empty panel when the user first switches a
     // numeric column to grade type — avoids a round-trip in that case.
-    const ALL_RUBRIC_MARKS  = {{ all_rubric_marks_json|safe }};
-    const RUBRIC_BANDS_URL  = "{% url 'rubric_bands_api' %}";
-    const debounceTimers    = {};
+    const ALL_RUBRIC_MARKS = {{ all_rubric_marks_json| safe }};
+    const RUBRIC_BANDS_URL = "{% url 'rubric_bands_api' %}";
+    const debounceTimers = {};
 
     function currentSubdivision(idx) {
         const panel = document.getElementById(`rubric-panel-${idx}`);
@@ -254,13 +276,13 @@
     /** Render a rubric panel from a pre-fetched bands array. */
     function renderBands(container, idx, bands) {
         container.innerHTML = bands.map((band, bandIdx) => `
-            <div style="background:white;border:1px solid #e2e8f0;border-radius:10px;padding:8px 12px;min-width:130px;">
-                <div style="font-size:.75rem;font-weight:600;color:#64748b;margin-bottom:4px;">${band.grade}</div>
+            <div style="background:white;border:1px solid #e2e8f0;border-radius:8px;padding:6px 10px;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:max-content;text-align:center;">
+                <div style="font-size:.7rem;font-weight:600;color:#64748b;white-space:nowrap;">${band.grade}</div>
                 <input type="number"
                     name="rubric_mark_${idx}_${bandIdx}"
                     value="${band.marks}"
                     class="form-control form-control-sm"
-                    style="width:80px;font-weight:700;color:#1e3a8a;">
+                    style="width:55px;font-weight:700;color:#1e3a8a;text-align:center;padding:2px;height:26px;margin:0;">
             </div>`).join('');
     }
 
@@ -273,20 +295,20 @@
     function fetchAndRenderBands(idx, panel, subdivision, debounceMs = 0) {
         clearTimeout(debounceTimers[idx]);
         debounceTimers[idx] = setTimeout(() => {
-            const maxMarks  = currentMaxMarks(idx);
+            const maxMarks = currentMaxMarks(idx);
             const container = panel.querySelector('.rubric-bands-container');
             if (!container) return;
             fetch(`${RUBRIC_BANDS_URL}?max_marks=${maxMarks}&subdivision=${subdivision}`)
                 .then(r => r.json())
                 .then(bands => renderBands(container, idx, bands))
-                .catch(() => {/* silent — leave existing values in place */});
+                .catch(() => {/* silent — leave existing values in place */ });
         }, debounceMs);
     }
 
     // ── Type selector: show/hide panel ──────────────────────────────────────
     document.querySelectorAll('.type-selector').forEach(select => {
         select.addEventListener('change', function () {
-            const idx   = this.getAttribute('data-idx');
+            const idx = this.getAttribute('data-idx');
             const panel = document.getElementById(`rubric-panel-${idx}`);
             if (!panel) return;
 
@@ -296,8 +318,8 @@
                 // If empty (user just switched a numeric column), seed from
                 // pre-computed data first, then fetch fresh to honour max_marks.
                 if (container && container.children.length === 0) {
-                    const col   = panel.getAttribute('data-col');
-                    const sub   = currentSubdivision(idx);
+                    const col = panel.getAttribute('data-col');
+                    const sub = currentSubdivision(idx);
                     const cache = ALL_RUBRIC_MARKS[col];
                     if (cache && cache[sub]) renderBands(container, idx, cache[sub]);
                 }
@@ -313,7 +335,7 @@
     // ── Max marks input ──────────────────────────────────────────────────────
     document.querySelectorAll('input[name^="max_"]').forEach(input => {
         input.addEventListener('input', function () {
-            const idx   = this.getAttribute('name').split('_')[1];
+            const idx = this.getAttribute('name').split('_')[1];
             const panel = document.getElementById(`rubric-panel-${idx}`);
             if (!panel || panel.classList.contains('d-none')) return;
 
