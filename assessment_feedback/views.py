@@ -12,6 +12,81 @@ from core.utils.charts import generate_radar_chart, generate_cohort_histogram
 from core.utils.pdf_renderer import render_html_to_pdf
 
 
+# ---------------------------------------------------------------------------
+# Grade-string sets used for rubric column detection
+# ---------------------------------------------------------------------------
+_GRADE_STRINGS_NONE = {
+    # Qualified 1st variants (used when no external subdivision is applied)
+    "max 1st", "high 1st", "mid 1st", "low 1st",
+    # Bare grade names — used in simple rubric columns with no subdivision
+    "1st", "2:1", "2:2", "3rd", "fail",
+}
+_GRADE_STRINGS_HIGH_LOW = {
+    "max 1st", "high 1st", "low 1st",
+    "high 2:1", "low 2:1",
+    "high 2:2", "low 2:2",
+    "high 3rd", "low 3rd",
+}
+_GRADE_STRINGS_HIGH_MID_LOW = {
+    "max 1st", "high 1st", "mid 1st", "low 1st",
+    "high 2:1", "mid 2:1", "low 2:1",
+    "high 2:2", "mid 2:2", "low 2:2",
+    "high 3rd", "mid 3rd", "low 3rd",
+}
+_FAIL_STRINGS = {"close fail", "fail", "poor fail", "zero fail"}
+_ALL_GRADE_STRINGS = (
+    _GRADE_STRINGS_NONE
+    | _GRADE_STRINGS_HIGH_LOW
+    | _GRADE_STRINGS_HIGH_MID_LOW
+    | _FAIL_STRINGS
+    # M-level suffixed variants
+    | {s.replace("1st", "1st/dist").replace("2:1", "2:1/merit").replace("2:2", "2:2/pass")
+       for s in _GRADE_STRINGS_HIGH_MID_LOW}
+)
+
+
+def infer_rubric_type(column_values):
+    """
+    Given a list of raw cell values from one column, return:
+        ("grade", subdivision)  if ≥70% are known UK grade strings
+        ("numeric", "none")     otherwise
+
+    subdivision is one of "none", "high_low", "high_mid_low".
+    """
+    non_null = [v for v in column_values if v is not None]
+    if not non_null:
+        return "numeric", "none"
+
+    normalised = [str(v).strip().lower() for v in non_null]
+    matched = sum(1 for v in normalised if v in _ALL_GRADE_STRINGS)
+    if matched / len(non_null) < 0.7:
+        return "numeric", "none"
+
+    # Detect which subdivision is in use
+    # "Mid X:Y" patterns (excluding Mid 1st which appears in 'none') distinguish high_mid_low
+    if any("mid 2:" in v or "mid 3rd" in v for v in normalised):
+        return "grade", "high_mid_low"
+    # "High/Low X:Y" patterns (on non-1st bands) distinguish high_low
+    if any(
+        any(p in v for p in ("high 2:", "low 2:", "high 3rd", "low 3rd"))
+        for v in normalised
+    ):
+        return "grade", "high_low"
+    return "grade", "none"
+
+
+def rubric_mark_from_label(grade_label, rubric_marks):
+    """
+    Look up a grade string (e.g. "Mid 2:1") in the rubric_marks list and
+    return the corresponding numeric mark.  Returns 0 if not found.
+    """
+    label_lower = str(grade_label).strip().lower()
+    for band in rubric_marks:
+        if band["grade"].lower() == label_lower:
+            return band["marks"]
+    return 0
+
+
 def build_pdf_layout_rows(layout):
     """
     Convert the flat layout list into a list of "rows" suitable for
@@ -117,25 +192,30 @@ def upload_file(request):
                 if any(kw in hl for kw in comment_keywords):
                     continue
                 
-                # Check if values in this column are predominantly numeric
+                # Check if values in this column are predominantly numeric OR grade strings
+                col_values = [r.get(h) for r in data_rows]
+                non_null = [v for v in col_values if v is not None]
+                total_valid = len(non_null)
+
+                if total_valid == 0:
+                    continue
+
                 numeric_count = 0
-                total_valid = 0
-                for r in data_rows:
-                    val = r.get(h)
-                    if val is not None:
-                        total_valid += 1
-                        try:
-                            float(val)
-                            numeric_count += 1
-                        except (ValueError, TypeError):
-                            pass
-                
-                # If mostly numeric, it is a grading category!
-                if total_valid > 0 and (numeric_count / total_valid) >= 0.7:
+                for v in non_null:
+                    try:
+                        float(v)
+                        numeric_count += 1
+                    except (ValueError, TypeError):
+                        pass
+
+                is_numeric_candidate = (numeric_count / total_valid) >= 0.7
+                is_rubric_candidate = not is_numeric_candidate and infer_rubric_type(col_values)[0] == "grade"
+
+                if is_numeric_candidate or is_rubric_candidate:
                     candidate_categories.append(h)
 
             
-            # Build category configurations with max marks & comments mappings
+            # Build category configurations with max marks, comments, and rubric detection
             for cat in candidate_categories:
                 # Infer max marks (denominator) from header (e.g. Design /30 or Design (30))
                 max_marks = 100  # default fallback
@@ -169,7 +249,11 @@ def upload_file(request):
                 weight_match = re.search(r'\((\d+)%\)', cat)
                 if weight_match:
                     weight = int(weight_match.group(1))
-                
+
+                # Detect rubric (grade string) columns
+                col_values = [r.get(cat) for r in data_rows]
+                cat_type, cat_subdivision = infer_rubric_type(col_values)
+
                 # Find matching feedback comments column
                 comments_col = ""
                 cat_clean = re.sub(r'[/()%\d\s]+', '', cat).lower()  # e.g. "design"
@@ -178,15 +262,30 @@ def upload_file(request):
                     if h != cat and ("comment" in hl or "feedback" in hl) and cat_clean in hl:
                         comments_col = h
                         break
-                
+
+                # Pre-compute rubric band marks so confirm page can display them
+                rubric_marks = []
+                if cat_type == "grade":
+                    rubric_marks = calculate_grade_bands(max_marks, cat_subdivision)
+
                 inferred_mappings["categories"].append({
                     "column": cat,
                     "max_marks": max_marks,
                     "weight": weight,
                     "comments_column": comments_col,
-                    "type": "numeric",      # Default category type
-                    "subdivision": "none"   # Default subdivision
+                    "type": cat_type,
+                    "subdivision": cat_subdivision,
+                    "rubric_marks": rubric_marks,
                 })
+
+            # Set global subdivision to the most common one detected across rubric columns
+            rubric_subdivisions = [
+                c["subdivision"] for c in inferred_mappings["categories"]
+                if c["type"] == "grade" and c["subdivision"] != "none"
+            ]
+            if rubric_subdivisions:
+                from collections import Counter
+                inferred_mappings["subdivision"] = Counter(rubric_subdivisions).most_common(1)[0][0]
             
             # Save parsed state inside session
             request.session["headers"] = headers
@@ -200,6 +299,30 @@ def upload_file(request):
             return render(request, "assessment_feedback/upload.html", {"error": f"Failed to parse file: {str(e)}"})
             
     return render(request, "assessment_feedback/upload.html")
+
+
+def rubric_bands_api(request):
+    """
+    Lightweight JSON API — returns grade band marks for a given max_marks +
+    subdivision combination.  Called by the confirm page JS when the user
+    edits the Max Marks field on a rubric-type category row.
+
+    GET /assessment-feedback/rubric-bands/?max_marks=30&subdivision=high_low
+    """
+    import json as _json
+    try:
+        max_marks  = int(request.GET.get("max_marks", 100))
+        subdivision = request.GET.get("subdivision", "none")
+        if subdivision not in ("none", "high_low", "high_mid_low"):
+            subdivision = "none"
+        bands = calculate_grade_bands(max_marks, subdivision)
+        return HttpResponse(_json.dumps(bands), content_type="application/json")
+    except (ValueError, TypeError):
+        return HttpResponse(
+            _json.dumps({"error": "Invalid parameters"}),
+            content_type="application/json",
+            status=400,
+        )
 
 
 def confirm_mappings(request):
@@ -220,7 +343,6 @@ def confirm_mappings(request):
         mappings["col_student_name"] = request.POST.get("col_student_name")
         mappings["col_student_id"] = request.POST.get("col_student_id")
         mappings["degree_level"] = request.POST.get("degree_level", "BEng")
-        mappings["subdivision"] = request.POST.get("subdivision", "none")
         
         # Read updated categories configs
         updated_categories = []
@@ -230,26 +352,69 @@ def confirm_mappings(request):
             weight = request.POST.get(f"weight_{idx}")
             comments_col = request.POST.get(f"comments_{idx}")
             cat_type = request.POST.get(f"type_{idx}", "numeric")
-            
+            cat_subdivision = cat_dict.get("subdivision", "none")
+
+            # Rebuild rubric_marks from submitted band mark inputs (user may have edited them)
+            existing_rubric = cat_dict.get("rubric_marks", [])
+            rubric_marks = []
+            if cat_type == "grade":
+                if existing_rubric:
+                    for band_idx, band in enumerate(existing_rubric):
+                        submitted_mark = request.POST.get(f"rubric_mark_{idx}_{band_idx}")
+                        try:
+                            mark_val = int(submitted_mark)
+                        except (TypeError, ValueError):
+                            mark_val = band["marks"]
+                        rubric_marks.append({"grade": band["grade"], "marks": mark_val})
+                else:
+                    rubric_marks = calculate_grade_bands(max_marks, cat_subdivision)
+
             updated_categories.append({
                 "column": col_name,
                 "max_marks": max_marks,
                 "weight": int(weight) if weight else None,
                 "comments_column": comments_col,
                 "type": cat_type,
-                "subdivision": mappings["subdivision"]
+                "subdivision": cat_subdivision,
+                "rubric_marks": rubric_marks,
             })
             
         mappings["categories"] = updated_categories
+
+        # Recalculate global subdivision based on the most common subdivision of active grade columns
+        rubric_subdivisions = [
+            c["subdivision"] for c in updated_categories
+            if c["type"] == "grade" and c["subdivision"] != "none"
+        ]
+        if rubric_subdivisions:
+            from collections import Counter
+            mappings["subdivision"] = Counter(rubric_subdivisions).most_common(1)[0][0]
+        else:
+            mappings["subdivision"] = "none"
+
         request.session["mappings"] = mappings
         request.session.modified = True
         
         return redirect("configure_layout")
         
+    # Pre-compute rubric bands for every subdivision for each category so the
+    # JS can dynamically populate the rubric panel when the user switches type
+    # or changes the global subdivision dropdown.
+    import json as _json
+    all_rubric_marks = {}   # {col: {"none": [...], "high_low": [...], "high_mid_low": [...]}}
+    for cat in mappings.get("categories", []):
+        max_marks = cat.get("max_marks", 100)
+        col = cat["column"]
+        all_rubric_marks[col] = {
+            sub: calculate_grade_bands(max_marks, sub)
+            for sub in ("none", "high_low", "high_mid_low")
+        }
+
     return render(request, "assessment_feedback/confirm.html", {
         "headers": headers,
         "mappings": mappings,
-        "sample_rows": uploaded_data[:3]
+        "sample_rows": uploaded_data[:3],
+        "all_rubric_marks_json": _json.dumps(all_rubric_marks),
     })
 
 
@@ -350,10 +515,16 @@ def process_feedback(request):
         for cat in categories:
             col = cat["column"]
             val = r.get(col, 0)
-            try:
-                mark_val = float(val) if val is not None else 0
-            except ValueError:
-                mark_val = 0
+            if cat["type"] == "grade":
+                rubric_marks = cat.get("rubric_marks") or calculate_grade_bands(
+                    cat["max_marks"], cat.get("subdivision", "none"), degree_level=degree_level
+                )
+                mark_val = rubric_mark_from_label(val, rubric_marks)
+            else:
+                try:
+                    mark_val = float(val) if val is not None else 0
+                except (ValueError, TypeError):
+                    mark_val = 0
             category_cohort_marks[col].append(mark_val)
             student_total += mark_val
         cohort_final_marks.append(student_total)
@@ -392,35 +563,37 @@ def process_feedback(request):
                 col = cat["column"]
                 max_marks = cat["max_marks"]
                 raw_mark = student_row.get(col, 0)
-                try:
-                    mark_val = float(raw_mark) if raw_mark is not None else 0
-                except ValueError:
-                    mark_val = 0
-                    
+                grade_awarded = None
+
+                if cat["type"] == "grade":
+                    # Column contains grade strings (e.g. "Mid 2:1") — look up numeric mark
+                    rubric_marks = cat.get("rubric_marks") or calculate_grade_bands(
+                        max_marks, cat.get("subdivision", "none"), degree_level=degree_level
+                    )
+                    mark_val = rubric_mark_from_label(raw_mark, rubric_marks)
+                    grade_awarded = str(raw_mark).strip() if raw_mark else None
+                else:
+                    try:
+                        mark_val = float(raw_mark) if raw_mark is not None else 0
+                    except (ValueError, TypeError):
+                        mark_val = 0
+
                 student_total_score += mark_val
-                
+
                 # Percentages for Radar
                 student_pct = (mark_val / max_marks) * 100 if max_marks > 0 else 0
                 avg_pct = (category_averages[col] / max_marks) * 100 if max_marks > 0 else 0
-                
+
                 radar_labels.append(col)
                 student_radar_percentages.append(student_pct)
                 avg_radar_percentages.append(avg_pct)
-                
-                # Grade Calculations
-                grade_awarded = None
-                if cat["type"] == "grade" and max_marks > 0:
-                    bands = calculate_grade_bands(max_marks, subdivision, degree_level=degree_level)
-                    # Match score to closest grade band
-                    closest_band = min(bands, key=lambda b: abs(b["marks"] - mark_val))
-                    grade_awarded = closest_band["grade"]
-                
+
                 student_categories_data.append({
                     "label": col,
                     "mark": mark_val,
                     "max_marks": max_marks,
                     "grade_awarded": grade_awarded,
-                    "feedback_comment": student_row.get(cat["comments_column"], ""),
+                    "feedback_comment": student_row.get(cat.get("comments_column", ""), ""),
                     "is_grade": cat["type"] == "grade"
                 })
                 

@@ -151,6 +151,53 @@ class AssessmentFeedbackViewsTest(TestCase):
         self.assertEqual(updated_mappings["col_student_name"], "Student Name")
         self.assertEqual(updated_mappings["categories"][0]["max_marks"], 30)
 
+    def test_confirm_mappings_post_recalculates_global_subdivision(self):
+        """POST /assessment-feedback/confirm/ must dynamically recalculate the global subdivision
+        based on the subdivisions of the active 'grade' categories, ignoring any POSTed subdivision value."""
+        session = self.client.session
+        session["headers"] = self.sample_headers
+        session["uploaded_data"] = self.sample_uploaded_data
+        
+        # Configure sample mappings to have one category of type 'grade' with 'high_mid_low' subdivision
+        sample_mappings = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "degree_level": "BEng",
+            "subdivision": "none",
+            "categories": [
+                {
+                    "column": "Design /30",
+                    "max_marks": 30,
+                    "weight": None,
+                    "comments_column": "Design Comments",
+                    "type": "grade",
+                    "subdivision": "high_mid_low",
+                    "rubric_marks": [{"grade": "High 1st", "marks": 28}]
+                }
+            ]
+        }
+        session["mappings"] = sample_mappings
+        session.save()
+
+        url = reverse("confirm_mappings")
+        form_data = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "degree_level": "BEng",
+            "subdivision": "none",  # Omitted or sent as "none", should be overridden/ignored
+            "max_0": "30",
+            "weight_0": "",
+            "comments_0": "Design Comments",
+            "type_0": "grade",
+            "rubric_mark_0_0": "28"
+        }
+        resp = self.client.post(url, form_data)
+        self.assertEqual(resp.status_code, 302)
+
+        # Global subdivision must have recalculated to 'high_mid_low'
+        updated_mappings = self.client.session["mappings"]
+        self.assertEqual(updated_mappings["subdivision"], "high_mid_low")
+
     def test_process_feedback_generates_valid_zip(self):
         """GET /assessment-feedback/process/ processes data and returns a downloadable ZIP of PDFs"""
         session = self.client.session
@@ -324,3 +371,347 @@ class AssessmentFeedbackViewsTest(TestCase):
             # Disabled blocks are present in layout list but flagged disabled
             radar_blocks = [b for b in layout if b["id"] == "radar_chart"]
             self.assertTrue(all(not b["enabled"] for b in radar_blocks))
+
+    # -------------------------------------------------------------------------
+    # Rubric auto-detection tests
+    # -------------------------------------------------------------------------
+
+    def test_infer_rubric_type_detects_grade_column(self):
+        """infer_rubric_type returns ('grade', subdivision) for grade-string columns."""
+        from assessment_feedback.views import infer_rubric_type
+
+        # high_mid_low: contains "Mid 2:1"
+        values_hml = ["High 1st", "Mid 2:1", "Low 2:2", "Mid 3rd", None]
+        cat_type, subdivision = infer_rubric_type(values_hml)
+        self.assertEqual(cat_type, "grade")
+        self.assertEqual(subdivision, "high_mid_low")
+
+        # high_low: contains "High 2:1" but no "Mid" on non-1st bands
+        values_hl = ["High 1st", "High 2:1", "Low 2:2", "High 3rd"]
+        cat_type, subdivision = infer_rubric_type(values_hl)
+        self.assertEqual(cat_type, "grade")
+        self.assertEqual(subdivision, "high_low")
+
+        # none subdivision: just plain grade names
+        values_none = ["2:1", "2:2", "3rd", "2:1"]
+        cat_type, subdivision = infer_rubric_type(values_none)
+        self.assertEqual(cat_type, "grade")
+        self.assertEqual(subdivision, "none")
+
+        # numeric: should not be detected as grade
+        values_num = [24, 18, 28, 35]
+        cat_type, subdivision = infer_rubric_type(values_num)
+        self.assertEqual(cat_type, "numeric")
+
+    def test_upload_detects_rubric_columns_from_fixture(self):
+        """Uploading a fixture with grade strings produces type='grade' categories
+        with rubric_marks pre-populated and subdivision correctly detected."""
+        import openpyxl, tempfile, os
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        # Build a minimal in-memory spreadsheet with a rubric column
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.append(["Student Name", "Student ID", "Design /30", "Design Comments"])
+        ws.append(["Alice Smith", "10001", "Mid 2:1", "Good work"])
+        ws.append(["Bob Jones",   "10002", "High 1st", "Excellent"])
+        ws.append(["Carol White", "10003", "Low 2:2", "Needs improvement"])
+
+        buf = io.BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+
+        uploaded = SimpleUploadedFile(
+            "rubric_test.xlsx", buf.read(),
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        resp = self.client.post(reverse("upload_file"), {"file": uploaded})
+        self.assertEqual(resp.status_code, 302)
+
+        mappings = self.client.session["mappings"]
+        cats = {c["column"]: c for c in mappings["categories"]}
+
+        self.assertIn("Design /30", cats)
+        design = cats["Design /30"]
+        self.assertEqual(design["type"], "grade",
+                         msg="Design /30 with grade strings should be detected as 'grade' type")
+        self.assertIn(design["subdivision"], ("none", "high_low", "high_mid_low"))
+        self.assertIsInstance(design["rubric_marks"], list)
+        self.assertGreater(len(design["rubric_marks"]), 0,
+                           msg="rubric_marks should be pre-populated on upload")
+
+        # Each band should have grade and marks keys
+        for band in design["rubric_marks"]:
+            self.assertIn("grade", band)
+            self.assertIn("marks", band)
+
+    def test_confirm_post_saves_rubric_mark_overrides(self):
+        """POSTing custom rubric_mark_{idx}_{band_idx} values stores them in session."""
+        rubric_marks = [
+            {"grade": "High 1st", "marks": 28},
+            {"grade": "Mid 2:1",  "marks": 19},
+            {"grade": "Low 2:2",  "marks": 15},
+        ]
+        session = self.client.session
+        session["headers"] = self.sample_headers
+        session["uploaded_data"] = self.sample_uploaded_data
+        session["mappings"] = {
+            **self.sample_mappings,
+            "categories": [
+                {
+                    "column": "Design /30", "max_marks": 30, "weight": None,
+                    "comments_column": "Design Comments",
+                    "type": "grade", "subdivision": "none",
+                    "rubric_marks": rubric_marks,
+                }
+            ],
+        }
+        session.save()
+
+        form_data = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "degree_level": "BEng",
+            "subdivision": "none",
+            "type_0": "grade",
+            "max_0": "30",
+            "weight_0": "",
+            "comments_0": "Design Comments",
+            # Override: user changes "Mid 2:1" from 19 → 20
+            "rubric_mark_0_0": "28",   # High 1st unchanged
+            "rubric_mark_0_1": "20",   # Mid 2:1 changed from 19 → 20
+            "rubric_mark_0_2": "15",   # Low 2:2 unchanged
+        }
+        resp = self.client.post(reverse("confirm_mappings"), form_data)
+        self.assertEqual(resp.status_code, 302)
+
+        saved_cats = self.client.session["mappings"]["categories"]
+        saved_rubric = saved_cats[0]["rubric_marks"]
+
+        self.assertEqual(saved_rubric[0]["grade"], "High 1st")
+        self.assertEqual(saved_rubric[0]["marks"], 28)
+        self.assertEqual(saved_rubric[1]["grade"], "Mid 2:1")
+        self.assertEqual(saved_rubric[1]["marks"], 20,
+                         msg="User override of Mid 2:1 from 19→20 should be saved")
+
+    def test_process_feedback_uses_rubric_marks_for_grade_columns(self):
+        """process_feedback maps grade strings to numeric marks via rubric_marks."""
+        rubric_marks = [
+            {"grade": "High 1st", "marks": 28},
+            {"grade": "Mid 2:1",  "marks": 19},
+            {"grade": "Low 2:2",  "marks": 15},
+        ]
+        # Two students with grade-string values in Design column
+        uploaded_data = [
+            {"Student Name": "Alice Smith", "Student ID": "10001",
+             "Design /30": "High 1st", "Design Comments": "Great"},
+            {"Student Name": "Bob Jones",   "Student ID": "10002",
+             "Design /30": "Mid 2:1",  "Design Comments": "OK"},
+        ]
+        mappings = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "degree_level": "BEng",
+            "subdivision": "none",
+            "categories": [
+                {
+                    "column": "Design /30", "max_marks": 30, "weight": None,
+                    "comments_column": "Design Comments",
+                    "type": "grade", "subdivision": "none",
+                    "rubric_marks": rubric_marks,
+                }
+            ],
+        }
+        session = self.client.session
+        session["uploaded_data"] = uploaded_data
+        session["mappings"] = mappings
+        session.save()
+
+        resp = self.client.get(reverse("process_feedback"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp["Content-Type"], "application/zip")
+
+        zf = zipfile.ZipFile(io.BytesIO(resp.content))
+        # Both students should have PDFs in the ZIP
+        self.assertEqual(len(zf.namelist()), 2)
+        # PDFs must be valid
+        for name in zf.namelist():
+            self.assertEqual(zf.read(name)[:5], b"%PDF-",
+                             msg=f"{name} does not start with PDF header")
+
+    # -------------------------------------------------------------------------
+    # Mixed-column fixture tests  (TDD — written against dummy_grades.xlsx
+    # which now contains: Design /30 [numeric], Implementation /40 [numeric],
+    # Testing /30 [rubric high_low], Analysis [rubric none / no denominator])
+    # -------------------------------------------------------------------------
+
+    def _load_fixture_excel(self):
+        """Return SimpleUploadedFile for the shared dummy_grades.xlsx fixture."""
+        fixture_path = r"c:\Backup Drive\Documents\django-apps\feedback_dl\functional_tests\fixtures\dummy_grades.xlsx"
+        with open(fixture_path, "rb") as f:
+            data = f.read()
+        return SimpleUploadedFile(
+            "dummy_grades.xlsx", data,
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
+    def test_mixed_fixture_detects_all_five_columns(self):
+        """Uploading the real fixture must detect all five grading columns:
+        two numeric (Design, Implementation) and two rubric (Testing, Analysis),
+        and assign correct types and subdivisions to each."""
+        resp = self.client.post(reverse("upload_file"), {"file": self._load_fixture_excel()})
+        self.assertEqual(resp.status_code, 302)
+
+        mappings = self.client.session["mappings"]
+        by_col = {c["column"]: c for c in mappings["categories"]}
+        found = list(by_col.keys())
+
+        # All four grading columns must be found
+        self.assertIn("Design /30", by_col, msg=f"Missing Design /30, found: {found}")
+        self.assertIn("Implementation /40", by_col, msg=f"Missing Implementation /40, found: {found}")
+        self.assertIn("Testing /30", by_col, msg=f"Missing Testing /30, found: {found}")
+        self.assertIn("Analysis", by_col, msg=f"Missing Analysis, found: {found}")
+
+        # Numeric columns must have type 'numeric'
+        self.assertEqual(by_col["Design /30"]["type"], "numeric")
+        self.assertEqual(by_col["Implementation /40"]["type"], "numeric")
+
+        # Rubric columns must have type 'grade'
+        self.assertEqual(by_col["Testing /30"]["type"], "grade",
+                         msg="Testing /30 contains grade strings, should be type='grade'")
+        self.assertEqual(by_col["Analysis"]["type"], "grade",
+                         msg="Analysis contains grade strings, should be type='grade'")
+
+        # Testing /30 contains "High 2:1", "Low 2:2" → high_low subdivision
+        self.assertEqual(by_col["Testing /30"]["subdivision"], "high_low")
+
+        # Rubric columns must have rubric_marks pre-computed
+        self.assertGreater(len(by_col["Testing /30"]["rubric_marks"]), 0)
+        self.assertGreater(len(by_col["Analysis"]["rubric_marks"]), 0)
+
+    def test_mixed_fixture_analysis_column_max_marks_fallback(self):
+        """Analysis column has no /N denominator — max_marks should fall back
+        to a sensible default (100) since values are grade strings, not numbers."""
+        resp = self.client.post(reverse("upload_file"), {"file": self._load_fixture_excel()})
+        self.assertEqual(resp.status_code, 302)
+
+        by_col = {c["column"]: c for c in self.client.session["mappings"]["categories"]}
+        self.assertIn("Analysis", by_col)
+        # Default fallback for rubric column with no denominator is 100
+        self.assertEqual(by_col["Analysis"]["max_marks"], 100)
+
+    def test_mixed_fixture_end_to_end_generates_valid_zip(self):
+        """Full pipeline: upload mixed fixture → confirm → layout → process
+        must produce a valid ZIP with one PDF per student."""
+        # Step 1: Upload
+        resp = self.client.post(reverse("upload_file"), {"file": self._load_fixture_excel()})
+        self.assertEqual(resp.status_code, 302)
+
+        mappings = self.client.session["mappings"]
+        categories = mappings["categories"]
+        by_col = {c["column"]: c for c in categories}
+
+        # Step 2: Confirm — POST with auto-detected mappings unchanged
+        form = {
+            "col_student_name": mappings["col_student_name"],
+            "col_student_id":   mappings["col_student_id"],
+            "degree_level":     mappings.get("degree_level", "BEng"),
+            "subdivision":      mappings.get("subdivision", "none"),
+        }
+        for idx, cat in enumerate(categories):
+            form[f"type_{idx}"]     = cat["type"]
+            form[f"max_{idx}"]      = str(cat["max_marks"])
+            form[f"weight_{idx}"]   = str(cat["weight"]) if cat["weight"] else ""
+            form[f"comments_{idx}"] = cat.get("comments_column", "")
+            for band_idx, band in enumerate(cat.get("rubric_marks", [])):
+                form[f"rubric_mark_{idx}_{band_idx}"] = str(band["marks"])
+
+        resp = self.client.post(reverse("confirm_mappings"), form)
+        self.assertEqual(resp.status_code, 302)
+
+        # Step 3: Process → ZIP
+        resp = self.client.get(reverse("process_feedback"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp["Content-Type"], "application/zip")
+
+        zf = zipfile.ZipFile(io.BytesIO(resp.content))
+        # One PDF per student (3 students in the fixture)
+        self.assertEqual(len(zf.namelist()), 3,
+                         msg=f"Expected 3 PDFs, got: {zf.namelist()}")
+        for name in zf.namelist():
+            self.assertEqual(zf.read(name)[:5], b"%PDF-",
+                             msg=f"{name} is not a valid PDF")
+
+    def test_rubric_bands_api_returns_correct_bands(self):
+        """GET /rubric-bands/ returns JSON grade bands for the requested max_marks
+        and subdivision, and recalculates correctly when max_marks changes."""
+        import json
+
+        # high_low, max_marks=30
+        resp = self.client.get(reverse("rubric_bands_api"),
+                               {"max_marks": "30", "subdivision": "high_low"})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp["Content-Type"], "application/json")
+        bands = json.loads(resp.content)
+        self.assertIsInstance(bands, list)
+        self.assertGreater(len(bands), 0)
+        # All bands have grade and marks keys; marks must be ≤ max_marks
+        for b in bands:
+            self.assertIn("grade", b)
+            self.assertIn("marks", b)
+            self.assertLessEqual(b["marks"], 30)
+
+        # Changing max_marks to 40 must produce different marks
+        resp2 = self.client.get(reverse("rubric_bands_api"),
+                                {"max_marks": "40", "subdivision": "high_low"})
+        bands2 = json.loads(resp2.content)
+        marks_30 = [b["marks"] for b in bands]
+        marks_40 = [b["marks"] for b in bands2]
+        self.assertNotEqual(marks_30, marks_40,
+                            msg="Changing max_marks must produce different band marks")
+
+        # Invalid subdivision falls back to 'none' (no error)
+        resp3 = self.client.get(reverse("rubric_bands_api"),
+                                {"max_marks": "20", "subdivision": "bogus"})
+        self.assertEqual(resp3.status_code, 200)
+        bands3 = json.loads(resp3.content)
+        self.assertIsInstance(bands3, list)
+
+    # -------------------------------------------------------------------------
+    # Grade band rounding tests (TDD — user reported Low 1st = 6/10, should be 7)
+    # -------------------------------------------------------------------------
+
+    def test_grade_bands_10_marks_none_subdivision_rounding(self):
+        """For max_marks=10 and 'none' subdivision the 1st-class bands must
+        land on integer boundaries that actually fall within the right grade:
+          Low 1st  = 7/10  (70 %)
+          Mid 1st  = 8/10  (80 %)
+          High 1st = 9/10  (90 %)
+          Max 1st  = 10/10 (100 %)
+        """
+        from core.utils.grade_bands import calculate_grade_bands
+        bands = {b["grade"]: b["marks"] for b in calculate_grade_bands(10, "none")}
+        self.assertEqual(bands.get("Low 1st"),  7,
+                         msg=f"Low 1st should be 7/10 (70%), got {bands.get('Low 1st')}")
+        self.assertEqual(bands.get("Mid 1st"),  8,
+                         msg=f"Mid 1st should be 8/10 (80%), got {bands.get('Mid 1st')}")
+        self.assertEqual(bands.get("High 1st"), 9,
+                         msg=f"High 1st should be 9/10 (90%), got {bands.get('High 1st')}")
+        self.assertEqual(bands.get("Max 1st"),  10,
+                         msg=f"Max 1st should be 10/10 (100%), got {bands.get('Max 1st')}")
+
+    def test_grade_bands_api_10_marks_none_rounding(self):
+        """The rubric-bands API must also return the correct marks for max_marks=10."""
+        import json
+        resp = self.client.get(reverse("rubric_bands_api"),
+                               {"max_marks": "10", "subdivision": "none"})
+        bands = {b["grade"]: b["marks"] for b in json.loads(resp.content)}
+        self.assertEqual(bands.get("Low 1st"),  7,
+                         msg=f"API Low 1st should be 7/10, got {bands.get('Low 1st')}")
+        self.assertEqual(bands.get("Mid 1st"),  8,
+                         msg=f"API Mid 1st should be 8/10, got {bands.get('Mid 1st')}")
+
+
+
+
+
