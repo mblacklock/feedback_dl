@@ -269,11 +269,8 @@ def upload_file(request):
                         else:
                             max_marks = 100
                 
-                # Infer weight from header (e.g. Design (30%))
+                # Weighting is no longer used
                 weight = None
-                weight_match = re.search(r'\((\d+)%\)', cat)
-                if weight_match:
-                    weight = int(weight_match.group(1))
 
                 # Detect rubric (grade string) columns
                 col_values = [r.get(cat) for r in data_rows]
@@ -374,7 +371,6 @@ def confirm_mappings(request):
         for idx, cat_dict in enumerate(mappings["categories"]):
             col_name = cat_dict["column"]
             max_marks = int(request.POST.get(f"max_{idx}", 100))
-            weight = request.POST.get(f"weight_{idx}")
             comments_col = request.POST.get(f"comments_{idx}")
             cat_type = request.POST.get(f"type_{idx}", "numeric")
             cat_subdivision = cat_dict.get("subdivision", "none")
@@ -397,7 +393,7 @@ def confirm_mappings(request):
             updated_categories.append({
                 "column": col_name,
                 "max_marks": max_marks,
-                "weight": int(weight) if weight else None,
+                "weight": None,
                 "comments_column": comments_col,
                 "type": cat_type,
                 "subdivision": cat_subdivision,

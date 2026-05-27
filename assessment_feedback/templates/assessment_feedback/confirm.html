@@ -78,22 +78,6 @@
         font-weight: 600;
         border: 1px solid #a7f3d0;
     }
-
-    .rubric-bands-container {
-        scrollbar-width: thin;
-        scrollbar-color: #cbd5e1 #f1f5f9;
-    }
-    .rubric-bands-container::-webkit-scrollbar {
-        height: 5px;
-    }
-    .rubric-bands-container::-webkit-scrollbar-track {
-        background: #f1f5f9;
-        border-radius: 4px;
-    }
-    .rubric-bands-container::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
-        border-radius: 4px;
-    }
 </style>
 {% endblock %}
 
@@ -159,9 +143,8 @@
                             <thead>
                                 <tr>
                                     <th>Grading Category (Excel Header)</th>
-                                    <th>Rubric Type</th>
+                                    <th>Category Type</th>
                                     <th>Max Marks</th>
-                                    <th>Weighting (Optional %)</th>
                                     <th>Matched Comments/Feedback Column</th>
                                 </tr>
                             </thead>
@@ -170,31 +153,23 @@
                                 <tr id="cat-row-{{ forloop.counter0 }}">
                                     <td class="fw-bold">
                                         {{ cat.column }}
-                                        {% if cat.type == 'grade' %}
-                                        <span class="badge badge-inferred ms-2">
-                                            ✦ Rubric — {{ cat.subdivision|default:"none" }}
-                                        </span>
-                                        {% endif %}
                                     </td>
                                     <td>
-                                        <select name="type_{{ forloop.counter0 }}"
-                                            class="form-select form-select-sm rounded-3 type-selector"
-                                            data-idx="{{ forloop.counter0 }}">
-                                            <option value="numeric" {% if cat.type == 'numeric' %}selected{% endif %}>
-                                                Numeric Score</option>
-                                            <option value="grade" {% if cat.type == 'grade' %}selected{% endif %}>UK Grade
-                                                Rubric</option>
-                                        </select>
+                                        {% if cat.type == 'grade' %}
+                                        <span class="badge badge-inferred rounded-2 px-2 py-1" style="font-size: 0.8rem;">
+                                            ✦ Rubric — {{ cat.subdivision|default:"none" }}
+                                        </span>
+                                        {% else %}
+                                        <span class="badge rounded-2 px-2 py-1" style="font-size: 0.8rem; background-color: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;">
+                                            Numeric Score
+                                        </span>
+                                        {% endif %}
+                                        <input type="hidden" name="type_{{ forloop.counter0 }}" value="{{ cat.type }}">
                                     </td>
                                     <td>
                                         <input type="number" name="max_{{ forloop.counter0 }}"
                                             class="form-control form-control-sm rounded-3" value="{{ cat.max_marks }}"
                                             style="width: 80px;">
-                                    </td>
-                                    <td>
-                                        <input type="number" name="weight_{{ forloop.counter0 }}"
-                                            class="form-control form-control-sm rounded-3"
-                                            value="{{ cat.weight|default:'' }}" placeholder="None" style="width: 80px;">
                                     </td>
                                     <td>
                                         <select name="comments_{{ forloop.counter0 }}"
@@ -212,7 +187,7 @@
                                     class="rubric-panel {% if cat.type != 'grade' %}d-none{% endif %}"
                                     data-idx="{{ forloop.counter0 }}" data-col="{{ cat.column }}"
                                     data-subdivision="{{ cat.subdivision|default:'none' }}">
-                                    <td colspan="5" class="p-0">
+                                    <td colspan="4" class="p-0">
                                         <div
                                             style="background:#f8fafc; border-left:3px solid #4361ee; padding:16px 20px;">
                                             <p class="text-muted small fw-semibold mb-2"
@@ -222,20 +197,20 @@
                                                     auto-calculated values</span>
                                             </p>
                                             <div class="rubric-bands-container"
-                                                style="display:flex;flex-wrap:nowrap;overflow-x:auto;gap:8px;padding-bottom:8px;">
-                                                {% for band in cat.rubric_marks %}
-                                                <div
-                                                    style="background:white;border:1px solid #e2e8f0;border-radius:8px;padding:6px 10px;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:max-content;text-align:center;">
-                                                    <div
-                                                        style="font-size:.7rem;font-weight:600;color:#64748b;white-space:nowrap;">
-                                                        {{ band.grade }}</div>
-                                                    <input type="number"
-                                                        name="rubric_mark_{{ forloop.parentloop.counter0 }}_{{ forloop.counter0 }}"
-                                                        value="{{ band.marks }}" class="form-control form-control-sm"
-                                                        style="width:55px;font-weight:700;color:#1e3a8a;text-align:center;padding:2px;height:26px;margin:0;">
-                                                </div>
-                                                {% endfor %}
-                                            </div>
+                                                 style="display:flex;flex-wrap:wrap;gap:6px;padding-bottom:2px;">
+                                                 {% for band in cat.rubric_marks %}
+                                                 <div
+                                                     style="background:white;border:1px solid #e2e8f0;border-radius:6px;padding:4px 7px;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:62px;text-align:center;">
+                                                     <div
+                                                         style="font-size:.7rem;font-weight:600;color:#64748b;white-space:nowrap;">
+                                                         {{ band.grade }}</div>
+                                                     <input type="number"
+                                                         name="rubric_mark_{{ forloop.parentloop.counter0 }}_{{ forloop.counter0 }}"
+                                                         value="{{ band.marks }}" class="form-control form-control-sm"
+                                                         style="width:45px;font-weight:700;color:#1e3a8a;text-align:center;padding:1px;height:24px;margin:0;font-size:0.8rem;">
+                                                 </div>
+                                                 {% endfor %}
+                                             </div>
                                         </div>
                                     </td>
                                 </tr>
@@ -276,13 +251,13 @@
     /** Render a rubric panel from a pre-fetched bands array. */
     function renderBands(container, idx, bands) {
         container.innerHTML = bands.map((band, bandIdx) => `
-            <div style="background:white;border:1px solid #e2e8f0;border-radius:8px;padding:6px 10px;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:max-content;text-align:center;">
+            <div style="background:white;border:1px solid #e2e8f0;border-radius:6px;padding:4px 7px;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:62px;text-align:center;">
                 <div style="font-size:.7rem;font-weight:600;color:#64748b;white-space:nowrap;">${band.grade}</div>
                 <input type="number"
                     name="rubric_mark_${idx}_${bandIdx}"
                     value="${band.marks}"
                     class="form-control form-control-sm"
-                    style="width:55px;font-weight:700;color:#1e3a8a;text-align:center;padding:2px;height:26px;margin:0;">
+                    style="width:45px;font-weight:700;color:#1e3a8a;text-align:center;padding:1px;height:24px;margin:0;font-size:0.8rem;">
             </div>`).join('');
     }
 
@@ -305,32 +280,6 @@
         }, debounceMs);
     }
 
-    // ── Type selector: show/hide panel ──────────────────────────────────────
-    document.querySelectorAll('.type-selector').forEach(select => {
-        select.addEventListener('change', function () {
-            const idx = this.getAttribute('data-idx');
-            const panel = document.getElementById(`rubric-panel-${idx}`);
-            if (!panel) return;
-
-            if (this.value === 'grade') {
-                const container = panel.querySelector('.rubric-bands-container');
-                // If already populated (auto-detected rubric column), leave it.
-                // If empty (user just switched a numeric column), seed from
-                // pre-computed data first, then fetch fresh to honour max_marks.
-                if (container && container.children.length === 0) {
-                    const col = panel.getAttribute('data-col');
-                    const sub = currentSubdivision(idx);
-                    const cache = ALL_RUBRIC_MARKS[col];
-                    if (cache && cache[sub]) renderBands(container, idx, cache[sub]);
-                }
-                panel.classList.remove('d-none');
-                // Always refresh from server to pick up the current max_marks
-                fetchAndRenderBands(idx, panel, currentSubdivision(idx), 0);
-            } else {
-                panel.classList.add('d-none');
-            }
-        });
-    });
 
     // ── Max marks input ──────────────────────────────────────────────────────
     document.querySelectorAll('input[name^="max_"]').forEach(input => {
