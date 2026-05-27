@@ -288,8 +288,8 @@
             const panel = document.getElementById(`rubric-panel-${idx}`);
             if (!panel || panel.classList.contains('d-none')) return;
 
-            const typeSelect = document.querySelector(`.type-selector[data-idx="${idx}"]`);
-            if (!typeSelect || typeSelect.value !== 'grade') return;
+            const typeInput = document.querySelector(`input[name="type_${idx}"]`);
+            if (!typeInput || typeInput.value !== 'grade') return;
 
             const maxMarks = parseInt(this.value, 10);
             if (isNaN(maxMarks) || maxMarks <= 0) return;
