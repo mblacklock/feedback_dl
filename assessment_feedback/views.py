@@ -441,9 +441,9 @@ def confirm_mappings(request):
 
 def configure_layout(request):
     """
-    Step 2.5: PDF Layout Builder Configuration Page
-    Allows academics to add/remove content blocks, control their positioning (ordering),
-    and set their grid widths (half vs. full).
+    Step 2.5: Feedback Sheet Layout Builder Configuration Page
+    Allows academics to control their positioning (ordering), set grid widths,
+    and preview any student's compiled Feedback Sheet in real-time.
     """
     headers = request.session.get("headers")
     mappings = request.session.get("mappings")
@@ -493,9 +493,143 @@ def configure_layout(request):
             request.session.modified = True
             
         return redirect("process_feedback")
+
+    col_name = mappings["col_student_name"]
+    col_id = mappings["col_student_id"]
+    degree_level = mappings["degree_level"]
+    subdivision = mappings["subdivision"]
+    categories = mappings["categories"]
+
+    # Compute Cohort Statistics
+    cohort_final_marks = []
+    category_cohort_marks = {cat["column"]: [] for cat in categories}
+    
+    for r in uploaded_data:
+        student_total = 0
+        for cat in categories:
+            col = cat["column"]
+            val = r.get(col, 0)
+            if cat["type"] == "grade":
+                rubric_marks = cat.get("rubric_marks") or calculate_grade_bands(
+                    cat["max_marks"], cat.get("subdivision", "none"), degree_level=degree_level
+                )
+                mark_val = rubric_mark_from_label(val, rubric_marks)
+            else:
+                try:
+                    mark_val = float(val) if val is not None else 0
+                except (ValueError, TypeError):
+                    mark_val = 0
+            category_cohort_marks[col].append(mark_val)
+            student_total += mark_val
+        cohort_final_marks.append(student_total)
         
+    # Class averages per category
+    category_averages = {}
+    for cat in categories:
+        col = cat["column"]
+        vals = category_cohort_marks[col]
+        category_averages[col] = sum(vals) / len(vals) if vals else 0
+        
+    total_max_marks = sum(cat["max_marks"] for cat in categories)
+
+    # Prepare student selection list
+    students_list = []
+    for idx, r in enumerate(uploaded_data):
+        s_name = str(r.get(col_name, f"Student {idx+1}")).strip()
+        s_id = str(r.get(col_id, f"ID-{idx+1}")).strip()
+        if s_name or s_id:
+            students_list.append({
+                "index": idx,
+                "name": s_name,
+                "id": s_id,
+            })
+
+    # Read selected student index from query param
+    try:
+        preview_student_index = int(request.GET.get("student_index", 0))
+        if preview_student_index < 0 or preview_student_index >= len(uploaded_data):
+            preview_student_index = 0
+    except (ValueError, TypeError):
+        preview_student_index = 0
+
+    preview_student = None
+    if uploaded_data:
+        student_row = uploaded_data[preview_student_index]
+        student_name = str(student_row.get(col_name, f"Student {preview_student_index+1}")).strip()
+        student_id = str(student_row.get(col_id, f"ID-{preview_student_index+1}")).strip()
+        
+        student_total_score = 0
+        student_categories_data = []
+        radar_labels = []
+        student_radar_percentages = []
+        avg_radar_percentages = []
+
+        for cat in categories:
+            col = cat["column"]
+            max_marks = cat["max_marks"]
+            raw_mark = student_row.get(col, 0)
+            grade_awarded = None
+
+            if cat["type"] == "grade":
+                rubric_marks = cat.get("rubric_marks") or calculate_grade_bands(
+                    max_marks, cat.get("subdivision", "none"), degree_level=degree_level
+                )
+                mark_val = rubric_mark_from_label(raw_mark, rubric_marks)
+                grade_awarded = str(raw_mark).strip() if raw_mark else None
+            else:
+                try:
+                    mark_val = float(raw_mark) if raw_mark is not None else 0
+                except (ValueError, TypeError):
+                    mark_val = 0
+
+            student_total_score += mark_val
+            student_pct = (mark_val / max_marks) * 100 if max_marks > 0 else 0
+            avg_pct = (category_averages[col] / max_marks) * 100 if max_marks > 0 else 0
+
+            radar_labels.append(clean_category_title(col))
+            student_radar_percentages.append(student_pct)
+            avg_radar_percentages.append(avg_pct)
+
+            student_categories_data.append({
+                "label": clean_category_title(col),
+                "mark": mark_val,
+                "max_marks": max_marks,
+                "grade_awarded": grade_awarded,
+                "feedback_comment": student_row.get(cat.get("comments_column", ""), ""),
+                "is_grade": cat["type"] == "grade"
+            })
+
+        overall_pct = (student_total_score / total_max_marks) * 100 if total_max_marks > 0 else 0
+        overall_grade = grade_for_percentage(overall_pct)
+
+        radar_svg = generate_radar_chart(radar_labels, student_radar_percentages, avg_radar_percentages)
+        hist_svg = generate_cohort_histogram(cohort_final_marks, student_total_score, max_score=total_max_marks, subdivision=subdivision)
+
+        import base64
+        radar_base64 = base64.b64encode(radar_svg.encode('utf-8')).decode('utf-8')
+        hist_base64 = base64.b64encode(hist_svg.encode('utf-8')).decode('utf-8')
+
+        preview_student = {
+            "student_name": student_name,
+            "student_id": student_id,
+            "categories": student_categories_data,
+            "total_score": student_total_score,
+            "total_max_marks": total_max_marks,
+            "overall_grade": overall_grade,
+            "radar_base64": radar_base64,
+            "hist_base64": hist_base64,
+            "degree_level": degree_level,
+            "module_code": mappings.get("module_code", "COMP101"),
+            "module_title": mappings.get("module_title", "Module Performance"),
+            "assessment_title": mappings.get("assessment_title", "Feedback Report"),
+            "academic_year": mappings.get("academic_year", "2025/2026"),
+        }
+
     return render(request, "assessment_feedback/configure_layout.html", {
-        "layout": layout
+        "layout": layout,
+        "preview_student_index": preview_student_index,
+        "students_list": students_list,
+        "preview_student": preview_student,
     })
 
 

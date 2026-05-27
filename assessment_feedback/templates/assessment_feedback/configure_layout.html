@@ -11,7 +11,7 @@
         color: #1e293b;
     }
     
-    h1, h2, h3, h4 {
+    h1, h2, h3, h4, h5 {
         font-family: 'Outfit', sans-serif;
     }
 
@@ -19,228 +19,401 @@
         border: none;
         border-radius: 20px;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
-        background: rgba(255, 255, 255, 0.85);
+        background: rgba(255, 255, 255, 0.9);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         border: 1px solid rgba(255, 255, 255, 0.4);
-        margin-bottom: 40px;
     }
     
     .gradient-header {
-        background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
         border-radius: 20px 20px 0 0;
         padding: 30px;
         color: white;
+        border-bottom: 4px solid #c8a951;
     }
 
-    .layout-card {
-        background: white;
-        border: 1px solid #e2e8f0;
-        border-radius: 16px;
-        padding: 20px;
-        margin-bottom: 16px;
-        transition: all 0.25s ease;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
+    /* ═══ Left Control Panel ═══ */
+    .control-pane {
+        position: sticky;
+        top: 24px;
     }
 
-    .layout-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
-        border-color: #4361ee;
-    }
-
-    .layout-card.disabled {
-        opacity: 0.6;
-        background-color: #f8fafc;
-    }
-
-    .layout-card.dragging {
-        opacity: 0.4;
-        box-shadow: 0 4px 20px rgba(67, 97, 238, 0.2);
-    }
-
-    .layout-card.drag-over {
-        border-color: #4361ee;
-        background-color: #eef2ff;
-        box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.3);
-        transform: scale(1.01);
-    }
-
-    .block-info {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-    }
-
-    .block-drag-icon {
-        font-size: 1.5rem;
-        color: #94a3b8;
-        cursor: grab;
-    }
-
-    .block-name {
-        font-weight: 600;
-        font-size: 1.1rem;
-        color: #1e293b;
-    }
-
-    .block-meta {
-        font-size: 0.85rem;
-        color: #64748b;
-    }
-
-    .control-actions {
-        display: flex;
-        align-items: center;
-        gap: 20px;
-    }
-
-    .width-selector {
-        display: flex;
+    .info-badge {
         background: #f1f5f9;
-        padding: 4px;
-        border-radius: 8px;
-        border: 1px solid #cbd5e1;
-    }
-
-    .width-btn {
-        border: none;
-        background: none;
-        padding: 6px 12px;
-        font-size: 0.85rem;
-        font-weight: 600;
-        border-radius: 6px;
         color: #475569;
-        transition: all 0.15s ease;
-    }
-
-    .width-btn.active {
-        background: white;
-        color: #4361ee;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-    }
-
-    .order-btns {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-    }
-
-    .order-btn {
-        background: none;
-        border: 1px solid #cbd5e1;
-        color: #64748b;
-        width: 28px;
-        height: 28px;
-        border-radius: 6px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
+        font-weight: 600;
         font-size: 0.8rem;
-        transition: all 0.2s;
-        cursor: pointer;
-    }
-
-    .order-btn:hover {
-        background: #f1f5f9;
-        color: #1e293b;
-        border-color: #94a3b8;
+        padding: 4px 12px;
+        border-radius: 20px;
+        display: inline-block;
     }
 
     .btn-premium {
-        background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
         color: white;
-        border: none;
+        border: 1px solid #c8a951;
         border-radius: 12px;
         padding: 14px 40px;
         font-weight: 700;
         transition: all 0.25s ease;
-        box-shadow: 0 4px 15px rgba(67, 97, 238, 0.25);
+        box-shadow: 0 4px 15px rgba(15, 23, 42, 0.2);
     }
 
     .btn-premium:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
+        box-shadow: 0 6px 20px rgba(200, 169, 81, 0.35);
+        color: #c8a951;
+        border-color: #c8a951;
+    }
+
+    /* ═══ Right Simulated Feedback Sheet ═══ */
+    .simulated-sheet {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 25px rgba(0, 0, 0, 0.08);
+        padding: 24px;
+        border: 1px solid #e2e8f0;
+    }
+
+    /* Sheet Header mimicking template */
+    .sheet-header-box {
+        background: #1a1a2e;
+        padding: 18px 24px;
+        margin-bottom: 16px;
         color: white;
+        border-bottom: 4px solid #c8a951;
+    }
+
+    /* Student Bar mimicking template */
+    .sheet-student-bar {
+        border: 1px solid #dddddd;
+        margin-bottom: 16px;
+        background-color: #fafafa;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 18px;
+    }
+
+    .sheet-score-badge {
+        background-color: #1a1a2e;
+        border: 1px solid #c8a951;
+        color: #c8a951;
+        padding: 8px 16px;
+        text-align: center;
+        font-weight: bold;
+    }
+
+    /* ═══ Drag & Drop Grid Containers ═══ */
+    .sheet-blocks-container {
+        display: flex;
+        flex-wrap: wrap;
+        margin: -8px;
+    }
+
+    .draggable-block {
+        padding: 8px;
+        box-sizing: border-box;
+        transition: width 0.25s ease, opacity 0.25s ease;
+        position: relative;
+        border: 2px dashed transparent;
+        border-radius: 12px;
+        margin-bottom: 12px;
+    }
+
+    .draggable-block.width-half {
+        width: 50%;
+    }
+
+    .draggable-block.width-full {
+        width: 100%;
+    }
+
+    .draggable-block:hover {
+        border-color: #cbd5e1;
+        background-color: rgba(248, 250, 252, 0.45);
+    }
+
+    .draggable-block.dragging {
+        opacity: 0.35;
+        border-color: #4361ee;
+        border-style: solid;
+    }
+
+    .draggable-block.drag-over {
+        border-color: #4361ee;
+        background-color: #f0f4ff;
+        border-style: solid;
+    }
+
+    /* Block Config Overlay Header */
+    .block-editor-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #f1f5f9;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 6px 12px;
+        margin-bottom: 8px;
+        user-select: none;
+    }
+
+    .drag-handle {
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: #334155;
+        cursor: grab;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .drag-icon {
+        font-size: 1.1rem;
+        color: #64748b;
+    }
+
+    .block-editor-controls {
+        display: flex;
+        align-items: center;
+    }
+
+    .width-selector-mini {
+        display: flex;
+        background: #e2e8f0;
+        padding: 2px;
+        border-radius: 6px;
+    }
+
+    .btn-size {
+        border: none;
+        background: none;
+        padding: 3px 8px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border-radius: 4px;
+        color: #475569;
+        transition: all 0.15s ease;
+    }
+
+    .btn-size.active {
+        background: white;
+        color: #1a1a2e;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    /* Disabled exclusions overlay styling */
+    .draggable-block.disabled .block-preview-content {
+        opacity: 0.25;
+        pointer-events: none;
+    }
+
+    .draggable-block.disabled {
+        border-color: #e2e8f0;
+        background-color: #f8fafc;
+    }
+
+    .excluded-overlay {
+        display: none;
+        position: absolute;
+        top: 48px;
+        left: 8px;
+        right: 8px;
+        bottom: 8px;
+        background: rgba(248, 250, 252, 0.65);
+        backdrop-filter: blur(1px);
+        -webkit-backdrop-filter: blur(1px);
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #64748b;
+        border-radius: 8px;
+        border: 1px dashed #cbd5e1;
+        z-index: 5;
+    }
+
+    .draggable-block.disabled .excluded-overlay {
+        display: flex;
+    }
+
+    /* Overall Summary footer in simulated sheet */
+    .sheet-summary-box {
+        margin-top: 16px;
+        margin-bottom: 12px;
+        border-top: 4px solid #c8a951;
+        background-color: #1a1a2e;
+        color: white;
+        display: flex;
+        width: 100%;
+    }
+
+    .sheet-disclaimer {
+        font-size: 7.5pt;
+        color: #aaaaaa;
+        text-align: center;
+        margin-top: 14px;
+        padding-top: 8px;
+        border-top: 1px solid #eeeeee;
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="row py-5">
-    <div class="col-lg-9 mx-auto">
-        <div class="card main-card">
-            <div class="gradient-header text-center">
-                <h2 class="fw-bold mb-2">Configure Feedback Sheet Layout</h2>
-                <p class="mb-0 opacity-75">Design your feedback sheet layout in real-time. Enable blocks, select grid widths, and arrange their visual positions.</p>
+    <!-- Left Column: Controls and Actions -->
+    <div class="col-lg-4 mb-4 mb-lg-0">
+        <div class="card main-card control-pane">
+            <div class="gradient-header text-center py-4">
+                <h3 class="fw-bold mb-1">Feedback Designer</h3>
+                <p class="mb-0 opacity-75 small">Interactive WYSIWYG Layout Editor</p>
             </div>
             
-            <div class="card-body p-5">
+            <div class="card-body p-4">
+                <!-- Preview Student Selector -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold text-secondary small">Real-time Student Preview</label>
+                    <select id="student_preview_select" class="form-select rounded-3 mb-2 shadow-sm">
+                        {% for s in students_list %}
+                        <option value="{{ s.index }}" {% if s.index == preview_student_index %}selected{% endif %}>
+                            {{ s.name }} ({{ s.id }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-text small">Select any student from your spreadsheet to inspect their actual live report preview.</div>
+                </div>
+
+                <hr class="text-muted opacity-25 my-4">
+
+                <!-- Builder Guidance -->
+                <div class="mb-4">
+                    <span class="info-badge mb-2">Instructions</span>
+                    <h5 class="fw-bold text-dark mb-2">Customizing the Layout</h5>
+                    <ul class="text-muted small ps-3 mb-0 d-flex flex-column gap-2">
+                        <li><strong>Drag and Drop</strong>: Hold the `☰` handle in any block header on the right and drag it to swap positioning.</li>
+                        <li><strong>Widths</strong>: Swap between `50%` and `100%` widths dynamically. Consecutive 50% items sit side-by-side.</li>
+                        <li><strong>Exclusions</strong>: Toggle the switch in any block header to exclude a section from the final generated report.</li>
+                    </ul>
+                </div>
+
+                <hr class="text-muted opacity-25 my-4">
+
+                <!-- Action Button -->
                 <form method="POST" id="layoutForm">
                     {% csrf_token %}
-                    
                     <input type="hidden" name="block_order" id="blockOrderInput" value="">
                     
-                    <h4 class="fw-bold mb-4">Feedback Sheet Layout Pipeline</h4>
-                    <p class="text-muted small mb-4">Arrange the cards below in the order you'd like them to appear on the Feedback Sheet. Toggle widths and visibility settings as needed.</p>
+                    <!-- Hidden inputs to preserve layout configuration states on POST -->
+                    {% for block in layout %}
+                    <input type="hidden" name="enabled_{{ block.id }}" id="enabled_input_{{ block.id }}" value="{% if block.enabled %}true{% else %}false{% endif %}">
+                    <input type="hidden" name="width_{{ block.id }}" id="width_input_{{ block.id }}" value="{{ block.width|default:'full' }}">
+                    {% endfor %}
 
-                    <div id="layoutContainer" class="mb-5">
-                        {% for block in layout %}
-                        <div class="layout-card {% if not block.enabled %}disabled{% endif %}" data-id="{{ block.id }}">
-                            <!-- Left: Drag indicator & Description -->
-                            <div class="block-info">
-                                <span class="block-drag-icon">☰</span>
-                                <div>
-                                    <div class="block-name">{{ block.name }}</div>
-                                    <div class="block-meta">
-                                        {% if block.id == 'category_marks' %}
-                                            Raw criteria score allocations.
-                                        {% elif block.id == 'feedback' %}
-                                            Detailed written commentary text.
-                                        {% elif block.id == 'radar_chart' %}
-                                            Student vs. Average cohort radar graphic.
-                                        {% elif block.id == 'histogram' %}
-                                            Mark distribution histogram comparison.
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Right: Configurable controls -->
-                            <div class="control-actions">
-                                <!-- Enabled/Disabled switch -->
-                                <div class="form-check form-switch mb-0">
-                                    <input class="form-check-input block-toggle-switch" type="checkbox" role="switch" 
-                                           id="switch_{{ block.id }}" {% if block.enabled %}checked{% endif %}>
-                                    <label class="form-check-label text-secondary small fw-semibold" for="switch_{{ block.id }}">Enabled</label>
-                                    <input type="hidden" name="enabled_{{ block.id }}" id="enabled_input_{{ block.id }}" value="{% if block.enabled %}true{% else %}false{% endif %}">
-                                </div>
-
-                                <!-- Width Selector -->
-                                <div class="width-selector">
-                                    <button type="button" class="width-btn {% if block.width == 'half' %}active{% endif %}" data-width="half">Half (50%)</button>
-                                    <button type="button" class="width-btn {% if block.width == 'full' or not block.width %}active{% endif %}" data-width="full">Full (100%)</button>
-                                    <input type="hidden" name="width_{{ block.id }}" id="width_input_{{ block.id }}" value="{{ block.width|default:'full' }}">
-                                </div>
-
-                                <!-- Position Arrow Buttons -->
-                                <div class="order-btns">
-                                    <button type="button" class="order-btn btn-up" title="Move Up">▲</button>
-                                    <button type="button" class="order-btn btn-down" title="Move Down">▼</button>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-
-                    <div class="text-center">
-                        <button type="submit" class="btn btn-premium btn-lg w-100">Generate Student Feedback Sheets</button>
-                    </div>
+                    <button type="submit" class="btn btn-premium btn-lg w-100 py-3 d-flex align-items-center justify-content-center gap-2">
+                        <span>Generate Student Feedback Sheets</span>
+                    </button>
                 </form>
             </div>
         </div>
+    </div>
+
+    <!-- Right Column: Draggable Live WYSIWYG Template Preview -->
+    <div class="col-lg-8">
+        <h4 class="fw-bold mb-3 d-flex align-items-center gap-2">
+            <span>Feedback Sheet Live Preview</span>
+            <span class="badge bg-secondary fs-6 rounded-pill">WYSIWYG Workspace</span>
+        </h4>
+
+        {% if preview_student %}
+        <div class="simulated-sheet">
+            <!-- Simulated Header mimicking feedback_sheet.html -->
+            <div class="sheet-header-box">
+                <p style="margin: 0 0 3px 0; font-family: Arial, Helvetica, sans-serif; font-size: 8.5pt; color: #c8a951; font-weight: bold; text-transform: uppercase;">
+                    {{ preview_student.module_code }} &middot; {{ preview_student.module_title }}
+                </p>
+                <h2 style="margin: 0 0 3px 0; font-family: Georgia, 'Times New Roman', serif; font-size: 20pt; color: white; font-weight: normal;">
+                    Assessment Feedback Report
+                </h2>
+                <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 8.5pt; color: #a0a8c0;">
+                    {{ preview_student.assessment_title }} &nbsp;&middot;&nbsp; {{ preview_student.academic_year }} &nbsp;&middot;&nbsp; Internally moderated results
+                </p>
+            </div>
+
+            <!-- Simulated Student Banner mimicking feedback_sheet.html -->
+            <div class="sheet-student-bar">
+                <div style="font-family: Georgia, serif;">
+                    <h3 style="margin: 0 0 2px 0; font-size: 13pt; font-weight: bold; color: #1a1a2e;">{{ preview_student.student_name }}</h3>
+                    <p style="margin: 0; font-family: Arial, sans-serif; font-size: 9pt; color: #666666;">
+                        Student Number: {{ preview_student.student_id }} &nbsp;&middot;&nbsp; {{ preview_student.degree_level }}
+                    </p>
+                </div>
+                <div class="sheet-score-badge">
+                    <div style="font-size: 12pt; line-height: 1.2;">{{ preview_student.total_score|floatformat:1 }} / {{ preview_student.total_max_marks }}</div>
+                    <div style="font-size: 9pt; line-height: 1.2;">{{ preview_student.overall_grade }}</div>
+                </div>
+            </div>
+
+            <!-- Draggable Blocks Container -->
+            <div class="sheet-blocks-container" id="layoutContainer">
+                {% for block in layout %}
+                <div class="draggable-block {% if not block.enabled %}disabled{% endif %} {% if block.width == 'half' %}width-half{% else %}width-full{% endif %}" data-id="{{ block.id }}">
+                    <!-- Interactive Header Controls -->
+                    <div class="block-editor-bar">
+                        <span class="drag-handle" title="Hold and drag to reorder">
+                            <span class="drag-icon">☰</span> {{ block.name }}
+                        </span>
+                        
+                        <div class="block-editor-controls">
+                            <!-- Width toggle buttons -->
+                            <div class="width-selector-mini shadow-sm">
+                                <button type="button" class="btn-size {% if block.width == 'half' %}active{% endif %}" data-width="half" title="Set to 50% width">50%</button>
+                                <button type="button" class="btn-size {% if block.width == 'full' or not block.width %}active{% endif %}" data-width="full" title="Set to 100% width">100%</button>
+                            </div>
+                            
+                            <!-- Switch toggle for Enabled state -->
+                            <div class="form-check form-switch mb-0 ms-3">
+                                <input class="form-check-input block-toggle-switch shadow-sm" type="checkbox" role="switch" 
+                                       id="switch_{{ block.id }}" {% if block.enabled %}checked{% endif %} title="Toggle visibility in output">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Live Content Rendered inside the block -->
+                    <div class="block-preview-content">
+                        {% include "assessment_feedback/_feedback_block.html" with categories=preview_student.categories radar_base64=preview_student.radar_base64 hist_base64=preview_student.hist_base64 block=block %}
+                    </div>
+
+                    <!-- Exclusion Overlay for visual indicator -->
+                    <div class="excluded-overlay">
+                        <span>Excluded from feedback report</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Simulated Overall Summary mimic -->
+            <div class="sheet-summary-box">
+                <div style="padding: 10px 16px; width: 50%;">
+                    <p style="margin: 0 0 4px 0; font-family: Arial, sans-serif; font-size: 7.5pt; color: #a0a8c0; font-weight: bold;">OVERALL ASSESSMENT MARK</p>
+                    <p style="margin: 0; font-family: Arial, sans-serif; font-size: 20pt; font-weight: bold; color: white; line-height: 1.1;">{{ preview_student.total_score|floatformat:1 }} / {{ preview_student.total_max_marks }}</p>
+                </div>
+                <div style="padding: 10px 16px; width: 50%;">
+                    <p style="margin: 0 0 4px 0; font-family: Arial, sans-serif; font-size: 7.5pt; color: #a0a8c0; font-weight: bold;">AWARDED UK GRADE</p>
+                    <p style="margin: 0; font-family: Arial, sans-serif; font-size: 18pt; font-weight: bold; color: #c8a951; line-height: 1.1;">{{ preview_student.overall_grade }}</p>
+                </div>
+            </div>
+
+            <div class="sheet-disclaimer">
+                These results are internally moderated and have not yet been confirmed by the Programme Assessment Board.
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-warning rounded-3 shadow-sm" role="alert">
+            No student records found to preview.
+        </div>
+        {% endif %}
     </div>
 </div>
 
@@ -248,88 +421,98 @@
     document.addEventListener('DOMContentLoaded', () => {
         const container = document.getElementById('layoutContainer');
         const blockOrderInput = document.getElementById('blockOrderInput');
+        const studentSelect = document.getElementById('student_preview_select');
+
+        // ── Refresh preview on student change ───────────────────────────────
+        if (studentSelect) {
+            studentSelect.addEventListener('change', (e) => {
+                const index = e.target.value;
+                const url = new URL(window.location.href);
+                url.searchParams.set('student_index', index);
+                window.location.href = url.toString();
+            });
+        }
 
         // ── Helpers ──────────────────────────────────────────────────────────
 
         function updateBlockOrder() {
-            const ids = [...container.querySelectorAll('.layout-card')]
+            if (!container) return;
+            const ids = [...container.querySelectorAll('.draggable-block')]
                 .map(c => c.getAttribute('data-id'));
             blockOrderInput.value = ids.join(',');
         }
 
         updateBlockOrder();
 
-        // ── Up / Down buttons ─────────────────────────────────────────────────
-
-        container.addEventListener('click', (e) => {
-            const btnUp   = e.target.closest('.btn-up');
-            const btnDown = e.target.closest('.btn-down');
-
-            if (btnUp) {
-                const card = btnUp.closest('.layout-card');
-                const prev = card.previousElementSibling;
-                if (prev) { container.insertBefore(card, prev); updateBlockOrder(); }
-            }
-            if (btnDown) {
-                const card = btnDown.closest('.layout-card');
-                const next = card.nextElementSibling;
-                if (next) { container.insertBefore(next, card); updateBlockOrder(); }
-            }
-        });
-
         // ── Enable / Disable switch ───────────────────────────────────────────
 
-        container.addEventListener('change', (e) => {
-            if (e.target.classList.contains('block-toggle-switch')) {
-                const card    = e.target.closest('.layout-card');
-                const blockId = card.getAttribute('data-id');
-                const hidden  = document.getElementById(`enabled_input_${blockId}`);
-                if (e.target.checked) {
-                    card.classList.remove('disabled');
-                    hidden.value = 'true';
-                } else {
-                    card.classList.add('disabled');
-                    hidden.value = 'false';
+        if (container) {
+            container.addEventListener('change', (e) => {
+                if (e.target.classList.contains('block-toggle-switch')) {
+                    const card    = e.target.closest('.draggable-block');
+                    const blockId = card.getAttribute('data-id');
+                    const hidden  = document.getElementById(`enabled_input_${blockId}`);
+                    if (e.target.checked) {
+                        card.classList.remove('disabled');
+                        hidden.value = 'true';
+                    } else {
+                        card.classList.add('disabled');
+                        hidden.value = 'false';
+                    }
                 }
-            }
-        });
+            });
+        }
 
         // ── Width selector ────────────────────────────────────────────────────
 
-        container.addEventListener('click', (e) => {
-            const widthBtn = e.target.closest('.width-btn');
-            if (!widthBtn) return;
-            const card    = widthBtn.closest('.layout-card');
-            const blockId = card.getAttribute('data-id');
-            const hidden  = document.getElementById(`width_input_${blockId}`);
-            card.querySelectorAll('.width-btn').forEach(b => b.classList.remove('active'));
-            widthBtn.classList.add('active');
-            hidden.value = widthBtn.getAttribute('data-width');
-        });
+        if (container) {
+            container.addEventListener('click', (e) => {
+                const widthBtn = e.target.closest('.btn-size');
+                if (!widthBtn) return;
+                const card    = widthBtn.closest('.draggable-block');
+                const blockId = card.getAttribute('data-id');
+                const hidden  = document.getElementById(`width_input_${blockId}`);
+                card.querySelectorAll('.btn-size').forEach(b => b.classList.remove('active'));
+                widthBtn.classList.add('active');
+                
+                const newWidth = widthBtn.getAttribute('data-width');
+                hidden.value = newWidth;
+                
+                if (newWidth === 'half') {
+                    card.classList.remove('width-full');
+                    card.classList.add('width-half');
+                } else {
+                    card.classList.remove('width-half');
+                    card.classList.add('width-full');
+                }
+            });
+        }
 
         // ── HTML5 Drag-and-Drop ───────────────────────────────────────────────
 
         let dragSrc = null;
 
         function getDragHandles() {
-            return container.querySelectorAll('.layout-card');
+            return container ? container.querySelectorAll('.draggable-block') : [];
         }
 
         function initDraggable() {
             getDragHandles().forEach(card => {
+                const handle = card.querySelector('.drag-handle');
+                if (!handle) return;
+                
+                // Allow dragging on the card itself, but coordinate via handle hover/state
                 card.setAttribute('draggable', 'true');
 
                 card.addEventListener('dragstart', (e) => {
                     dragSrc = card;
                     e.dataTransfer.effectAllowed = 'move';
-                    // small delay so the browser snapshot doesn't show the
-                    // highlighted state
                     setTimeout(() => card.classList.add('dragging'), 0);
                 });
 
                 card.addEventListener('dragend', () => {
                     card.classList.remove('dragging');
-                    container.querySelectorAll('.layout-card').forEach(c => {
+                    container.querySelectorAll('.draggable-block').forEach(c => {
                         c.classList.remove('drag-over');
                     });
                     dragSrc = null;
@@ -340,7 +523,7 @@
                     e.preventDefault();
                     e.dataTransfer.dropEffect = 'move';
                     if (card !== dragSrc) {
-                        container.querySelectorAll('.layout-card').forEach(c => c.classList.remove('drag-over'));
+                        container.querySelectorAll('.draggable-block').forEach(c => c.classList.remove('drag-over'));
                         card.classList.add('drag-over');
                     }
                 });
@@ -354,8 +537,6 @@
                     e.stopPropagation();
                     if (!dragSrc || dragSrc === card) return;
 
-                    // Insert dragSrc before or after the target depending on
-                    // whether we're in the top or bottom half of the target card
                     const rect   = card.getBoundingClientRect();
                     const midY   = rect.top + rect.height / 2;
                     const before = e.clientY < midY;
@@ -372,8 +553,9 @@
             });
         }
 
-        initDraggable();
+        if (container) {
+            initDraggable();
+        }
     });
 </script>
-
 {% endblock %}
