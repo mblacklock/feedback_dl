@@ -10,181 +10,105 @@
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            color: #1e293b;
-            line-height: 1.4;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #1a1a2e;
             font-size: 10pt;
+            line-height: 1.3;
             margin: 0;
             background-color: #ffffff;
         }
 
-        h1, h2, h3, h4, h5 {
-            font-family: 'Outfit', sans-serif;
-            color: #1e293b;
+        p {
+            margin: 0;
+            padding: 0;
+        }
+
+        .section-heading {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 8pt;
+            font-weight: bold;
+            color: #888888;
+            border-bottom: 1px solid #dddddd;
+            padding-bottom: 3px;
+            margin-bottom: 8px;
             margin-top: 0;
         }
 
-        .header-container {
-            border-bottom: 2px solid #e2e8f0;
-            padding-bottom: 15px;
-            margin-bottom: 20px;
-        }
-
-        .header-title {
-            font-size: 18pt;
-            font-weight: 800;
-            color: #1e3a8a;
-            margin-bottom: 4px;
-            text-transform: uppercase;
-        }
-
-        .header-meta {
-            font-size: 9pt;
-            color: #64748b;
-            margin-bottom: 10px;
-        }
-
-        .student-details-card {
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-
-        .student-details-grid {
-            display: table;
-            width: 100%;
-        }
-
-        .student-details-row {
-            display: table-row;
-        }
-
-        .student-details-cell {
-            display: table-cell;
-            width: 50%;
-            padding: 4px 8px;
+        .chart-title {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 8pt;
+            font-weight: bold;
+            color: #888888;
+            margin-bottom: 6px;
         }
 
         .score-badge {
-            background-color: #eff6ff;
-            color: #1e40af;
-            border: 1px solid #bfdbfe;
-            border-radius: 40px;
-            padding: 4px 12px;
-            font-weight: 700;
+            font-family: Arial, Helvetica, sans-serif;
             font-size: 9pt;
-            display: inline-block;
-        }
-
-        .overall-card {
-            background-color: #1e3a8a;
-            color: white;
-            border-radius: 8px;
-            padding: 20px;
-            margin-top: 25px;
-            margin-bottom: 25px;
-            page-break-inside: avoid;
-        }
-
-        .overall-card h3 {
-            color: white;
-            margin-bottom: 8px;
-            font-size: 13pt;
-        }
-
-        .overall-score {
-            font-size: 20pt;
-            font-weight: 800;
-            font-family: 'Outfit', sans-serif;
-        }
-
-        .overall-grade {
-            background-color: #3b5fcf;
-            border: 1px solid #93c5fd;
-            border-radius: 30px;
-            padding: 4px 14px;
-            font-weight: 700;
-            font-size: 11pt;
-            display: inline-block;
-            margin-top: 5px;
-        }
-
-        .block-chart-box {
-            text-align: center;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 12px;
-            background-color: #f8fafc;
-        }
-
-        .chart-title {
-            font-size: 10pt;
-            font-weight: 700;
-            margin-bottom: 8px;
-            color: #475569;
-            font-family: 'Outfit', sans-serif;
+            font-weight: bold;
+            color: #1a1a2e;
         }
 
         .disclaimer {
-            font-size: 8pt;
-            color: #64748b;
-            margin-top: 30px;
-            border-top: 1px solid #e2e8f0;
-            padding-top: 10px;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 7.5pt;
+            color: #aaaaaa;
             text-align: center;
+            margin-top: 14px;
+            padding-top: 8px;
+            border-top: 1px solid #eeeeee;
         }
     </style>
 </head>
 <body>
 
-    <!-- Header -->
-    <div class="header-container">
-        <div class="header-title">Student Performance Report</div>
-        <div class="header-meta">Assessment Feedback Report Summary</div>
-    </div>
+    <!-- ═══ HEADER ═══ -->
+    <table width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 14px;">
+        <tr>
+            <td bgcolor="#1a1a2e" style="padding: 14px 20px 12px 20px;">
+                <p style="margin: 0 0 3px 0; font-family: Arial, Helvetica, sans-serif; font-size: 8.5pt; color: #c8a951; font-weight: bold;">{{ module_code }} &middot; {{ module_title }}</p>
+                <p style="margin: 0 0 3px 0; font-family: Georgia, 'Times New Roman', serif; font-size: 20pt; color: #ffffff; font-weight: normal;">Assessment Feedback Report</p>
+                <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 8.5pt; color: #a0a8c0;">{{ assessment_title }} &nbsp;&middot;&nbsp; {{ academic_year }} &nbsp;&middot;&nbsp; These results are internally moderated</p>
+            </td>
+        </tr>
+        <tr>
+            <td bgcolor="#c8a951" style="height: 4px; font-size: 1pt;">&nbsp;</td>
+        </tr>
+    </table>
 
-    <!-- Student Details -->
-    <div class="student-details-card">
-        <div class="student-details-grid">
-            <div class="student-details-row">
-                <div class="student-details-cell">
-                    <strong>Student Name:</strong> {{ student_name }}
-                </div>
-                <div class="student-details-cell">
-                    <strong>Student Number:</strong> {{ student_id }}
-                </div>
-            </div>
-            <div class="student-details-row">
-                <div class="student-details-cell" style="padding-top: 10px;">
-                    <strong>Degree Level:</strong> {{ degree_level }}
-                </div>
-                <div class="student-details-cell" style="padding-top: 10px;">
-                    <strong>Assessment Mode:</strong> In-Memory Generator
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- ═══ STUDENT BAR ═══ -->
+    <table width="100%" cellspacing="0" cellpadding="0" style="border: 1px solid #dddddd; margin-bottom: 14px;" bgcolor="#fafafa">
+        <tr>
+            <td style="padding: 8px 14px;" valign="middle">
+                <p style="margin: 0 0 2px 0; font-family: Georgia, 'Times New Roman', serif; font-size: 13pt; font-weight: bold; color: #1a1a2e;">{{ student_name }}</p>
+                <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 9pt; color: #666666;">Student Number: {{ student_id }} &nbsp;&middot;&nbsp; {{ degree_level }}</p>
+            </td>
+            <td style="padding: 8px 14px; text-align: right;" valign="middle" width="150">
+                <table cellspacing="0" cellpadding="0" align="right">
+                    <tr>
+                        <td bgcolor="#1a1a2e" style="padding: 6px 14px; border: 1px solid #c8a951; text-align: center;">
+                            <p style="margin: 0 0 2px 0; font-family: Arial, Helvetica, sans-serif; font-size: 12pt; font-weight: bold; color: #c8a951;">{{ total_score|floatformat:1 }} / {{ total_max_marks }}</p>
+                            <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 9pt; font-weight: bold; color: #c8a951;">{{ overall_grade }}</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 
-    <!-- Dynamic Layout Blocks -->
-    <!-- Real HTML <table> elements used because xhtml2pdf ignores CSS floats and
-         is unreliable with CSS display:table on divs. Native <table> is the
-         most reliable two-column layout in xhtml2pdf. -->
-    <div style="margin-top: 20px;">
+    <!-- ═══ DYNAMIC LAYOUT BLOCKS ═══ -->
+    <div>
         {% for row in layout_rows %}
 
             {% if row.type == "full" %}
-                <!-- Full-width single block -->
-                <div style="margin-bottom: 20px;">
+                <div style="margin-bottom: 12px;">
                     {% with block=row.blocks.0 %}
                         {% include "assessment_feedback/_pdf_block.html" %}
                     {% endwith %}
                 </div>
 
             {% elif row.type == "half-pair" %}
-                <!-- Two half-width blocks side by side using a real HTML table -->
-                <table width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 20px;">
+                <table width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 12px;">
                     <tr>
                         <td width="50%" valign="top" style="padding-right: 8px;">
                             {% with block=row.blocks.0 %}
@@ -200,8 +124,7 @@
                 </table>
 
             {% elif row.type == "half-single" %}
-                <!-- Single half-width block with empty second column -->
-                <table width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 20px;">
+                <table width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 12px;">
                     <tr>
                         <td width="50%" valign="top" style="padding-right: 8px;">
                             {% with block=row.blocks.0 %}
@@ -216,25 +139,22 @@
         {% endfor %}
     </div>
 
-
-    <!-- Overall Summary -->
-    <div class="overall-card" style="page-break-inside: avoid;">
-        <div class="student-details-grid">
-            <div class="student-details-row">
-                <div class="student-details-cell">
-                    <h3>Overall Assessment Mark</h3>
-                    <div class="overall-score">{{ total_score|floatformat:1 }} / {{ total_max_marks }}</div>
-                </div>
-                <div class="student-details-cell">
-                    <h3>Awarded UK Grade</h3>
-                    <div class="overall-grade">{{ overall_grade }}</div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- ═══ OVERALL SUMMARY ═══ -->
+    <table width="100%" cellspacing="0" cellpadding="0" style="margin-top: 14px; margin-bottom: 14px; border-top: 4px solid #c8a951;">
+        <tr>
+            <td bgcolor="#1a1a2e" style="padding: 10px 16px;" valign="middle" width="50%">
+                <p style="margin: 0 0 4px 0; font-family: Arial, Helvetica, sans-serif; font-size: 7.5pt; color: #a0a8c0; font-weight: bold;">OVERALL ASSESSMENT MARK</p>
+                <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 20pt; font-weight: bold; color: #ffffff; line-height: 1.1;">{{ total_score|floatformat:1 }} / {{ total_max_marks }}</p>
+            </td>
+            <td bgcolor="#1a1a2e" style="padding: 10px 16px;" valign="middle" width="50%">
+                <p style="margin: 0 0 4px 0; font-family: Arial, Helvetica, sans-serif; font-size: 7.5pt; color: #a0a8c0; font-weight: bold;">AWARDED UK GRADE</p>
+                <p style="margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 18pt; font-weight: bold; color: #c8a951; line-height: 1.1;">{{ overall_grade }}</p>
+            </td>
+        </tr>
+    </table>
 
     <div class="disclaimer">
-        These results are generated in-memory and are internally moderated. Official grades are confirmed by the Programme Assessment Board.
+        These results are internally moderated and have not yet been confirmed by the Programme Assessment Board.
     </div>
 
 </body>

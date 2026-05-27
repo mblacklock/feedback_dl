@@ -1,6 +1,6 @@
 {% extends "rubric_generator/base.html" %}
 
-{% block title %}Configure PDF Layout{% endblock %}
+{% block title %}Configure Feedback Sheet Layout{% endblock %}
 
 {% block extra_css %}
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -173,8 +173,8 @@
     <div class="col-lg-9 mx-auto">
         <div class="card main-card">
             <div class="gradient-header text-center">
-                <h2 class="fw-bold mb-2">Configure PDF Feedback Layout</h2>
-                <p class="mb-0 opacity-75">Design your printable feedback report sheet in real-time. Enable blocks, select grid widths, and arrange their visual positions.</p>
+                <h2 class="fw-bold mb-2">Configure Feedback Sheet Layout</h2>
+                <p class="mb-0 opacity-75">Design your feedback sheet layout in real-time. Enable blocks, select grid widths, and arrange their visual positions.</p>
             </div>
             
             <div class="card-body p-5">
@@ -183,8 +183,8 @@
                     
                     <input type="hidden" name="block_order" id="blockOrderInput" value="">
                     
-                    <h4 class="fw-bold mb-4">Print Layout Pipeline</h4>
-                    <p class="text-muted small mb-4">Arrange the cards below in the order you'd like them to appear on the PDF. Toggle widths and visibility settings as needed.</p>
+                    <h4 class="fw-bold mb-4">Feedback Sheet Layout Pipeline</h4>
+                    <p class="text-muted small mb-4">Arrange the cards below in the order you'd like them to appear on the Feedback Sheet. Toggle widths and visibility settings as needed.</p>
 
                     <div id="layoutContainer" class="mb-5">
                         {% for block in layout %}
@@ -236,7 +236,7 @@
                     </div>
 
                     <div class="text-center">
-                        <button type="submit" class="btn btn-premium btn-lg w-100">Generate Student Feedback PDFs</button>
+                        <button type="submit" class="btn btn-premium btn-lg w-100">Generate Student Feedback Sheets</button>
                     </div>
                 </form>
             </div>

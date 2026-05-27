@@ -33,7 +33,7 @@ class AssessmentFeedbackViewsTest(TestCase):
         url = reverse("upload_file")
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
-        self.assertContains(resp, "Cohort PDF Feedback Generator")
+        self.assertContains(resp, "Cohort Feedback Sheet Generator")
 
     def test_upload_file_post_redirects_to_confirm(self):
         """POST /assessment-feedback/ with valid Excel redirects to confirm page"""
@@ -202,7 +202,7 @@ class AssessmentFeedbackViewsTest(TestCase):
         self.assertEqual(updated_mappings["subdivision"], "high_mid_low")
 
     def test_process_feedback_generates_valid_zip(self):
-        """GET /assessment-feedback/process/ processes data and returns a downloadable ZIP of PDFs"""
+        """GET /assessment-feedback/process/ processes data and returns a downloadable ZIP of HTMLs"""
         session = self.client.session
         session["headers"] = self.sample_headers
         session["uploaded_data"] = self.sample_uploaded_data
@@ -221,12 +221,13 @@ class AssessmentFeedbackViewsTest(TestCase):
         with zipfile.ZipFile(zip_bytes, "r") as zf:
             namelist = zf.namelist()
             self.assertEqual(len(namelist), 2)
-            self.assertIn("10001_alice-smith.pdf", namelist)
-            self.assertIn("10002_bob-jones.pdf", namelist)
+            self.assertIn("10001_alice-smith.html", namelist)
+            self.assertIn("10002_bob-jones.html", namelist)
             
-            # Read first PDF header bytes (PDF header is %PDF-)
-            pdf_data = zf.read("10001_alice-smith.pdf")
-            self.assertEqual(pdf_data[:5], b"%PDF-")
+            # Read first HTML file content (should start with <!DOCTYPE html>)
+            html_data = zf.read("10001_alice-smith.html").strip()
+            self.assertTrue(html_data.startswith(b"<!DOCTYPE html>"),
+                            msg=f"HTML content does not start with <!DOCTYPE html>: {html_data[:50]}")
 
     # -------------------------------------------------------------------------
     # Layout Builder tests
@@ -535,12 +536,13 @@ class AssessmentFeedbackViewsTest(TestCase):
         self.assertEqual(resp["Content-Type"], "application/zip")
 
         zf = zipfile.ZipFile(io.BytesIO(resp.content))
-        # Both students should have PDFs in the ZIP
+        # Both students should have HTMLs in the ZIP
         self.assertEqual(len(zf.namelist()), 2)
-        # PDFs must be valid
+        # HTMLs must be valid
         for name in zf.namelist():
-            self.assertEqual(zf.read(name)[:5], b"%PDF-",
-                             msg=f"{name} does not start with PDF header")
+            html_data = zf.read(name).strip()
+            self.assertTrue(html_data.startswith(b"<!DOCTYPE html>"),
+                            msg=f"{name} does not start with <!DOCTYPE html>")
 
     # -------------------------------------------------------------------------
     # Mixed-column fixture tests  (TDD — written against dummy_grades.xlsx
@@ -605,7 +607,7 @@ class AssessmentFeedbackViewsTest(TestCase):
 
     def test_mixed_fixture_end_to_end_generates_valid_zip(self):
         """Full pipeline: upload mixed fixture → confirm → layout → process
-        must produce a valid ZIP with one PDF per student."""
+        must produce a valid ZIP with one HTML per student."""
         # Step 1: Upload
         resp = self.client.post(reverse("upload_file"), {"file": self._load_fixture_excel()})
         self.assertEqual(resp.status_code, 302)
@@ -638,12 +640,13 @@ class AssessmentFeedbackViewsTest(TestCase):
         self.assertEqual(resp["Content-Type"], "application/zip")
 
         zf = zipfile.ZipFile(io.BytesIO(resp.content))
-        # One PDF per student (3 students in the fixture)
+        # One HTML per student (3 students in the fixture)
         self.assertEqual(len(zf.namelist()), 3,
-                         msg=f"Expected 3 PDFs, got: {zf.namelist()}")
+                         msg=f"Expected 3 HTMLs, got: {zf.namelist()}")
         for name in zf.namelist():
-            self.assertEqual(zf.read(name)[:5], b"%PDF-",
-                             msg=f"{name} is not a valid PDF")
+            html_data = zf.read(name).strip()
+            self.assertTrue(html_data.startswith(b"<!DOCTYPE html>"),
+                             msg=f"{name} is not a valid HTML")
 
     def test_rubric_bands_api_returns_correct_bands(self):
         """GET /rubric-bands/ returns JSON grade bands for the requested max_marks

@@ -643,15 +643,19 @@ def process_feedback(request):
                 "degree_level": degree_level,
                 "layout": layout,
                 "layout_rows": build_pdf_layout_rows(layout),
+                # Fallback header configurations
+                "module_code": mappings.get("module_code", "COMP101"),
+                "module_title": mappings.get("module_title", "Module Performance"),
+                "assessment_title": mappings.get("assessment_title", "Feedback Report"),
+                "academic_year": mappings.get("academic_year", "2025/2026"),
             }
             
-            # Render PDF in-memory using WeasyPrint
+            # Render HTML template in-memory
             html_content = render_html_to_pdf_template(request, context)
-            pdf_bytes = render_html_to_pdf(html_content)
             
             # Add to ZIP archive
-            filename = f"{slugify(student_id)}_{slugify(student_name)}.pdf"
-            zip_file.writestr(filename, pdf_bytes)
+            filename = f"{slugify(student_id)}_{slugify(student_name)}.html"
+            zip_file.writestr(filename, html_content.encode('utf-8'))
             
     # Send ZIP file response
     response = HttpResponse(zip_buffer.getvalue(), content_type="application/zip")
