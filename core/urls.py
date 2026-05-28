@@ -26,4 +26,5 @@ urlpatterns = [
     path("assessment-feedback/", include("assessment_feedback.urls")),
     path("mcrf-converter/", include("mcrf_converter.urls")),
     path("module-summary/", include("module_summary.urls")),
+    path("cohort-report/", include("cohort_report.urls")),
 ]

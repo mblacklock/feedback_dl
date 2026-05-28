@@ -1,0 +1,300 @@
+{% extends "rubric_generator/base.html" %}
+
+{% block title %}Cohort Summary - {{ module_code }}{% endblock %}
+
+{% block extra_css %}
+<link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap"
+    rel="stylesheet">
+<style>
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: #f0f2f5;
+        color: #1e293b;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    .brand-font {
+        font-family: 'Outfit', sans-serif;
+    }
+
+    .report-header {
+        background: #1a1a2e;
+        border-bottom: 4px solid #c8a951;
+        padding: 30px;
+        border-radius: 16px;
+        color: white;
+        margin-bottom: 30px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    }
+
+    .header-code {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: #c8a951;
+        margin-bottom: 8px;
+    }
+
+    .header-title {
+        font-size: 28px;
+        font-weight: 600;
+        margin-bottom: 10px;
+        line-height: 1.2;
+    }
+
+    .header-meta {
+        font-size: 13px;
+        color: #8892b0;
+    }
+
+    .glass-card {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        border-radius: 16px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.03);
+        margin-bottom: 30px;
+        overflow: hidden;
+    }
+
+    .card-title-bar {
+        background: #fafafa;
+        border-bottom: 1px solid #e8e8e8;
+        padding: 16px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .card-body-pad {
+        padding: 24px;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        gap: 12px;
+        margin-bottom: 24px;
+    }
+
+    .stat-box {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 14px;
+        text-align: center;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .stat-box:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.02);
+    }
+
+    .stat-label {
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: #64748b;
+        margin-bottom: 6px;
+        letter-spacing: 0.05em;
+    }
+
+    .stat-value {
+        font-size: 22px;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .stat-highlight {
+        border-top: 3px solid #c8a951;
+        background: #faf8f5;
+    }
+
+    .stat-highlight .stat-value {
+        color: #c8a951;
+    }
+
+    .chart-container {
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        background: white;
+        padding: 16px;
+        text-align: center;
+        min-height: 250px;
+    }
+
+    .chart-container svg {
+        max-width: 100%;
+        height: auto;
+    }
+
+    .btn-premium-action {
+        background: linear-gradient(135deg, #1a1a2e 0%, #2e2e4a 100%);
+        color: white;
+        border: 1px solid #c8a951;
+        border-radius: 8px;
+        padding: 10px 20px;
+        font-weight: 600;
+        transition: all 0.25s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-premium-action:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(200, 169, 81, 0.25);
+        color: #c8a951;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header Block -->
+    <div class="report-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div>
+            <div class="header-code">{{ module_code }}</div>
+            <h1 class="header-title">{{ module_title }}</h1>
+            <div class="header-meta">
+                Degree Level: <strong>{{ degree_level }}</strong> &nbsp;&middot;&nbsp; 
+                Cohort Size: <strong>{{ cohort_size }} students</strong> &nbsp;&middot;&nbsp; 
+                These results are aggregated and anonymised
+            </div>
+        </div>
+        <div>
+            <a href="{% url 'cohort_report_download' %}" class="btn-premium-action">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download" viewBox="0 0 16 16">
+                  <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5"/>
+                  <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708z"/>
+                </svg>
+                Download Offline Report
+            </a>
+        </div>
+    </div>
+
+    <!-- Overall Performance Section -->
+    <div class="glass-card">
+        <div class="card-title-bar">
+            <h3 class="fw-bold mb-0 text-slate-800">Overall Weighted Module Performance</h3>
+            <span class="badge bg-dark px-3 py-2 text-gold border border-gold" style="color: #c8a951;">Module Outcome</span>
+        </div>
+        <div class="card-body-pad">
+            <div class="row g-4 align-items-center">
+                <div class="col-lg-6">
+                    <h5 class="fw-bold mb-3 text-secondary">Summary Metrics</h5>
+                    <div class="stats-grid">
+                        <div class="stat-box stat-highlight">
+                            <div class="stat-label">Mean Score</div>
+                            <div class="stat-value">{{ overall_stats.mean|floatformat:1 }}%</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Std Dev</div>
+                            <div class="stat-value">{{ overall_stats.std_dev|floatformat:1 }}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Max Mark</div>
+                            <div class="stat-value">{{ overall_stats.max|floatformat:0 }}%</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Min Mark</div>
+                            <div class="stat-value">{{ overall_stats.min|floatformat:0 }}%</div>
+                        </div>
+                    </div>
+                    
+                    <h5 class="fw-bold mb-3 text-secondary">Grade Classification Distribution</h5>
+                    <div class="stats-grid">
+                        <div class="stat-box" style="border-top: 3px solid #74c476;">
+                            <div class="stat-label">% 1st</div>
+                            <div class="stat-value">{{ overall_stats.pct_1st|floatformat:1 }}%</div>
+                        </div>
+                        <div class="stat-box" style="border-top: 3px solid #4a90d9;">
+                            <div class="stat-label">% 2:1 & above</div>
+                            <div class="stat-value">{{ overall_stats.pct_21_above|floatformat:1 }}%</div>
+                        </div>
+                        <div class="stat-box" style="border-top: 3px solid #d9534f;">
+                            <div class="stat-label">% Fail</div>
+                            <div class="stat-value">{{ overall_stats.pct_fail|floatformat:1 }}%</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="chart-container">
+                        {{ overall_chart_svg|safe }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assessment Components Section -->
+    <h3 class="fw-bold mb-4 brand-font">Assessment Component Breakdowns</h3>
+    
+    <div class="row">
+        {% for comp in components_stats %}
+        <div class="col-12 col-xl-6">
+            <div class="glass-card">
+                <div class="card-title-bar">
+                    <h4 class="fw-bold mb-0 text-slate-800">{{ comp.header_formatted }}</h4>
+                    <span class="badge bg-secondary">Weight: {{ comp.weight }}%</span>
+                </div>
+                <div class="card-body-pad">
+                    <div class="row g-4 align-items-center">
+                        <div class="col-12 col-md-6">
+                            <div class="stats-grid" style="grid-template-columns: repeat(2, 1fr);">
+                                <div class="stat-box stat-highlight">
+                                    <div class="stat-label">Mean Score</div>
+                                    <div class="stat-value">{{ comp.stats.mean|floatformat:1 }}%</div>
+                                </div>
+                                <div class="stat-box">
+                                    <div class="stat-label">Std Dev</div>
+                                    <div class="stat-value">{{ comp.stats.std_dev|floatformat:1 }}</div>
+                                </div>
+                                <div class="stat-box">
+                                    <div class="stat-label">Max Mark</div>
+                                    <div class="stat-value">{{ comp.stats.max|floatformat:0 }}%</div>
+                                </div>
+                                <div class="stat-box">
+                                    <div class="stat-label">Min Mark</div>
+                                    <div class="stat-value">{{ comp.stats.min|floatformat:0 }}%</div>
+                                </div>
+                            </div>
+                            
+                            <hr class="my-3 text-slate-300">
+                            
+                            <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
+                                <div class="stat-box p-2" style="border-top: 3px solid #74c476;">
+                                    <div class="stat-label" style="font-size: 8px;">% 1st</div>
+                                    <div class="stat-value" style="font-size: 16px;">{{ comp.stats.pct_1st|floatformat:1 }}%</div>
+                                </div>
+                                <div class="stat-box p-2" style="border-top: 3px solid #4a90d9;">
+                                    <div class="stat-label" style="font-size: 8px;">% 2:1 +</div>
+                                    <div class="stat-value" style="font-size: 16px;">{{ comp.stats.pct_21_above|floatformat:1 }}%</div>
+                                </div>
+                                <div class="stat-box p-2" style="border-top: 3px solid #d9534f;">
+                                    <div class="stat-label" style="font-size: 8px;">% Fail</div>
+                                    <div class="stat-value" style="font-size: 16px;">{{ comp.stats.pct_fail|floatformat:1 }}%</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="chart-container">
+                                {{ comp.chart_svg|safe }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

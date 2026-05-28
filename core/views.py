@@ -16,6 +16,12 @@ def portal_home(request):
             "cta": "Create module summaries",
         },
         {
+            "title": "Cohort Summary Report",
+            "description": "Generate dynamic cohort summary reports from a completed MCRF spreadsheet.",
+            "url_name": "cohort_report_upload",
+            "cta": "Create cohort report",
+        },
+        {
             "title": "Rubric Generator",
             "description": "Build reusable marking templates, rubric bands, and feedback sheet layouts.",
             "url_name": "rubric_home",

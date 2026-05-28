@@ -34,7 +34,8 @@ INSTALLED_APPS += [
     'comments_generator',
     'assessment_feedback',
     'mcrf_converter',
-    'module_summary'
+    'module_summary',
+    'cohort_report'
 ]
 
 MIDDLEWARE = [

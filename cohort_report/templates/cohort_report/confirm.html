@@ -1,0 +1,196 @@
+{% extends "rubric_generator/base.html" %}
+
+{% block title %}Confirm Cohort Mappings{% endblock %}
+
+{% block extra_css %}
+<link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap"
+    rel="stylesheet">
+<style>
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: #f8fafc;
+        color: #1e293b;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4 {
+        font-family: 'Outfit', sans-serif;
+    }
+
+    .main-card {
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        margin-bottom: 40px;
+    }
+
+    .gradient-header {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        border-radius: 20px 20px 0 0;
+        padding: 30px;
+        color: white;
+        border-bottom: 4px solid #c8a951;
+    }
+
+    .mapping-table th {
+        background-color: #f1f5f9;
+        font-weight: 600;
+        color: #475569;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        border: none;
+    }
+
+    .mapping-table td {
+        vertical-align: middle;
+        border-bottom: 1px solid #f1f5f9;
+        padding: 16px 12px;
+    }
+
+    .btn-generate {
+        background: linear-gradient(135deg, #1a1a2e 0%, #2e2e4a 100%);
+        color: white;
+        border: 1px solid #c8a951;
+        border-radius: 12px;
+        padding: 14px 40px;
+        font-weight: 700;
+        transition: all 0.25s ease;
+        box-shadow: 0 4px 15px rgba(26, 26, 46, 0.2);
+    }
+
+    .btn-generate:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(200, 169, 81, 0.25);
+        color: #c8a951;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row py-5">
+    <div class="col-lg-10 mx-auto">
+        <div class="card main-card">
+            <div class="gradient-header text-center">
+                <h2 class="fw-bold mb-2">Confirm Grade Mappings</h2>
+                <p class="mb-0 opacity-75">Verify student identity columns, assign weights to component marks, and select the degree level.</p>
+            </div>
+
+            <div class="card-body p-5">
+                <form method="POST">
+                    {% csrf_token %}
+
+                    {% if error %}
+                    <div class="alert alert-danger rounded-3 mb-4 text-center" role="alert">
+                        <span class="fw-bold">Validation Error:</span> {{ error }}
+                    </div>
+                    {% endif %}
+
+                    <!-- Section 1: Module Details -->
+                    <h4 class="fw-bold mb-4">1. Module Details</h4>
+                    <div class="row g-4 mb-5">
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold text-secondary" for="module_code">Module Code</label>
+                            <input type="text" name="module_code" id="module_code" class="form-control rounded-3"
+                                placeholder="e.g. COMP1001" value="{{ mappings.module_code|default:'' }}">
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label fw-semibold text-secondary" for="module_title">Module Title</label>
+                            <input type="text" name="module_title" id="module_title" class="form-control rounded-3"
+                                placeholder="e.g. Software Engineering Principles"
+                                value="{{ mappings.module_title|default:'' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold text-secondary" for="degree_level">Degree Level</label>
+                            <select name="degree_level" id="degree_level" class="form-select rounded-3" required>
+                                <option value="BEng" {% if mappings.degree_level == 'BEng' %}selected{% endif %}>BEng (UG - 40% Pass)</option>
+                                <option value="MEng/MSc" {% if mappings.degree_level == 'MEng/MSc' %}selected{% endif %}>MEng/MSc (PG - 50% Pass)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Section 2: Core Student Details -->
+                    <h4 class="fw-bold mb-4">2. Core Identifiers</h4>
+                    <div class="row g-4 mb-5">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-secondary">Student Name Column</label>
+                            <select name="col_student_name" class="form-select rounded-3" required id="col_student_name">
+                                {% for h in headers %}
+                                <option value="{{ h }}" {% if h == mappings.col_student_name %}selected{% endif %}>{{ h }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Used for referencing names. Not stored in final report output.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-secondary">Student ID Column</label>
+                            <select name="col_student_id" class="form-select rounded-3" required id="col_student_id">
+                                {% for h in headers %}
+                                <option value="{{ h }}" {% if h == mappings.col_student_id %}selected{% endif %}>{{ h }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Used for resolving cohorts. Not stored in final report output.</div>
+                        </div>
+                    </div>
+
+                    <!-- Section 3: Assessment Categories -->
+                    <h4 class="fw-bold mb-4">3. Assessment Component Weights</h4>
+                    <p class="text-muted mb-3 small">Specify the weight percentage for each assessment component (must sum to exactly 100%).</p>
+
+                    <div class="table-responsive mb-5">
+                        <table class="table mapping-table">
+                            <thead>
+                                <tr>
+                                    <th>Assessment Component Column (Excel Header)</th>
+                                    <th style="width: 180px;">Weighting</br>(Must sum to 100%)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for comp in mappings.components %}
+                                <tr>
+                                    <td class="fw-bold">{{ comp.column }}</td>
+                                    <td>
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" name="weight_{{ forloop.counter0 }}"
+                                                class="form-control rounded-3 weight-input"
+                                                value="{{ comp.weight|default:'' }}" style="width: 80px;" required
+                                                min="0" max="100">
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-generate btn-lg w-100">Generate Cohort Report</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.querySelector('form').addEventListener('submit', (e) => {
+        const weights = document.querySelectorAll('.weight-input');
+        let sum = 0;
+        weights.forEach(input => {
+            sum += parseInt(input.value || 0, 10);
+        });
+
+        if (sum !== 100) {
+            e.preventDefault();
+            alert(`Component weights must sum to exactly 100%. Currently they sum to ${sum}%.`);
+        }
+    });
+</script>
+{% endblock %}

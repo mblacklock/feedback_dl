@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cohort Report Summary — {{ module_code }}</title>
+    <style>
+        /* Base Resets & Layout Envelope */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: #1a1a2e;
+            font-size: 14px;
+            line-height: 1.5;
+            background: #f0f2f5;
+            padding: 32px 16px;
+        }
+
+        .page {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+
+        /* Shared block style sheet variables */
+        {% include "css/feedback_blocks.css" %}
+
+        /* Dashboard specific overrides */
+        .content {
+            padding: 32px;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 30px;
+            align-items: center;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .metrics-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .metric-card {
+            background: #fafafa;
+            border: 1px solid #e8e8e8;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .metric-card-highlight {
+            border-top: 3px solid #c8a951;
+            background: #faf8f5;
+        }
+
+        .metric-label {
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #8892b0;
+            margin-bottom: 6px;
+        }
+
+        .metric-val {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+
+        .metric-card-highlight .metric-val {
+            color: #c8a951;
+        }
+
+        .chart-box {
+            background: #ffffff;
+            border: 1px solid #e8e8e8;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .chart-box svg {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .component-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 992px) {
+            .component-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comp-card {
+            background: #ffffff;
+            border: 1px solid #e8e8e8;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+
+        .comp-title-bar {
+            background: #fafafa;
+            border-bottom: 1px solid #e8e8e8;
+            padding: 14px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .comp-title {
+            font-weight: 700;
+            font-size: 15px;
+            color: #1a1a2e;
+        }
+
+        .comp-weight-pill {
+            font-size: 11px;
+            background: #1a1a2e;
+            color: #c8a951;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .comp-body {
+            padding: 20px;
+        }
+
+        .section-label {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1a1a2e;
+            border-bottom: 2px solid #c8a951;
+            padding-bottom: 6px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-module">{{ module_code }}</div>
+            <h1 class="header-title">{{ module_title }}</h1>
+            <div class="header-sub">
+                Degree Level: {{ degree_level }} &nbsp;&middot;&nbsp; 
+                Cohort Size: {{ cohort_size }} students &nbsp;&middot;&nbsp; 
+                These results are internally moderated &nbsp;&middot;&nbsp;
+                Aggregated Offline Record
+            </div>
+        </header>
+
+        <!-- Main stats content -->
+        <main class="content">
+            <!-- Overall Module performance -->
+            <h2 class="section-label">Overall Weighted Module Performance</h2>
+            <div class="dashboard-grid">
+                <div>
+                    <!-- Primary summary stats -->
+                    <div class="metrics-container">
+                        <div class="metric-card metric-card-highlight">
+                            <div class="metric-label">Mean Score</div>
+                            <div class="metric-val">{{ overall_stats.mean|floatformat:1 }}%</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Std Dev</div>
+                            <div class="metric-val">{{ overall_stats.std_dev|floatformat:1 }}</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Max Mark</div>
+                            <div class="metric-val">{{ overall_stats.max|floatformat:0 }}%</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Min Mark</div>
+                            <div class="metric-val">{{ overall_stats.min|floatformat:0 }}%</div>
+                        </div>
+                    </div>
+                    <!-- Degree classifications distributions -->
+                    <div class="metrics-container" style="grid-template-columns: repeat(3, 1fr);">
+                        <div class="metric-card" style="border-top: 3px solid #74c476;">
+                            <div class="metric-label">% 1st</div>
+                            <div class="metric-val" style="font-size: 18px;">{{ overall_stats.pct_1st|floatformat:1 }}%</div>
+                        </div>
+                        <div class="metric-card" style="border-top: 3px solid #4a90d9;">
+                            <div class="metric-label">% 2:1 & above</div>
+                            <div class="metric-val" style="font-size: 18px;">{{ overall_stats.pct_21_above|floatformat:1 }}%</div>
+                        </div>
+                        <div class="metric-card" style="border-top: 3px solid #d9534f;">
+                            <div class="metric-label">% Fail</div>
+                            <div class="metric-val" style="font-size: 18px;">{{ overall_stats.pct_fail|floatformat:1 }}%</div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <!-- Histogram box -->
+                    <div class="chart-box">
+                        {{ overall_chart_svg|safe }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Components Breakdown -->
+            <h2 class="section-label" style="margin-top: 40px; margin-bottom: 24px;">Assessment Component Breakdowns</h2>
+            <div class="component-grid">
+                {% for comp in components_stats %}
+                <div class="comp-card">
+                    <div class="comp-title-bar">
+                        <div class="comp-title">{{ comp.header_formatted }}</div>
+                        <div class="comp-weight-pill">Weight: {{ comp.weight }}%</div>
+                    </div>
+                    <div class="comp-body">
+                        <div class="dashboard-grid" style="grid-template-columns: 1fr; gap: 16px;">
+                            <div class="metrics-container" style="grid-template-columns: repeat(2, 1fr); gap: 8px;">
+                                <div class="metric-card metric-card-highlight" style="padding: 10px;">
+                                    <div class="metric-label" style="font-size: 8px;">Mean Score</div>
+                                    <div class="metric-val" style="font-size: 18px;">{{ comp.stats.mean|floatformat:1 }}%</div>
+                                </div>
+                                <div class="metric-card" style="padding: 10px;">
+                                    <div class="metric-label" style="font-size: 8px;">Std Dev</div>
+                                    <div class="metric-val" style="font-size: 18px;">{{ comp.stats.std_dev|floatformat:1 }}</div>
+                                </div>
+                                <div class="metric-card" style="padding: 10px;">
+                                    <div class="metric-label" style="font-size: 8px;">Max Mark</div>
+                                    <div class="metric-val" style="font-size: 18px;">{{ comp.stats.max|floatformat:0 }}%</div>
+                                </div>
+                                <div class="metric-card" style="padding: 10px;">
+                                    <div class="metric-label" style="font-size: 8px;">Min Mark</div>
+                                    <div class="metric-val" style="font-size: 18px;">{{ comp.stats.min|floatformat:0 }}%</div>
+                                </div>
+                            </div>
+                            
+                            <div class="metrics-container" style="grid-template-columns: repeat(3, 1fr); gap: 6px;">
+                                <div class="metric-card" style="border-top: 3px solid #74c476; padding: 8px 4px;">
+                                    <div class="metric-label" style="font-size: 7px;">% 1st</div>
+                                    <div class="metric-val" style="font-size: 13px;">{{ comp.stats.pct_1st|floatformat:1 }}%</div>
+                                </div>
+                                <div class="metric-card" style="border-top: 3px solid #4a90d9; padding: 8px 4px;">
+                                    <div class="metric-label" style="font-size: 7px;">% 2:1 +</div>
+                                    <div class="metric-val" style="font-size: 13px;">{{ comp.stats.pct_21_above|floatformat:1 }}%</div>
+                                </div>
+                                <div class="metric-card" style="border-top: 3px solid #d9534f; padding: 8px 4px;">
+                                    <div class="metric-label" style="font-size: 7px;">% Fail</div>
+                                    <div class="metric-val" style="font-size: 13px;">{{ comp.stats.pct_fail|floatformat:1 }}%</div>
+                                </div>
+                            </div>
+                            
+                            <div class="chart-box" style="padding: 10px;">
+                                {{ comp.chart_svg|safe }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="disclaimer" style="font-size: 10px; color: #8892b0; text-align: center; padding: 20px 32px; border-top: 1px solid #e8e8e8; background: #fafafa;">
+            This document is generated by the Feedback Portal. It contains aggregate statistical data for class performance review and is subject to departmental moderation.
+        </footer>
+    </div>
+</body>
+</html>

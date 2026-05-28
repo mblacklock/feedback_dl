@@ -5,7 +5,8 @@ from django.test import TestCase
 from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
 
-from .views import normalize_student_id, parse_mcrf_workbook
+from .views import normalize_student_id
+from core.mcrf_parser import parse_mcrf_workbook
 
 
 class ModuleSummaryViewsTest(TestCase):

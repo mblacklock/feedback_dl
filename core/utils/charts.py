@@ -123,14 +123,14 @@ def generate_radar_chart(categories, student_percentages, average_percentages, p
     return buf.getvalue().decode('utf-8')
 
 
-def generate_cohort_histogram(scores, student_score, degree_level=None):
+def generate_cohort_histogram(scores, student_score=None, degree_level=None):
     """
     Generate a cohort mark distribution histogram using percentage-based bins,
     coloured by UK grade band, with a dashed vertical line for the student's mark.
 
     Args:
         scores: List of all student marks (already converted to percentages) in the cohort
-        student_score: The specific student's mark (already converted to percentage)
+        student_score: The specific student's mark (already converted to percentage) or None to omit
         degree_level: The degree level (e.g. 'BEng' or 'MEng/MSc')
 
     Returns:
@@ -177,16 +177,17 @@ def generate_cohort_histogram(scores, student_score, degree_level=None):
     for patch, left_edge in zip(patches, fixed_bins[:-1]):
         patch.set_facecolor(band_colours.get(left_edge, '#74c476'))
 
-    # Student mark — dashed vertical line with label above
-    ax.axvline(student_score, color='#3a3a3a', linestyle='--', linewidth=1.8, zorder=5)
-    ax.text(
-        student_score + 0.8,
-        ax.get_ylim()[1] * 1.1,
-        f'Your Mark',
-        color='#3a3a3a',
-        fontsize=16,
-        va='top',
-    )
+    # Student mark — dashed vertical line with label above (if provided)
+    if student_score is not None:
+        ax.axvline(student_score, color='#3a3a3a', linestyle='--', linewidth=1.8, zorder=5)
+        ax.text(
+            student_score + 0.8,
+            ax.get_ylim()[1] * 1.1,
+            f'Your Mark',
+            color='#3a3a3a',
+            fontsize=16,
+            va='top',
+        )
 
     # Axes
     ax.set_xlim(0, 100)
