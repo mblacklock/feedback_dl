@@ -72,94 +72,73 @@ def generate_radar_chart(categories, student_percentages, average_percentages):
     return buf.getvalue().decode('utf-8')
 
 
-def generate_cohort_histogram(scores, student_score, degree_level=None):
+def generate_cohort_histogram(scores, student_score, max_score=100, subdivision="none"):
     """
-    Generate a cohort mark distribution histogram using percentage-based bins,
-    coloured by UK grade band, with a dashed vertical line for the student's mark.
-
+    Generate a class distribution histogram showing cohort final marks,
+    along with a clear visual vertical line highlighting the current student's score.
+    
     Args:
-        scores: List of all student marks (already converted to percentages) in the cohort
-        student_score: The specific student's mark (already converted to percentage)
-        degree_level: The degree level (e.g. 'BEng' or 'MEng/MSc')
-
+        scores: List of all student marks in the cohort
+        student_score: The specific student's score
+        max_score: Maximum possible marks for the assessment
+        subdivision: The grading subdivision mode
+        
     Returns:
         str: SVG XML string representing the vector chart
     """
     if not scores:
         return ""
-
-    # Determine if postgraduate/M-level (where <50% is a fail)
-    is_m_level = bool(
-        degree_level 
-        and isinstance(degree_level, str) 
-        and degree_level.strip().lower().startswith('m')
-    )
-
-    # Grade band colours for each 10% bin
-    band_colours = {
-        0:  '#d9534f',  # Fail
-        10: '#d9534f',  # Fail
-        20: '#d9534f',  # Fail
-        30: '#d9534f',  # Fail
-        40: '#d9534f' if is_m_level else '#f0a070',  # Fail for M-level, 3rd otherwise
-        50: '#7bafd4',  # 2:2
-        60: '#4a90d9',  # 2:1
-        70: '#74c476',  # 1st
-        80: '#74c476',  # 1st
-        90: '#74c476',  # 1st
-    }
-
-    fixed_bins = list(range(0, 101, 10))
-
-    fig, ax = plt.subplots(figsize=(8.0, 5.0))
-
-    n, bins, patches = ax.hist(
-        scores,
-        bins=fixed_bins,
-        range=(0, 100),
-        edgecolor='white',
-        linewidth=1.0,
-        rwidth=0.85,
-    )
-
-    # Colour each bar by its grade band
-    for patch, left_edge in zip(patches, fixed_bins[:-1]):
-        patch.set_facecolor(band_colours.get(left_edge, '#74c476'))
-
-    # Student mark — dashed vertical line with label above
-    ax.axvline(student_score, color='#3a3a3a', linestyle='--', linewidth=1.8, zorder=5)
-    ax.text(
-        student_score + 0.8,
-        ax.get_ylim()[1] * 0.97,
-        f'Your Mark ({round(student_score)}%)',
-        color='#3a3a3a',
-        fontsize=16,
-        va='top',
-    )
-
-    # Axes
-    ax.set_xlim(0, 100)
-    ax.set_xticks(range(0, 101, 10))
-    ax.set_xlabel('Mark (%)', color='#475569', size=16, fontfamily='DejaVu Sans')
-    ax.set_ylabel('Number of Students', color='#475569', size=16, fontfamily='DejaVu Sans')
-
-    # Y-axis integer ticks
-    max_count = int(max(n)) if len(n) > 0 else 1
-    ax.set_yticks(range(0, max_count + 2))
-
-    # Spines — all four visible to form a box
-    for spine in ax.spines.values():
-        spine.set_visible(True)
-        spine.set_color('#cbd5e1')
-
-    ax.tick_params(axis='both', which='both', length=0, colors='#475569', labelsize=16)
-    ax.set_facecolor('white')
-    fig.patch.set_facecolor('white')
-
+        
+    fig, ax = plt.subplots(figsize=(5.5, 3.5))
+    
+    # Color palette
+    bar_color = '#94a3b8'         # Clean, soft slate blue for background bars
+    highlight_color = '#ff006e'   # Vibrant pink/red for vertical line
+    avg_color = '#3b82f6'         # Blue for average
+    text_color = '#1e293b'
+    grid_color = '#f1f5f9'
+    
+    # Calculate bins dynamically
+    num_bins = min(15, max(5, int(max_score / 5)))
+    
+    # Plot histogram
+    n, bins, patches = ax.hist(scores, bins=num_bins, range=(0, max_score), 
+                               color=bar_color, edgecolor='#f8fafc', linewidth=1.2, alpha=0.85, rwidth=0.9)
+    
+    # Plot Student score vertical line
+    ax.axvline(student_score, color=highlight_color, linestyle='-', linewidth=2.5, 
+               label=f"Your Mark ({student_score})")
+    
+    # Plot Class Average vertical line
+    cohort_avg = np.mean(scores)
+    ax.axvline(cohort_avg, color=avg_color, linestyle='--', linewidth=2, 
+               label=f"Class Average ({cohort_avg:.1f})")
+    
+    # Styling axes
+    ax.set_xlim(0, max_score)
+    ax.set_xlabel('Marks', color=text_color, fontweight='semibold', size=9.5)
+    ax.set_ylabel('Number of Students', color=text_color, fontweight='semibold', size=9.5)
+    
+    # Standard grid lines
+    ax.grid(True, axis='y', color='#e2e8f0', linestyle=':', linewidth=0.8)
+    ax.set_axisbelow(True)
+    
+    # Turn off outer border spines
+    for spine in ['top', 'right', 'left']:
+        ax.spines[spine].set_visible(False)
+    ax.spines['bottom'].set_color('#cbd5e1')
+    
+    # Tick formatting
+    ax.tick_params(axis='both', which='both', length=0, colors='#475569', labelsize=8.5)
+    
+    # Legend
+    plt.legend(loc='upper right', fontsize=8.5, frameon=True, facecolor='white', edgecolor='#e2e8f0')
+    
+    # Save to buffer as SVG
     buf = io.BytesIO()
-    plt.savefig(buf, format='svg', bbox_inches='tight', transparent=False)
+    plt.savefig(buf, format='svg', bbox_inches='tight', transparent=True)
     plt.close(fig)
-
+    
     return buf.getvalue().decode('utf-8')
 
 

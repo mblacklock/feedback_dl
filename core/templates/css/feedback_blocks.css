@@ -95,7 +95,7 @@
     justify-content: center;
 }
 
-.half-pair > .half {
+.half-pair>.half {
     flex: 0 0 calc(50% - 8px);
     min-width: 0;
 }
@@ -112,7 +112,7 @@
     padding: 16px 24px;
 }
 
-.overall-cell + .overall-cell {
+.overall-cell+.overall-cell {
     border-left: 1px solid #2e2e4a;
 }
 
@@ -181,7 +181,9 @@
     text-align: left;
 }
 
-.marks-table th.right { text-align: right; }
+.marks-table th.right {
+    text-align: right;
+}
 
 .marks-table td {
     padding: 8px 12px;
@@ -189,9 +191,13 @@
     color: #1a1a2e;
 }
 
-.marks-table td.right { text-align: right; }
+.marks-table td.right {
+    text-align: right;
+}
 
-.marks-table td.label { font-weight: 700; }
+.marks-table td.label {
+    font-weight: 700;
+}
 
 .marks-table td.band {
     font-weight: 700;
@@ -199,7 +205,9 @@
     text-align: right;
 }
 
-.marks-table tbody tr:last-child td { border-bottom: none; }
+.marks-table tbody tr:last-child td {
+    border-bottom: none;
+}
 
 /* ── Feedback blocks ── */
 .feedback-item {
@@ -228,11 +236,8 @@
 
 /* ── Chart blocks ── */
 .chart-box {
-    border: 1px solid #e8e8e8;
-    border-radius: 6px;
     padding: 12px;
     text-align: center;
-    background: #fafafa;
     height: 100%;
 }
 
@@ -247,7 +252,6 @@
 
 .chart-box img {
     width: 100%;
-    max-width: 280px;
     height: auto;
     display: block;
     margin: 0 auto;

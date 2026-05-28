@@ -352,11 +352,15 @@ def build_assessment_student_context(student_row, student_index, mappings, categ
 
     overall_pct = (student_total_score / total_max_marks) * 100 if total_max_marks > 0 else 0
     radar_svg = generate_radar_chart(radar_labels, student_radar_percentages, avg_radar_percentages)
+    
+    cohort_final_percentages = [
+        (mark / total_max_marks) * 100 for mark in cohort_final_marks
+    ] if total_max_marks > 0 else []
+    
     hist_svg = generate_cohort_histogram(
-        cohort_final_marks,
-        student_total_score,
-        max_score=total_max_marks,
-        subdivision=subdivision,
+        cohort_final_percentages,
+        overall_pct,
+        degree_level=mappings.get("degree_level"),
     )
 
     return {

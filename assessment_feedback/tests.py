@@ -1266,6 +1266,23 @@ class AssessmentFeedbackViewsTest(TestCase):
         self.assertEqual(migrated_layout[2]["id"], "general_feedback")
         self.assertFalse(migrated_layout[2]["enabled"])
 
+    def test_cohort_histogram_bin_colour_degree_level(self):
+        """Verify that generate_cohort_histogram colours the 40% bin correctly based on degree_level."""
+        from core.utils.charts import generate_cohort_histogram
+        
+        # Test cohort with scores in 40-49% range
+        scores = [45]
+        student_score = 45
+        
+        # 1. BEng (Undergraduate): 40-49% is a passing 3rd class (colored #f0a070)
+        svg_beng = generate_cohort_histogram(scores, student_score, degree_level="BEng")
+        self.assertIn('#f0a070', svg_beng)
+        
+        # 2. MEng/MSc (Postgraduate): 40-49% is a Fail (colored #d9534f)
+        svg_meng = generate_cohort_histogram(scores, student_score, degree_level="MEng/MSc")
+        self.assertIn('#d9534f', svg_meng)
+
+
 
 
 
