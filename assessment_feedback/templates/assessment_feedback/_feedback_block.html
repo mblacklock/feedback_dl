@@ -25,15 +25,14 @@ Depends on: feedback_blocks.css
     <thead>
         <tr>
             <th>Criterion</th>
-            <th class="right">Mark</th>
             <th class="right">Grade Band</th>
+            <th class="right">Mark</th>
         </tr>
     </thead>
     <tbody>
         {% for cat in categories %}
         <tr>
             <td class="label">{{ cat.label }}</td>
-            <td class="right">{{ cat.mark|floatformat:0 }} / {{ cat.max_marks }}</td>
             <td class="band">
                 {% if cat.is_grade %}
                 {{ cat.grade_awarded }}
@@ -46,6 +45,7 @@ Depends on: feedback_blocks.css
                 </span>
                 {% endif %}
             </td>
+            <td class="right">{{ cat.mark|floatformat:0 }} / {{ cat.max_marks }}</td>
         </tr>
         {% endfor %}
     </tbody>
