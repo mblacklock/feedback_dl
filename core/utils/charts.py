@@ -152,8 +152,8 @@ def generate_cohort_histogram(scores, student_score=None, degree_level=None):
         10: '#d9534f',  # Fail
         20: '#d9534f',  # Fail
         30: '#d9534f',  # Fail
-        40: '#d9534f' if is_m_level else '#f0a070',  # Fail for M-level, 3rd otherwise
-        50: '#7bafd4',  # 2:2
+        40: '#d9534f' if is_m_level else '#4a90d9',  # Fail for M-level, 3rd otherwise
+        50: '#4a90d9',  # 2:2
         60: '#4a90d9',  # 2:1
         70: '#74c476',  # 1st
         80: '#74c476',  # 1st
