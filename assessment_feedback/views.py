@@ -715,6 +715,46 @@ def confirm_mappings(request):
                   assessment_confirm_context(headers, mappings, uploaded_data))
 
 
+def ensure_layout_defaults(layout, session=None):
+    """
+    Ensure all default blocks exist in the loaded layout to handle stale sessions.
+    """
+    default_blocks = {
+        "category_marks": {"id": "category_marks", "name": "Category Marks", "width": "full", "enabled": True},
+        "feedback": {"id": "feedback", "name": "Feedback Comments", "width": "full", "enabled": True},
+        "general_feedback": {"id": "general_feedback", "name": "General Feedback", "width": "full", "enabled": False},
+        "radar_chart": {"id": "radar_chart", "name": "Radar Chart", "width": "half", "enabled": True},
+        "histogram": {"id": "histogram", "name": "Histogram Chart", "width": "half", "enabled": True},
+    }
+    if not layout:
+        return list(default_blocks.values())
+
+    modified = False
+    # Check for missing blocks
+    for bid, block_def in default_blocks.items():
+        if not any(b["id"] == bid for b in layout):
+            # Insert at default position or append
+            if bid == "general_feedback":
+                # Insert after feedback if present
+                inserted = False
+                for idx, b in enumerate(layout):
+                    if b["id"] == "feedback":
+                        layout.insert(idx + 1, block_def.copy())
+                        inserted = True
+                        break
+                if not inserted:
+                    layout.append(block_def.copy())
+            else:
+                layout.append(block_def.copy())
+            modified = True
+
+    if modified and session is not None:
+        session["layout"] = layout
+        session.modified = True
+
+    return layout
+
+
 def configure_layout(request):
     """
     Step 2.5: Feedback Sheet Layout Builder Configuration Page
@@ -728,23 +768,19 @@ def configure_layout(request):
     if not headers or not mappings or not uploaded_data:
         return redirect("upload_file")
         
-    default_layout = [
-        {"id": "category_marks", "name": "Category Marks", "width": "full", "enabled": True},
-        {"id": "feedback", "name": "Feedback Comments", "width": "full", "enabled": True},
-        {"id": "radar_chart", "name": "Radar Chart", "width": "half", "enabled": True},
-        {"id": "histogram", "name": "Histogram Chart", "width": "half", "enabled": True},
-    ]
-    layout = request.session.get("layout", default_layout)
+    layout = request.session.get("layout")
+    layout = ensure_layout_defaults(layout, session=request.session)
     
     if request.method == "POST":
         block_order = request.POST.get("block_order", "").split(",")
         if not any(block_order):
-            block_order = [b["id"] for b in default_layout]
+            block_order = ["category_marks", "feedback", "general_feedback", "radar_chart", "histogram"]
             
         updated_layout = []
         name_map = {
             "category_marks": "Category Marks",
             "feedback": "Feedback Comments",
+            "general_feedback": "General Feedback",
             "radar_chart": "Radar Chart",
             "histogram": "Histogram Chart",
         }
@@ -766,6 +802,9 @@ def configure_layout(request):
                 
         show_numeric_grade_bands = request.POST.get("show_numeric_grade_bands") == "true"
         request.session["show_numeric_grade_bands"] = show_numeric_grade_bands
+
+        general_comments = request.POST.get("general_comments", "").strip()
+        request.session["general_comments"] = general_comments
 
         if updated_layout:
             request.session["layout"] = updated_layout
@@ -815,6 +854,7 @@ def configure_layout(request):
         )
 
     show_numeric_grade_bands = request.session.get("show_numeric_grade_bands", False)
+    general_comments = request.session.get("general_comments", "")
 
     return render(request, "assessment_feedback/configure_layout.html", {
         "layout": layout,
@@ -822,6 +862,7 @@ def configure_layout(request):
         "students_list": students_list,
         "preview_student": preview_student,
         "show_numeric_grade_bands": show_numeric_grade_bands,
+        "general_comments": general_comments,
     })
 
 
@@ -840,13 +881,7 @@ def process_feedback(request):
         return redirect("upload_file")
         
     layout = request.session.get("layout")
-    if not layout:
-        layout = [
-            {"id": "category_marks", "name": "Category Marks", "width": "full", "enabled": True},
-            {"id": "feedback", "name": "Feedback Comments", "width": "full", "enabled": True},
-            {"id": "radar_chart", "name": "Radar Chart", "width": "half", "enabled": True},
-            {"id": "histogram", "name": "Histogram Chart", "width": "half", "enabled": True},
-        ]
+    layout = ensure_layout_defaults(layout, session=request.session)
         
     col_name = mappings["col_student_name"]
     col_id = mappings["col_student_id"]
@@ -880,6 +915,7 @@ def process_feedback(request):
                 "layout": layout,
                 "layout_rows": build_feedback_sheet_layout_rows(layout),
                 "show_numeric_grade_bands": show_numeric_grade_bands,
+                "general_comments": request.session.get("general_comments", ""),
             }
             
             html_content = render_feedback_sheet_template(request, context)
@@ -890,6 +926,7 @@ def process_feedback(request):
     response = HttpResponse(zip_buffer.getvalue(), content_type="application/zip")
     response["Content-Disposition"] = "attachment; filename=student_feedback_reports.zip"
     return response
+
 
 def render_feedback_sheet_template(request, context):
     """

@@ -105,6 +105,27 @@ Depends on: feedback_blocks.css
 </div>
 {% endfor %}
 
+{% elif block.id == "general_feedback" %}
+
+<div class="section-heading">General Feedback</div>
+<div class="feedback-item">
+    {% if is_editor %}
+    <div style="margin-top: 10px;">
+        <!-- Container for Quill editor -->
+        <div id="general_comments_editor">{{ general_comments|safe }}</div>
+    </div>
+    {% else %}
+    <div class="feedback-item-body">
+        {% if general_comments and general_comments != "<p><br></p>" %}
+            {{ general_comments|safe }}
+        {% else %}
+            No general feedback provided for this assessment.
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+
 {% elif block.id == "radar_chart" %}
 
 <div class="chart-box">

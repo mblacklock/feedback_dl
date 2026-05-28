@@ -180,3 +180,35 @@
     color: #1a1a2e;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
+
+/* ── Quill Editor Overrides ── */
+.ql-toolbar.ql-snow {
+    border: 1px solid #cbd5e1 !important;
+    border-top-left-radius: 8px !important;
+    border-top-right-radius: 8px !important;
+    background: #f8fafc !important;
+}
+
+.ql-container.ql-snow {
+    border: 1px solid #cbd5e1 !important;
+    border-top: none !important;
+    border-bottom-left-radius: 8px !important;
+    border-bottom-right-radius: 8px !important;
+    background: white !important;
+    font-family: inherit !important;
+}
+
+.ql-editor {
+    font-family: inherit !important;
+    font-size: 13px !important;
+    line-height: 1.6 !important;
+    color: #444 !important;
+    min-height: 120px;
+}
+
+.ql-editor.ql-blank::before {
+    font-style: normal !important;
+    color: #94a3b8 !important;
+    left: 15px !important;
+}
+

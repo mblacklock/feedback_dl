@@ -374,15 +374,15 @@ class AssessmentFeedbackViewsTest(TestCase):
         session.save()
 
     def test_configure_layout_get_returns_200_with_defaults(self):
-        """GET /assessment-feedback/layout/ renders builder with default four blocks."""
+        """GET /assessment-feedback/layout/ renders builder with default blocks."""
         self._set_full_session()
 
         url = reverse("configure_layout")
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
 
-        # All four default blocks should appear in the response
-        for label in ["Category Marks", "Feedback Comments", "Radar Chart", "Histogram Chart"]:
+        # All five default blocks should appear in the response
+        for label in ["Category Marks", "Feedback Comments", "General Feedback", "Radar Chart", "Histogram Chart"]:
             self.assertContains(resp, label)
 
     def test_configure_layout_get_redirects_without_session(self):
@@ -398,23 +398,26 @@ class AssessmentFeedbackViewsTest(TestCase):
 
         url = reverse("configure_layout")
         form_data = {
-            # Reversed order: histogram first, then radar, feedback, category_marks
-            "block_order": "histogram,radar_chart,feedback,category_marks",
+            # Reversed order: histogram first, then radar, general_feedback, feedback, category_marks
+            "block_order": "histogram,radar_chart,general_feedback,feedback,category_marks",
             "enabled_histogram": "true",
             "width_histogram": "full",
             "enabled_radar_chart": "true",
             "width_radar_chart": "half",
+            "enabled_general_feedback": "false",
+            "width_general_feedback": "full",
             "enabled_feedback": "true",
             "width_feedback": "full",
             "enabled_category_marks": "true",
             "width_category_marks": "half",
+            "general_comments": "These are overall class comments.",
         }
         resp = self.client.post(url, form_data)
         self.assertEqual(resp.status_code, 302)
         self.assertRedirects(resp, reverse("process_feedback"))
 
         saved_layout = self.client.session["layout"]
-        self.assertEqual(len(saved_layout), 4)
+        self.assertEqual(len(saved_layout), 5)
 
         # First block should now be histogram
         self.assertEqual(saved_layout[0]["id"], "histogram")
@@ -425,9 +428,15 @@ class AssessmentFeedbackViewsTest(TestCase):
         self.assertEqual(saved_layout[1]["id"], "radar_chart")
         self.assertEqual(saved_layout[1]["width"], "half")
 
+        # Third block should be general_feedback
+        self.assertEqual(saved_layout[2]["id"], "general_feedback")
+        self.assertFalse(saved_layout[2]["enabled"])
+
         # Last block should be category_marks
-        self.assertEqual(saved_layout[3]["id"], "category_marks")
-        self.assertEqual(saved_layout[3]["width"], "half")
+        self.assertEqual(saved_layout[4]["id"], "category_marks")
+        self.assertEqual(saved_layout[4]["width"], "half")
+
+        self.assertEqual(self.client.session["general_comments"], "These are overall class comments.")
 
     def test_configure_layout_post_disabled_block_not_enabled(self):
         """POST /assessment-feedback/layout/ correctly marks a block as disabled."""
@@ -435,12 +444,14 @@ class AssessmentFeedbackViewsTest(TestCase):
 
         url = reverse("configure_layout")
         form_data = {
-            "block_order": "category_marks,feedback,radar_chart,histogram",
+            "block_order": "category_marks,feedback,general_feedback,radar_chart,histogram",
             # radar_chart explicitly disabled (no enabled_radar_chart key → defaults to false)
             "enabled_category_marks": "true",
             "width_category_marks": "full",
             "enabled_feedback": "true",
             "width_feedback": "full",
+            "enabled_general_feedback": "true",
+            "width_general_feedback": "full",
             # enabled_radar_chart intentionally omitted → treated as "false"
             "width_radar_chart": "half",
             "enabled_histogram": "true",
@@ -1161,6 +1172,100 @@ class AssessmentFeedbackViewsTest(TestCase):
         
         # Check standard mark format: "20 / 30"
         self.assertIn("20 / 30", html_content)
+
+    def test_configure_layout_general_comments_persists_in_session(self):
+        """Verify that POSTing layout configurations persists general_comments to session."""
+        self._set_full_session()
+        
+        form_data = {
+            "block_order": "category_marks,feedback,general_feedback,radar_chart,histogram",
+            "enabled_category_marks": "true",
+            "width_category_marks": "full",
+            "enabled_feedback": "true",
+            "width_feedback": "full",
+            "enabled_general_feedback": "true",
+            "width_general_feedback": "full",
+            "enabled_radar_chart": "true",
+            "width_radar_chart": "half",
+            "enabled_histogram": "true",
+            "width_histogram": "half",
+            "general_comments": "Great overall performance from the cohort."
+        }
+        resp = self.client.post(reverse("configure_layout"), form_data)
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(self.client.session["general_comments"], "Great overall performance from the cohort.")
+
+    def test_process_includes_general_comments_block_if_enabled(self):
+        """Verify that general feedback comments are rendered on feedback sheets when enabled."""
+        self._set_full_session()
+        
+        # Configure layout with general_feedback ENABLED
+        custom_layout = [
+            {"id": "category_marks", "name": "Category Marks", "width": "full", "enabled": True},
+            {"id": "general_feedback", "name": "General Feedback", "width": "full", "enabled": True},
+        ]
+        session = self.client.session
+        session["layout"] = custom_layout
+        session["general_comments"] = "This is cohort-wide general class feedback comments."
+        session.save()
+
+        resp = self.client.get(reverse("process_feedback"))
+        self.assertEqual(resp.status_code, 200)
+        
+        zf = zipfile.ZipFile(io.BytesIO(resp.content))
+        html_content = zf.read("10001_alice-smith.html").decode("utf-8")
+        
+        self.assertIn("General Feedback", html_content)
+        self.assertIn("This is cohort-wide general class feedback comments.", html_content)
+
+    def test_process_excludes_general_comments_block_if_disabled(self):
+        """Verify that general feedback comments are NOT rendered on feedback sheets when disabled."""
+        self._set_full_session()
+        
+        # Configure layout with general_feedback DISABLED
+        custom_layout = [
+            {"id": "category_marks", "name": "Category Marks", "width": "full", "enabled": True},
+            {"id": "general_feedback", "name": "General Feedback", "width": "full", "enabled": False},
+        ]
+        session = self.client.session
+        session["layout"] = custom_layout
+        session["general_comments"] = "This comments should not show."
+        session.save()
+
+        resp = self.client.get(reverse("process_feedback"))
+        self.assertEqual(resp.status_code, 200)
+        
+        zf = zipfile.ZipFile(io.BytesIO(resp.content))
+        html_content = zf.read("10001_alice-smith.html").decode("utf-8")
+        
+        self.assertNotIn("General Feedback", html_content)
+        self.assertNotIn("This comments should not show.", html_content)
+
+    def test_ensure_layout_defaults_migrates_stale_session(self):
+        """Verify that stale layout lists (missing general_feedback) are successfully migrated to include default blocks."""
+        self._set_full_session()
+        
+        # Simulate a stale layout session from a previous version (without general_feedback)
+        stale_layout = [
+            {"id": "category_marks", "name": "Category Marks", "width": "full", "enabled": True},
+            {"id": "feedback", "name": "Feedback Comments", "width": "full", "enabled": True},
+            {"id": "radar_chart", "name": "Radar Chart", "width": "half", "enabled": True},
+            {"id": "histogram", "name": "Histogram Chart", "width": "half", "enabled": True},
+        ]
+        session = self.client.session
+        session["layout"] = stale_layout
+        session.save()
+
+        # Access configure layout view to trigger migration helper
+        resp = self.client.get(reverse("configure_layout"))
+        self.assertEqual(resp.status_code, 200)
+
+        # The session layout should now contain general_feedback in the correct position (after feedback)
+        migrated_layout = self.client.session["layout"]
+        self.assertEqual(len(migrated_layout), 5)
+        self.assertEqual(migrated_layout[2]["id"], "general_feedback")
+        self.assertFalse(migrated_layout[2]["enabled"])
+
 
 
 

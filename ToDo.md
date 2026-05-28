@@ -10,6 +10,6 @@
 ## Future Enhancements
 
 - [x] Ability to have non-mark categories, e.g. for performance data.
-- [ ] General assessment feedback/freeform comments.
+- [x] General assessment feedback/freeform comments.
 - [ ] Create a marking spreadsheet from a template.
 - [ ] Add a changelog file.
