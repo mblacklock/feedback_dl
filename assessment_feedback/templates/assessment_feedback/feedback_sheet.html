@@ -42,17 +42,7 @@
         <!-- Header -->
         {% include "assessment_feedback/_feedback_header.html" %}
 
-        <!-- Student bar -->
-        <div class="student-bar">
-            <div>
-                <div class="student-name">{{ student_name }}</div>
-                <div class="student-meta">Student Number: {{ student_id }}</div>
-            </div>
-            <div class="grade-pill">
-                <div class="grade-pill-score">{{ total_score|floatformat:1 }} / {{ total_max_marks }}</div>
-                <div class="grade-pill-band">{{ overall_grade }}</div>
-            </div>
-        </div>
+
 
         <!-- Dynamic layout blocks -->
         <div class="content">
@@ -93,24 +83,10 @@
 
             {% endfor %}
 
-            <!-- Overall summary -->
-            <div class="overall-card">
-                <div class="overall-cell">
-                    <div class="overall-label">Overall Assessment Mark</div>
-                    <div class="overall-score">{{ total_score|floatformat:1 }} / {{ total_max_marks }}</div>
-                </div>
-                <div class="overall-cell">
-                    <div class="overall-label">Awarded UK Grade</div>
-                    <div class="overall-grade">{{ overall_grade }}</div>
-                </div>
-            </div>
-
         </div>
 
-        <!-- Disclaimer -->
-        <div class="disclaimer">
-            These results are internally moderated and have not yet been confirmed by the Programme Assessment Board.
-        </div>
+        <!-- Overall Summary and Disclaimer -->
+        {% include "assessment_feedback/_feedback_footer.html" %}
 
     </div>
 </body>

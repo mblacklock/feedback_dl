@@ -299,22 +299,8 @@
 
         {% if preview_student %}
         <div class="simulated-sheet">
-            <!-- Simulated Header -->
-            {% include "assessment_feedback/_feedback_header.html" with module_code=preview_student.module_code module_title=preview_student.module_title assessment_title=preview_student.assessment_title academic_year=preview_student.academic_year %}
-
-            <!-- Simulated Student Banner mimicking feedback_sheet.html -->
-            <div class="sheet-student-bar">
-                <div style="font-family: Georgia, serif;">
-                    <h3 style="margin: 0 0 2px 0; font-size: 13pt; font-weight: bold; color: #1a1a2e;">{{ preview_student.student_name }}</h3>
-                    <p style="margin: 0; font-family: Arial, sans-serif; font-size: 9pt; color: #666666;">
-                        Student Number: {{ preview_student.student_id }} &nbsp;&middot;&nbsp; {{ preview_student.degree_level }}
-                    </p>
-                </div>
-                <div class="sheet-score-badge">
-                    <div style="font-size: 12pt; line-height: 1.2;">{{ preview_student.total_score|floatformat:1 }} / {{ preview_student.total_max_marks }}</div>
-                    <div style="font-size: 9pt; line-height: 1.2;">{{ preview_student.overall_grade }}</div>
-                </div>
-            </div>
+            <!-- Simulated Header and Student details -->
+            {% include "assessment_feedback/_feedback_header.html" with module_code=preview_student.module_code module_title=preview_student.module_title assessment_title=preview_student.assessment_title academic_year=preview_student.academic_year student_name=preview_student.student_name student_id=preview_student.student_id total_score=preview_student.total_score total_max_marks=preview_student.total_max_marks overall_grade=preview_student.overall_grade overall_percentage=preview_student.overall_percentage %}
 
             <!-- Draggable Blocks Container -->
             <div class="sheet-blocks-container" id="layoutContainer">
@@ -354,21 +340,8 @@
                 {% endfor %}
             </div>
 
-            <!-- Simulated Overall Summary mimic -->
-            <div class="sheet-summary-box">
-                <div style="padding: 10px 16px; width: 50%;">
-                    <p style="margin: 0 0 4px 0; font-family: Arial, sans-serif; font-size: 7.5pt; color: #a0a8c0; font-weight: bold;">OVERALL ASSESSMENT MARK</p>
-                    <p style="margin: 0; font-family: Arial, sans-serif; font-size: 20pt; font-weight: bold; color: white; line-height: 1.1;">{{ preview_student.total_score|floatformat:1 }} / {{ preview_student.total_max_marks }}</p>
-                </div>
-                <div style="padding: 10px 16px; width: 50%;">
-                    <p style="margin: 0 0 4px 0; font-family: Arial, sans-serif; font-size: 7.5pt; color: #a0a8c0; font-weight: bold;">AWARDED UK GRADE</p>
-                    <p style="margin: 0; font-family: Arial, sans-serif; font-size: 18pt; font-weight: bold; color: #c8a951; line-height: 1.1;">{{ preview_student.overall_grade }}</p>
-                </div>
-            </div>
-
-            <div class="sheet-disclaimer">
-                These results are internally moderated and have not yet been confirmed by the Programme Assessment Board.
-            </div>
+            <!-- Overall Summary and Disclaimer -->
+            {% include "assessment_feedback/_feedback_footer.html" with overall_percentage=preview_student.overall_percentage overall_grade=preview_student.overall_grade %}
         </div>
         {% else %}
         <div class="alert alert-warning rounded-3 shadow-sm" role="alert">

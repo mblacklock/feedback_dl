@@ -2,5 +2,18 @@
 <div class="header">
     <div class="header-module">{{ module_code }} &middot; {{ module_title }}</div>
     <div class="header-title">Assessment Feedback Report</div>
-    <div class="header-sub">{{ assessment_title }} &nbsp;&middot;&nbsp; {{ academic_year }} &nbsp;&middot;&nbsp; These results are internally moderated</div>
+    <div class="header-sub">{{ assessment_title }} &nbsp;&middot;&nbsp; {{ academic_year }} &nbsp;&middot;&nbsp; These
+        results are internally moderated</div>
+</div>
+
+<!-- Student details bar -->
+<div class="student-bar">
+    <div>
+        <div class="student-name">{{ student_name }}</div>
+        <div class="student-meta">Student Number: {{ student_id }}</div>
+    </div>
+    <div class="grade-pill">
+        <div class="grade-pill-score">{{ overall_percentage }}%</div>
+        <div class="grade-pill-score">Grade: {{ overall_grade }}</div>
+    </div>
 </div>
