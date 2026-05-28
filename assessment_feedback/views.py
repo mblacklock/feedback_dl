@@ -376,6 +376,7 @@ def build_assessment_student_context(student_row, student_index, mappings, categ
         "degree_level": degree_level,
         "module_code": mappings.get("module_code", "COMP101"),
         "module_title": mappings.get("module_title", "Module Performance"),
+        "assessment_component": mappings.get("assessment_component", ""),
         "assessment_title": mappings.get("assessment_title", "Feedback Report"),
         "academic_year": mappings.get("academic_year", "2025/2026"),
     }
@@ -421,7 +422,12 @@ def upload_file(request):
                 "col_student_id": "",
                 "categories": [],
                 "degree_level": "BEng",  # default
-                "subdivision": "none"    # default
+                "subdivision": "none",   # default
+                "module_code": "COMP101",
+                "module_title": "Module Performance",
+                "assessment_component": "",
+                "assessment_title": "Feedback Report",
+                "academic_year": "2025/2026",
             }
             
             # 1. Infer Name & ID
@@ -631,6 +637,13 @@ def confirm_mappings(request):
         mappings["col_student_name"] = request.POST.get("col_student_name")
         mappings["col_student_id"] = request.POST.get("col_student_id")
         mappings["degree_level"] = request.POST.get("degree_level", "BEng")
+        
+        # Read module and assessment details
+        mappings["module_code"] = request.POST.get("module_code", "").strip() or "COMP101"
+        mappings["module_title"] = request.POST.get("module_title", "").strip() or "Module Performance"
+        mappings["assessment_component"] = request.POST.get("assessment_component", "").strip()
+        mappings["assessment_title"] = request.POST.get("assessment_title", "").strip() or "Feedback Report"
+        mappings["academic_year"] = request.POST.get("academic_year", "").strip() or "2025/2026"
         
         # Read updated categories configs
         updated_categories = []

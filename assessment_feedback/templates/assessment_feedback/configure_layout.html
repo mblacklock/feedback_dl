@@ -82,7 +82,7 @@
         {% if preview_student %}
         <div class="simulated-sheet">
             <!-- Simulated Header and Student details -->
-            {% include "assessment_feedback/_feedback_header.html" with module_code=preview_student.module_code module_title=preview_student.module_title assessment_title=preview_student.assessment_title academic_year=preview_student.academic_year student_name=preview_student.student_name student_id=preview_student.student_id total_score=preview_student.total_score total_max_marks=preview_student.total_max_marks overall_grade=preview_student.overall_grade overall_percentage=preview_student.overall_percentage %}
+            {% include "assessment_feedback/_feedback_header.html" with module_code=preview_student.module_code module_title=preview_student.module_title assessment_component=preview_student.assessment_component assessment_title=preview_student.assessment_title academic_year=preview_student.academic_year student_name=preview_student.student_name student_id=preview_student.student_id total_score=preview_student.total_score total_max_marks=preview_student.total_max_marks overall_grade=preview_student.overall_grade overall_percentage=preview_student.overall_percentage %}
 
             <!-- Draggable Blocks Container -->
             <div class="sheet-blocks-container" id="layoutContainer">

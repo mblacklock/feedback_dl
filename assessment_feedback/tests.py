@@ -1352,6 +1352,83 @@ class AssessmentFeedbackViewsTest(TestCase):
         self.assertEqual(resp.status_code, 302)
         self.assertRedirects(resp, reverse("upload_file"))
 
+    def test_confirm_saves_module_and_assessment_details(self):
+        """POST /assessment-feedback/confirm/ correctly saves module and assessment configurations to session."""
+        session = self.client.session
+        session["headers"] = self.sample_headers
+        session["uploaded_data"] = self.sample_uploaded_data
+        session["mappings"] = self.sample_mappings
+        session.save()
+
+        url = reverse("confirm_mappings")
+        form_data = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "degree_level": "BEng",
+            "subdivision": "none",
+            "module_code": "CS201",
+            "module_title": "Data Structures",
+            "assessment_component": "002",
+            "assessment_title": "Practical Exam",
+            "academic_year": "2026/2027",
+            # Category mappings configuration
+            "max_0": "30", "weight_0": "", "comments_0": "Design Comments", "type_0": "numeric",
+            "max_1": "40", "weight_1": "", "comments_1": "Implementation Comments", "type_1": "numeric",
+            "max_2": "30", "weight_2": "", "comments_2": "Testing Comments", "type_2": "numeric"
+        }
+        resp = self.client.post(url, form_data)
+        self.assertEqual(resp.status_code, 302)
+
+        # Verify mappings updated inside session
+        updated_mappings = self.client.session["mappings"]
+        self.assertEqual(updated_mappings["module_code"], "CS201")
+        self.assertEqual(updated_mappings["module_title"], "Data Structures")
+        self.assertEqual(updated_mappings["assessment_component"], "002")
+        self.assertEqual(updated_mappings["assessment_title"], "Practical Exam")
+        self.assertEqual(updated_mappings["academic_year"], "2026/2027")
+
+    def test_feedback_sheet_header_renders_assessment_component(self):
+        """Rendering a feedback sheet context must output the Assessment Component in the subheader if present."""
+        uploaded_data = [
+            {"Student Name": "Alice", "Student ID": "1", "Design /30": 20}
+        ]
+        mappings = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "degree_level": "BEng",
+            "subdivision": "none",
+            "module_code": "COMP101",
+            "module_title": "Intro to Programming",
+            "assessment_component": "003",
+            "assessment_title": "Class Test",
+            "academic_year": "2025/2026",
+            "categories": [
+                {"column": "Design /30", "max_marks": 30, "weight": None, "comments_column": "", "type": "numeric", "unit": ""}
+            ]
+        }
+        session = self.client.session
+        session["headers"] = ["Student Name", "Student ID", "Design /30"]
+        session["uploaded_data"] = uploaded_data
+        session["mappings"] = mappings
+        session.save()
+
+        # Check preview rendered header contents in layout configuration page
+        preview_resp = self.client.get(reverse("configure_layout"))
+        self.assertEqual(preview_resp.status_code, 200)
+        self.assertContains(preview_resp, "COMP101 &middot; Intro to Programming")
+        self.assertContains(preview_resp, "Component 003 &nbsp;&middot;&nbsp; Class Test")
+
+        # Now test ZIP processing
+        process_resp = self.client.get(reverse("process_feedback"))
+        self.assertEqual(process_resp.status_code, 200)
+        
+        zf = zipfile.ZipFile(io.BytesIO(process_resp.content))
+        html_content = zf.read("1_alice.html").decode("utf-8")
+        
+        # Verify rendered value inside student report HTML
+        self.assertIn("Component 003", html_content)
+        self.assertIn("Class Test", html_content)
+
 
 
 

@@ -2,7 +2,7 @@
 <div class="header">
     <div class="header-module">{{ module_code }} &middot; {{ module_title }}</div>
     <div class="header-title">Assessment Feedback Report</div>
-    <div class="header-sub">{{ assessment_title }} &nbsp;&middot;&nbsp; {{ academic_year }} &nbsp;&middot;&nbsp; These
+    <div class="header-sub">{% if assessment_component %}Component {{ assessment_component }} &nbsp;&middot;&nbsp; {% endif %}{{ assessment_title }} &nbsp;&middot;&nbsp; {{ academic_year }} &nbsp;&middot;&nbsp; These
         results are internally moderated</div>
 </div>
 

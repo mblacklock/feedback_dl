@@ -128,8 +128,45 @@
                         </div>
                     </div>
 
-                    <!-- Section 2: Degree configurations -->
-                    <h4 class="fw-bold mb-4">2. Grading Layout Configuration</h4>
+                    <!-- Section 2: Module & Assessment Details -->
+                    <h4 class="fw-bold mb-4">2. Module & Assessment Details</h4>
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-secondary">Module Code / Name</label>
+                            <input type="text" name="module_code" class="form-control rounded-3" required
+                                value="{{ mappings.module_code|default:'COMP101' }}" placeholder="e.g. COMP101">
+                            <div class="form-text">The official code or short name of the module.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold text-secondary">Module Title</label>
+                            <input type="text" name="module_title" class="form-control rounded-3" required
+                                value="{{ mappings.module_title|default:'Module Performance' }}" placeholder="e.g. Programming 1">
+                            <div class="form-text">The full title or description of the module.</div>
+                        </div>
+                    </div>
+                    <div class="row g-4 mb-5">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold text-secondary">Assessment Component</label>
+                            <input type="text" name="assessment_component" class="form-control rounded-3"
+                                value="{{ mappings.assessment_component|default:'' }}" placeholder="e.g. 001, 002 (Optional)">
+                            <div class="form-text">The specific assessment identifier (optional).</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold text-secondary">Assessment Name</label>
+                            <input type="text" name="assessment_title" class="form-control rounded-3" required
+                                value="{{ mappings.assessment_title|default:'Feedback Report' }}" placeholder="e.g. Coursework 1">
+                            <div class="form-text">The name of the assessment task.</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold text-secondary">Academic Year</label>
+                            <input type="text" name="academic_year" class="form-control rounded-3" required
+                                value="{{ mappings.academic_year|default:'2025/2026' }}" placeholder="e.g. 2025/2026">
+                            <div class="form-text">The academic session of the cohort.</div>
+                        </div>
+                    </div>
+
+                    <!-- Section 3: Degree configurations -->
+                    <h4 class="fw-bold mb-4">3. Grading Layout Configuration</h4>
                     <div class="row g-4 mb-5">
                         <div class="col-md-6">
                             <label class="form-label fw-semibold text-secondary">Degree Level</label>
@@ -143,8 +180,8 @@
                         </div>
                     </div>
 
-                    <!-- Section 3: Assessment Categories -->
-                    <h4 class="fw-bold mb-4">3. Grading Categories & Commentary Columns</h4>
+                    <!-- Section 4: Assessment Categories -->
+                    <h4 class="fw-bold mb-4">4. Grading Categories & Commentary Columns</h4>
                     <div class="table-responsive mb-5">
                         <table class="table mapping-table">
                             <thead>
