@@ -113,7 +113,8 @@
                                 </option>
                                 {% endfor %}
                             </select>
-                            <div class="form-text">Used for identifying student names on individual Feedback Sheets.</div>
+                            <div class="form-text">Used for identifying student names on individual Feedback Sheets.
+                            </div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold text-secondary">Student ID Column</label>
@@ -161,22 +162,28 @@
                                         {{ cat.column }}
                                     </td>
                                     <td>
-                                        <select name="type_{{ forloop.counter0 }}" class="form-select form-select-sm rounded-3 type-select" data-idx="{{ forloop.counter0 }}">
+                                        <select name="type_{{ forloop.counter0 }}"
+                                            class="form-select form-select-sm rounded-3 type-select"
+                                            data-idx="{{ forloop.counter0 }}">
                                             <option value="numeric" {% if cat.type == 'numeric' %}selected{% endif %}>Mark</option>
                                             <option value="grade" {% if cat.type == 'grade' %}selected{% endif %}>Rubric grade</option>
-                                            <option value="information" {% if cat.type == 'information' %}selected{% endif %}>Information data</option>
+                                            <option value="information" {% if cat.type == 'information' %}selected{% endif %}>Information</option>
                                         </select>
                                     </td>
                                     <td>
                                         <div class="max-marks-container-{{ forloop.counter0 }}">
                                             <input type="number" name="max_{{ forloop.counter0 }}"
-                                                class="form-control form-control-sm rounded-3 max-marks-input" value="{{ cat.max_marks|default:'' }}"
-                                                style="width: 80px;" {% if cat.type == 'information' %}disabled style="display:none;"{% endif %}>
+                                                class="form-control form-control-sm rounded-3 max-marks-input"
+                                                value="{{ cat.max_marks|default:'' }}" style="width: 80px;"
+                                                {% if cat.type == 'information' %}disabled style="display:none;"{% endif %}>
                                         </div>
-                                        <div class="unit-container-{{ forloop.counter0 }} {% if cat.type != 'information' %}d-none{% endif %}">
+                                        <div
+                                            class="unit-container-{{ forloop.counter0 }} {% if cat.type != 'information' %}d-none{% endif %}">
                                             <input type="text" name="unit_{{ forloop.counter0 }}"
-                                                class="form-control form-control-sm rounded-3 unit-input" value="{{ cat.unit|default:'' }}"
-                                                placeholder="e.g. N, kg, ms" style="width: 100px;" {% if cat.type != 'information' %}disabled{% endif %}>
+                                                class="form-control form-control-sm rounded-3 unit-input"
+                                                value="{{ cat.unit|default:'' }}" placeholder="e.g. N, kg, ms"
+                                                style="width: 100px;"
+                                                {% if cat.type != 'information' %}disabled{% endif %}>
                                         </div>
                                     </td>
                                     <td>
@@ -205,20 +212,20 @@
                                                     auto-calculated values</span>
                                             </p>
                                             <div class="rubric-bands-container"
-                                                 style="display:flex;flex-wrap:wrap;gap:6px;padding-bottom:2px;">
-                                                 {% for band in cat.rubric_marks %}
-                                                 <div
-                                                     style="background:white;border:1px solid #e2e8f0;border-radius:6px;padding:4px 7px;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:62px;text-align:center;">
-                                                     <div
-                                                         style="font-size:.7rem;font-weight:600;color:#64748b;white-space:nowrap;">
-                                                         {{ band.grade }}</div>
-                                                     <input type="number"
-                                                         name="rubric_mark_{{ forloop.parentloop.counter0 }}_{{ forloop.counter0 }}"
-                                                         value="{{ band.marks }}" class="form-control form-control-sm"
-                                                         style="width:45px;font-weight:700;color:#1e3a8a;text-align:center;padding:1px;height:24px;margin:0;font-size:0.8rem;">
-                                                 </div>
-                                                 {% endfor %}
-                                             </div>
+                                                style="display:flex;flex-wrap:wrap;gap:6px;padding-bottom:2px;">
+                                                {% for band in cat.rubric_marks %}
+                                                <div
+                                                    style="background:white;border:1px solid #e2e8f0;border-radius:6px;padding:4px 7px;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:62px;text-align:center;">
+                                                    <div
+                                                        style="font-size:.7rem;font-weight:600;color:#64748b;white-space:nowrap;">
+                                                        {{ band.grade }}</div>
+                                                    <input type="number"
+                                                        name="rubric_mark_{{ forloop.parentloop.counter0 }}_{{ forloop.counter0 }}"
+                                                        value="{{ band.marks }}" class="form-control form-control-sm"
+                                                        style="width:45px;font-weight:700;color:#1e3a8a;text-align:center;padding:1px;height:24px;margin:0;font-size:0.8rem;">
+                                                </div>
+                                                {% endfor %}
+                                            </div>
                                         </div>
                                     </td>
                                 </tr>
