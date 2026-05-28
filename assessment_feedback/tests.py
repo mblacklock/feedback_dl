@@ -727,6 +727,44 @@ class AssessmentFeedbackViewsTest(TestCase):
         self.assertEqual(clean_category_title("Design (30%)"), "Design")
         self.assertEqual(clean_category_title("Normal Title"), "Normal Title")
 
+    def test_half_single_row_does_not_contain_empty_placeholder(self):
+        """Verify that a half-single layout row renders without the empty placeholder <div class="half"></div>"""
+        from django.template.loader import render_to_string
+        
+        context = {
+            "student_name": "Test Student",
+            "student_id": "99999",
+            "layout_rows": [
+                {
+                    "type": "half-single",
+                    "blocks": [{"id": "radar_chart", "name": "Radar Chart", "width": "half", "enabled": True}]
+                }
+            ],
+            "categories": [],
+            "total_score": 80,
+            "total_max_marks": 100,
+            "overall_grade": "1st",
+            "overall_percentage": 80,
+        }
+        
+        rendered = render_to_string("assessment_feedback/feedback_sheet.html", context)
+        
+        # Check that we render the half block
+        self.assertIn("Criterion Radar", rendered)
+        
+        # Check that the empty placeholder does NOT exist inside the half-pair
+        # Since we removed the `<div class="half"></div>` empty placeholder,
+        # there should not be a second .half div or empty .half inside the container.
+        # Let's count occurrences of class="half" or similar.
+        # In the modified template:
+        # <div class="half-pair">
+        #     <div class="half">
+        #         ...
+        #     </div>
+        # </div>
+        # So there should only be ONE occurrence of `<div class="half">` inside this block.
+        self.assertEqual(rendered.count('<div class="half">'), 1)
+
 
 
 

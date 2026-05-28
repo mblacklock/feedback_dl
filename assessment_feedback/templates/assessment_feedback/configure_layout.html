@@ -122,7 +122,7 @@
     .draggable-block {
         padding: 8px;
         box-sizing: border-box;
-        transition: width 0.25s ease, opacity 0.25s ease;
+        transition: width 0.25s ease, opacity 0.25s ease, margin 0.25s ease;
         position: relative;
         border: 2px dashed transparent;
         border-radius: 12px;
@@ -130,6 +130,7 @@
     }
 
     .draggable-block.width-half { width: 50%; }
+    .draggable-block.width-half.lone-half { margin-left: 25%; margin-right: 25%; }
     .draggable-block.width-full { width: 100%; }
 
     .draggable-block:hover {
@@ -376,7 +377,35 @@
             blockOrderInput.value = ids.join(',');
         }
 
+        function alignLoneHalfBlocks() {
+            if (!container) return;
+            const blocks = [...container.querySelectorAll('.draggable-block')];
+            
+            // First, remove the lone-half class from all blocks
+            blocks.forEach(b => b.classList.remove('lone-half'));
+            
+            // Loop through all blocks to identify isolated 50% blocks in DOM order
+            let i = 0;
+            while (i < blocks.length) {
+                const current = blocks[i];
+                if (current.classList.contains('width-half')) {
+                    // Check if there is a next block and it is also 50% wide
+                    if (i + 1 < blocks.length && blocks[i + 1].classList.contains('width-half')) {
+                        // They sit side-by-side on the row
+                        i += 2;
+                    } else {
+                        // This block is isolated and has no partner on its row
+                        current.classList.add('lone-half');
+                        i += 1;
+                    }
+                } else {
+                    i += 1;
+                }
+            }
+        }
+
         updateBlockOrder();
+        alignLoneHalfBlocks();
 
         // ── Enable / Disable switch ───────────────────────────────────────────
 
@@ -393,6 +422,7 @@
                         card.classList.add('disabled');
                         hidden.value = 'false';
                     }
+                    alignLoneHalfBlocks();
                 }
             });
         }
@@ -419,6 +449,7 @@
                     card.classList.remove('width-half');
                     card.classList.add('width-full');
                 }
+                alignLoneHalfBlocks();
             });
         }
 
@@ -451,6 +482,7 @@
                     });
                     dragSrc = null;
                     updateBlockOrder();
+                    alignLoneHalfBlocks();
                 });
 
                 card.addEventListener('dragover', (e) => {
@@ -483,6 +515,7 @@
 
                     card.classList.remove('drag-over');
                     updateBlockOrder();
+                    alignLoneHalfBlocks();
                 });
             });
         }
