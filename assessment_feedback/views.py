@@ -9,7 +9,7 @@ from django.utils.text import slugify
 
 from core.utils.grade_bands import calculate_grade_bands, grade_for_percentage
 from core.utils.charts import generate_radar_chart, generate_cohort_histogram
-from core.utils.pdf_renderer import render_html_to_pdf
+
 
 
 def grade_for_percentage_and_degree(percentage, degree_level=None):
@@ -668,9 +668,9 @@ def configure_layout(request):
 
 def process_feedback(request):
     """
-    Step 3: Processing & PDF ZIP Stream
+    Step 3: Processing & HTML ZIP Stream
     Computes cohort stats (averages, final score arrays), loops over student rows to
-    generate custom Matplotlib radar/hist charts, renders WeasyPrint PDFs in-memory,
+    generate custom Matplotlib radar/hist charts, compiles self-contained HTML sheets,
     and returns a downloadable ZIP archive with zero data persistence.
     """
     uploaded_data = request.session.get("uploaded_data")
@@ -799,7 +799,7 @@ def process_feedback(request):
             radar_base64 = base64.b64encode(radar_svg.encode('utf-8')).decode('utf-8')
             hist_base64 = base64.b64encode(hist_svg.encode('utf-8')).decode('utf-8')
             
-            # Render HTML to PDF template
+            # Prepare context for HTML template
             context = {
                 "student_name": student_name,
                 "student_id": student_id,
