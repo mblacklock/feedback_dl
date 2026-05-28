@@ -814,7 +814,7 @@ def configure_layout(request):
             request.session["layout"] = updated_layout
             request.session.modified = True
             
-        return redirect("process_feedback")
+        return redirect("generation_success")
 
     col_name = mappings["col_student_name"]
     col_id = mappings["col_student_id"]
@@ -938,3 +938,81 @@ def render_feedback_sheet_template(request, context):
     to a compiled raw HTML string in context.
     """
     return render_to_string("assessment_feedback/feedback_sheet.html", context, request=request)
+
+
+def generation_success(request):
+    """
+    Step 2.7: Generation Success Landing Page
+    Shows confirmation stats and holds download buttons for the ZIP and Email Sending Utility.
+    """
+    uploaded_data = request.session.get("uploaded_data")
+    mappings = request.session.get("mappings")
+    if not uploaded_data or not mappings:
+        return redirect("upload_file")
+        
+    student_count = len(uploaded_data)
+    return render(request, "assessment_feedback/success.html", {
+        "student_count": student_count,
+    })
+
+
+def download_email_xlsm(request):
+    """
+    Step 2.8: XLSM Email Sending Utility Generator View
+    Pre-populates a macro-enabled Excel sheet from the template in resources
+    with student numbers, names, and exact matching feedback filenames.
+    """
+    from pathlib import Path
+    import openpyxl
+    from io import BytesIO
+    from django.http import HttpResponse
+
+    uploaded_data = request.session.get("uploaded_data")
+    mappings = request.session.get("mappings")
+    if not uploaded_data or not mappings:
+        return redirect("upload_file")
+
+    col_name = mappings["col_student_name"]
+    col_id = mappings["col_student_id"]
+
+    template_path = Path(__file__).parent / "resources" / "_send_emails.xlsm"
+    
+    try:
+        wb = openpyxl.load_workbook(template_path, keep_vba=True)
+    except Exception as e:
+        return HttpResponse(f"Error loading template: {str(e)}", status=500)
+
+    ws = wb['Students'] if 'Students' in wb.sheetnames else wb.active
+
+    # Clean existing data rows under header starting from Row 2
+    if ws.max_row > 1:
+        for r in range(2, ws.max_row + 1):
+            for c in range(1, 4):
+                ws.cell(row=r, column=c, value=None)
+
+    # Populate rows
+    row_idx = 2
+    for idx, student_row in enumerate(uploaded_data):
+        student_name = str(student_row.get(col_name, f"Student {idx+1}")).strip()
+        student_id = str(student_row.get(col_id, f"ID-{idx+1}")).strip()
+        
+        if not student_name and not student_id:
+            continue
+            
+        filename = f"{slugify(student_id)}_{slugify(student_name)}.html"
+        
+        ws.cell(row=row_idx, column=1, value=student_id)
+        ws.cell(row=row_idx, column=2, value=student_name)
+        ws.cell(row=row_idx, column=3, value=filename)
+        row_idx += 1
+
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+
+    response = HttpResponse(
+        buffer.read(),
+        content_type='application/vnd.ms-excel.sheet.macroEnabled.12'
+    )
+    response['Content-Disposition'] = 'attachment; filename="send_feedback.xlsm"'
+    return response

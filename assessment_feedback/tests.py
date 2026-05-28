@@ -414,7 +414,7 @@ class AssessmentFeedbackViewsTest(TestCase):
         }
         resp = self.client.post(url, form_data)
         self.assertEqual(resp.status_code, 302)
-        self.assertRedirects(resp, reverse("process_feedback"))
+        self.assertRedirects(resp, reverse("generation_success"))
 
         saved_layout = self.client.session["layout"]
         self.assertEqual(len(saved_layout), 5)
@@ -1281,6 +1281,76 @@ class AssessmentFeedbackViewsTest(TestCase):
         # 2. MEng/MSc (Postgraduate): 40-49% is a Fail (colored #d9534f)
         svg_meng = generate_cohort_histogram(scores, student_score, degree_level="MEng/MSc")
         self.assertIn('#d9534f', svg_meng)
+
+    def test_generation_success_renders_results_page(self):
+        """GET /assessment-feedback/success/ renders the success landing page with the cohort count."""
+        session = self.client.session
+        session["headers"] = self.sample_headers
+        session["uploaded_data"] = self.sample_uploaded_data
+        session["mappings"] = self.sample_mappings
+        session.save()
+
+        url = reverse("generation_success")
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Feedback Generation Successful")
+        self.assertContains(resp, "2")  # Cohort count has 2 students in self.sample_uploaded_data
+
+    def test_generation_success_redirects_without_session(self):
+        """GET /assessment-feedback/success/ redirects to upload when session is empty."""
+        url = reverse("generation_success")
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 302)
+        self.assertRedirects(resp, reverse("upload_file"))
+
+    def test_download_email_xlsm_generates_valid_workbook(self):
+        """GET /assessment-feedback/download-email-utility/ returns a valid .xlsm download response with student data."""
+        session = self.client.session
+        session["headers"] = self.sample_headers
+        session["uploaded_data"] = self.sample_uploaded_data
+        session["mappings"] = self.sample_mappings
+        session.save()
+
+        url = reverse("download_email_xlsm")
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp["Content-Type"], "application/vnd.ms-excel.sheet.macroEnabled.12")
+        self.assertTrue(resp.has_header("Content-Disposition"))
+        self.assertIn("attachment; filename=\"send_feedback.xlsm\"", resp["Content-Disposition"])
+
+        # Load returned bytes using openpyxl
+        import openpyxl
+        from io import BytesIO
+        wb = openpyxl.load_workbook(BytesIO(resp.content), keep_vba=True)
+        
+        # Verify VBA is kept (wb.vba_archive is populated)
+        self.assertIsNotNone(wb.vba_archive)
+
+        # Select active or Students sheet
+        ws = wb['Students'] if 'Students' in wb.sheetnames else wb.active
+
+        # Column A (ID), B (Name), C (Filename)
+        # Check header
+        self.assertEqual(ws.cell(row=1, column=1).value, "Student Number")
+        self.assertEqual(ws.cell(row=1, column=2).value, "Name")
+        self.assertEqual(ws.cell(row=1, column=3).value, "Attachment")
+
+        # Row 2 (first student: Alice Smith, 10001)
+        self.assertEqual(ws.cell(row=2, column=1).value, "10001")
+        self.assertEqual(ws.cell(row=2, column=2).value, "Alice Smith")
+        self.assertEqual(ws.cell(row=2, column=3).value, "10001_alice-smith.html")
+
+        # Row 3 (second student: Bob Jones, 10002)
+        self.assertEqual(ws.cell(row=3, column=1).value, "10002")
+        self.assertEqual(ws.cell(row=3, column=2).value, "Bob Jones")
+        self.assertEqual(ws.cell(row=3, column=3).value, "10002_bob-jones.html")
+
+    def test_download_email_xlsm_redirects_without_session(self):
+        """GET /assessment-feedback/download-email-utility/ redirects to upload when session is empty."""
+        url = reverse("download_email_xlsm")
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 302)
+        self.assertRedirects(resp, reverse("upload_file"))
 
 
 
