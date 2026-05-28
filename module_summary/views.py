@@ -8,7 +8,7 @@ from django.http import HttpResponse, Http404
 from django.utils.text import slugify
 
 from core.utils.grade_bands import calculate_grade_bands, grade_for_percentage
-from core.utils.charts import generate_module_comparison_chart
+from core.utils.charts import generate_cohort_histogram
 from assessment_feedback.views import build_feedback_sheet_layout_rows
 
 
@@ -314,25 +314,22 @@ def configure_module_layout(request):
     subdivision = mappings["subdivision"]
     components = mappings["components"]
     
-    # Calculate Cohort Component Averages in percentage terms
-    comp_cohort_percentages = {comp["column"]: [] for comp in components}
+    # Calculate all cohort weighted final percentages for the histogram
+    cohort_weighted_finals = []
     for r in uploaded_data:
+        row_weighted_pct = 0
         for comp in components:
             col = comp["column"]
             max_marks = comp["max_marks"]
+            weight = comp["weight"]
             val = r.get(col, 0)
             try:
                 mark_val = float(val) if val is not None else 0
             except ValueError:
                 mark_val = 0
             pct = (mark_val / max_marks) * 100 if max_marks > 0 else 0
-            comp_cohort_percentages[col].append(pct)
-            
-    comp_averages_pct = {}
-    for comp in components:
-        col = comp["column"]
-        pcts = comp_cohort_percentages[col]
-        comp_averages_pct[col] = sum(pcts) / len(pcts) if pcts else 0
+            row_weighted_pct += (pct * weight) / 100
+        cohort_weighted_finals.append(row_weighted_pct)
         
     # Prepare student selection list
     students_list = []
@@ -361,9 +358,6 @@ def configure_module_layout(request):
         student_id = str(student_row.get(col_id, f"ID-{preview_student_index+1}")).strip()
         
         student_components_data = []
-        chart_labels = []
-        student_chart_percentages = []
-        avg_chart_percentages = []
         weighted_final_pct = 0
         
         for comp in components:
@@ -391,13 +385,9 @@ def configure_module_layout(request):
                 "grade": comp_grade
             })
             
-            chart_labels.append(label_short)
-            student_chart_percentages.append(pct_awarded)
-            avg_chart_percentages.append(comp_averages_pct[col])
-            
         weighted_final_pct_rounded = round_mark_pct(weighted_final_pct)
         overall_grade = grade_for_percentage(weighted_final_pct)
-        chart_svg = generate_module_comparison_chart(chart_labels, student_chart_percentages, avg_chart_percentages)
+        chart_svg = generate_cohort_histogram(cohort_weighted_finals, weighted_final_pct_rounded)
         chart_base64 = base64.b64encode(chart_svg.encode('utf-8')).decode('utf-8') if chart_svg else ""
         
         preview_student = {
@@ -445,26 +435,22 @@ def process_module_summary(request):
     subdivision = mappings["subdivision"]
     components = mappings["components"]
     
-    # Calculate Cohort Component Averages in percentage terms
-    comp_cohort_percentages = {comp["column"]: [] for comp in components}
-    
+    # Pre-compute all cohort weighted final percentages for the histogram
+    cohort_weighted_finals = []
     for r in uploaded_data:
+        row_weighted_pct = 0
         for comp in components:
             col = comp["column"]
             max_marks = comp["max_marks"]
+            weight = comp["weight"]
             val = r.get(col, 0)
             try:
                 mark_val = float(val) if val is not None else 0
             except ValueError:
                 mark_val = 0
             pct = (mark_val / max_marks) * 100 if max_marks > 0 else 0
-            comp_cohort_percentages[col].append(pct)
-            
-    comp_averages_pct = {}
-    for comp in components:
-        col = comp["column"]
-        pcts = comp_cohort_percentages[col]
-        comp_averages_pct[col] = sum(pcts) / len(pcts) if pcts else 0
+            row_weighted_pct += (pct * weight) / 100
+        cohort_weighted_finals.append(row_weighted_pct)
         
     zip_buffer = io.BytesIO()
     
@@ -478,10 +464,6 @@ def process_module_summary(request):
                 continue
                 
             student_components_data = []
-            chart_labels = []
-            student_chart_percentages = []
-            avg_chart_percentages = []
-            
             weighted_final_pct = 0
             
             for comp in components:
@@ -509,16 +491,12 @@ def process_module_summary(request):
                     "grade": comp_grade
                 })
                 
-                chart_labels.append(label_short)
-                student_chart_percentages.append(pct_awarded)
-                avg_chart_percentages.append(comp_averages_pct[col])
-                
             # Derive overall weighted module grade
             weighted_final_pct_rounded = round_mark_pct(weighted_final_pct)
             overall_grade = grade_for_percentage(weighted_final_pct)
             
-            # Generate Base64 Grouped Bar Chart SVG
-            chart_svg = generate_module_comparison_chart(chart_labels, student_chart_percentages, avg_chart_percentages)
+            # Generate Base64 Cohort Distribution Histogram SVG
+            chart_svg = generate_cohort_histogram(cohort_weighted_finals, weighted_final_pct_rounded)
             chart_base64 = base64.b64encode(chart_svg.encode('utf-8')).decode('utf-8') if chart_svg else ""
             
             context = {
