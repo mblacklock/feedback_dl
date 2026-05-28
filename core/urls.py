@@ -16,8 +16,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from . import views
 
 urlpatterns = [
+    path("", views.portal_home, name="portal_home"),
     path('admin/', admin.site.urls),
     path("rubric-generator/", include("rubric_generator.urls")),
     path("comments-generator/", include("comments_generator.urls")),

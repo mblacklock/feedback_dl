@@ -1,7 +1,31 @@
 from django.test import TestCase
 from django.urls import resolve, reverse
+from core.views import portal_home
 from rubric_generator.views import home
 from rubric_generator.models import AssessmentTemplate
+
+
+class PortalHomeViewTest(TestCase):
+    def test_root_url_resolves_to_portal_home(self):
+        match = resolve("/")
+        assert match.func == portal_home
+
+    def test_portal_home_links_to_available_tools(self):
+        resp = self.client.get(reverse("portal_home"))
+
+        assert resp.status_code == 200
+        self.assertContains(resp, "Feedback Portal")
+        self.assertContains(resp, "Assessment Feedback")
+        self.assertContains(resp, 'href="/assessment-feedback/"')
+        self.assertContains(resp, "Module Summary")
+        self.assertContains(resp, 'href="/module-summary/"')
+        self.assertContains(resp, "Rubric Generator")
+        self.assertContains(resp, 'href="/rubric-generator/"')
+        self.assertContains(resp, "Comments Generator")
+        self.assertContains(resp, 'href="/comments-generator/"')
+        self.assertContains(resp, "MCRF Converter")
+        self.assertContains(resp, 'href="/mcrf-converter/"')
+
 
 class HomeViewTest(TestCase):
     def test_root_url_resolves_to_home_view(self):
@@ -123,8 +147,8 @@ class TemplateDeleteViewTests(TestCase):
         self.assertEqual(resp.status_code, 405)
 
 class TemplateUpdateViewTests(TestCase):
-    def test_get_edit_page_shows_home_button(self):
-        """GET /rubric-generator/template/<pk>/edit/ shows Back to Home button."""
+    def test_get_edit_page_shows_templates_button(self):
+        """GET /rubric-generator/template/<pk>/edit/ shows Back to Templates button."""
         template = AssessmentTemplate.objects.create(
             component=1,
             title="Test Template",
@@ -140,8 +164,8 @@ class TemplateUpdateViewTests(TestCase):
         resp = self.client.get(url)
         
         self.assertEqual(resp.status_code, 200)
-        # Check for Back to Home button
-        self.assertContains(resp, 'Back to Home')
+        # Check for Back to Templates button
+        self.assertContains(resp, 'Back to Templates')
         self.assertContains(resp, 'href="/rubric-generator/"')
         # Check for View Rubric and View Feedback Sheet buttons
         self.assertContains(resp, 'View Rubric')
