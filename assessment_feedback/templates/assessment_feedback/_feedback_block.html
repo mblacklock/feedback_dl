@@ -9,7 +9,7 @@ Depends on: feedback_blocks.css
 
 {% if is_editor %}
 <div class="section-heading" style="display: flex; justify-content: space-between; align-items: center;">
-    <span>Criterion Marks</span>
+    <span>Breakdown of Marks</span>
     <label class="toggle-numeric-grades-label"
         style="font-size: 10px; text-transform: none; font-weight: 500; color: #8892b0; cursor: pointer; display: flex; align-items: center; gap: 6px; user-select: none; margin: 0;">
         <input type="checkbox" class="toggle-numeric-grades-input" {% if show_numeric_grade_bands %}checked{% endif %}
@@ -18,17 +18,10 @@ Depends on: feedback_blocks.css
     </label>
 </div>
 {% else %}
-<div class="section-heading">Criterion Marks</div>
+<div class="section-heading">Breakdown of Marks</div>
 {% endif %}
 
 <table class="marks-table">
-    <thead>
-        <tr>
-            <th>Criterion</th>
-            <th class="right">Grade Band</th>
-            <th class="right">Mark</th>
-        </tr>
-    </thead>
     <tbody>
         {% for cat in categories %}
         <tr>

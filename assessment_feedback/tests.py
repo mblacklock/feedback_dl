@@ -917,7 +917,7 @@ class AssessmentFeedbackViewsTest(TestCase):
         rendered = render_to_string("assessment_feedback/feedback_sheet.html", context)
         
         # Check that we render the half block
-        self.assertIn("Criterion Radar", rendered)
+        self.assertIn("Visual Breakdown of Marks", rendered)
         
         # Check that the empty placeholder does NOT exist inside the half-pair
         # Since we removed the `<div class="half"></div>` empty placeholder,
