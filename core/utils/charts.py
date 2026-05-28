@@ -7,68 +7,119 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 
-def generate_radar_chart(categories, student_percentages, average_percentages):
+def generate_radar_chart(categories, student_percentages, average_percentages, pass_mark=40):
     """
-    Generate a high-fidelity vector radar chart comparing a student's marks
-    against the class average in percentage terms (0-100%).
-    
+    Generate a radar chart with a straight-sided (polygon) grid comparing a
+    student's marks against the class average in percentage terms (0-100%).
+
+    Uses a manual polygon-based approach so grid rings are diamond/square
+    shaped rather than circular, matching the reference style.
+
     Args:
         categories: List of category label strings
         student_percentages: List of student percentages matching the categories
         average_percentages: List of class average percentages matching the categories
-        
+        pass_mark: Pass threshold percentage — drawn as a red dashed polygon ring.
+                   Use 40 for UG, 50 for M-level. Defaults to 40.
+
     Returns:
         str: SVG XML string representing the vector chart
     """
-    # Number of variables/categories
     num_vars = len(categories)
     if num_vars == 0:
         return ""
 
-    # Compute angle for each category (closed loop)
-    angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
-    
-    # Close the loop for polar plot
-    angles += angles[:1]
-    student_vals = list(student_percentages) + list(student_percentages)[:1]
-    avg_vals = list(average_percentages) + list(average_percentages)[:1]
-    
-    # Styling variables
-    student_color = '#4361ee'  # Sleek Indigo/Blue
-    average_color = '#ff006e'  # Vibrantly harmonized Pink/Red
-    grid_color = '#e2e8f0'      # Clean slate border
-    text_color = '#1e293b'      # Dark slate text
-    
-    fig, ax = plt.subplots(figsize=(4.5, 4.5), subplot_kw=dict(projection='polar'))
-    
-    # Draw category labels
-    plt.xticks(angles[:-1], categories, color=text_color, size=9, fontweight='semibold')
-    
-    # Draw student data
-    ax.plot(angles, student_vals, color=student_color, linewidth=2.5, linestyle='solid', label='Student')
-    ax.fill(angles, student_vals, color=student_color, alpha=0.15)
-    
-    # Draw average data
-    ax.plot(angles, avg_vals, color=average_color, linewidth=2, linestyle='dashed', label='Class Average')
-    ax.fill(angles, avg_vals, color=average_color, alpha=0.08)
-    
-    # Y-axis configurations (0 to 100%)
-    ax.set_ylim(0, 100)
-    ax.set_rlabel_position(30)
-    plt.yticks([20, 40, 60, 80, 100], ["20%", "40%", "60%", "80%", "100%"], color='#64748b', size=8)
-    
-    # Grid styling
-    ax.grid(True, color=grid_color, linestyle='-', linewidth=0.5)
-    ax.spines['polar'].set_visible(False)
-    
-    # Legend
-    plt.legend(loc='upper right', bbox_to_anchor=(1.25, 1.15), fontsize=8.5, frameon=True, facecolor='white', edgecolor=grid_color)
-    
-    # Save to buffer as SVG
+    # Angles for each axis, starting from top (90 degrees) going clockwise
+    angles = np.linspace(np.pi / 2, np.pi / 2 + 2 * np.pi, num_vars, endpoint=False)
+
+    def polar_to_xy(r, theta):
+        return r * np.cos(theta), r * np.sin(theta)
+
+    def make_polygon(values, angles, scale=1.0):
+        """Convert percentage values to (x, y) polygon points, normalised to scale."""
+        xs, ys = [], []
+        for v, a in zip(values, angles):
+            r = (v / 100.0) * scale
+            x, y = polar_to_xy(r, a)
+            xs.append(x)
+            ys.append(y)
+        xs.append(xs[0])
+        ys.append(ys[0])
+        return xs, ys
+
+    # Colours
+    student_color = '#74c476'   # Green — matches histogram 1st colour
+    average_color = '#7bafd4'   # Blue — matches histogram 2:2 colour
+    grid_color    = '#cccccc'
+    label_color   = '#1e293b'
+    scale = 1.0  # unit circle radius
+
+    fig, ax = plt.subplots(figsize=(5.5, 5.5))
+    ax.set_aspect('equal')
+    ax.axis('off')
+
+    # Draw polygon grid rings at 20, 40, 60, 80, 100%
+    for level in [0.2, 0.4, 0.6, 0.8, 1.0]:
+        ring_xs, ring_ys = make_polygon([level * 100] * num_vars, angles, scale)
+        ax.plot(ring_xs, ring_ys, color=grid_color, linewidth=0.8, zorder=1)
+        # Label the ring on the first axis
+        label_x, label_y = polar_to_xy(level * scale, angles[0])
+        ax.text(label_x, label_y, f'{int(level * 100)}',
+                ha='center', va='bottom', fontsize=9, color='#888888')
+
+    # Draw axis spokes
+    for a in angles:
+        x, y = polar_to_xy(scale, a)
+        ax.plot([0, x], [0, y], color=grid_color, linewidth=0.8, zorder=1)
+
+    # Draw pass mark threshold ring — red dashed polygon
+    pass_xs, pass_ys = make_polygon([pass_mark] * num_vars, angles, scale)
+    ax.plot(pass_xs, pass_ys, color='#d9534f', linewidth=1.5,
+            linestyle='--', zorder=2, label=f'Pass Mark ({pass_mark}%)')
+
+    # Draw class average polygon
+    avg_xs, avg_ys = make_polygon(list(average_percentages), angles, scale)
+    ax.fill(avg_xs, avg_ys, color=average_color, alpha=0.25, zorder=2)
+    ax.plot(avg_xs, avg_ys, color=average_color, linewidth=2.0, zorder=3, label='Class Average')
+
+    # Draw student polygon
+    stu_xs, stu_ys = make_polygon(list(student_percentages), angles, scale)
+    ax.fill(stu_xs, stu_ys, color=student_color, alpha=0.25, zorder=4)
+    ax.plot(stu_xs, stu_ys, color=student_color, linewidth=2.0, zorder=5, label='Your Mark')
+
+    # Category labels — truncate at 14 chars, positioned just outside outer ring
+    for i, (cat, a) in enumerate(zip(categories, angles)):
+        x_raw, y_raw = polar_to_xy(scale, a)
+        # Apply separate x and y offsets so horizontal labels sit closer
+        lx = x_raw * 1.05
+        ly = y_raw * 1.22
+        ha = 'center'
+        if x_raw < -0.1: ha = 'right'
+        elif x_raw > 0.1: ha = 'left'
+        label = cat if len(cat) <= 7 else cat[:6] + '…'
+        ax.text(lx, ly, label, ha=ha, va='center',
+                fontsize=11, color=label_color, fontweight='semibold',
+                fontfamily='DejaVu Sans')
+
+    # Legend at the bottom, horizontal
+    ax.legend(
+        loc='upper center',
+        bbox_to_anchor=(0.5, -0.02),
+        ncol=3,
+        fontsize=11,
+        frameon=False,
+        handlelength=1.5,
+    )
+
+    ax.set_xlim(-1.4, 1.4)
+    ax.set_ylim(-1.4, 1.4)
+
+    fig.patch.set_facecolor('white')
+
     buf = io.BytesIO()
-    plt.savefig(buf, format='svg', bbox_inches='tight', transparent=True)
+    plt.savefig(buf, format='svg', bbox_inches='tight', transparent=False)
     plt.close(fig)
-    
+
     return buf.getvalue().decode('utf-8')
 
 
@@ -130,8 +181,8 @@ def generate_cohort_histogram(scores, student_score, degree_level=None):
     ax.axvline(student_score, color='#3a3a3a', linestyle='--', linewidth=1.8, zorder=5)
     ax.text(
         student_score + 0.8,
-        ax.get_ylim()[1] * 0.97,
-        f'Your Mark ({round(student_score)}%)',
+        ax.get_ylim()[1] * 1.1,
+        f'Your Mark',
         color='#3a3a3a',
         fontsize=16,
         va='top',
