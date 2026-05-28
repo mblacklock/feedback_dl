@@ -12,6 +12,31 @@ from core.utils.charts import generate_radar_chart, generate_cohort_histogram
 from core.utils.pdf_renderer import render_html_to_pdf
 
 
+def grade_for_percentage_and_degree(percentage, degree_level=None):
+    is_m_level = bool(degree_level and isinstance(degree_level, str) and degree_level.strip().lower().startswith('m'))
+    if is_m_level:
+        if percentage >= 70:
+            return "1st/Dist"
+        elif percentage >= 60:
+            return "2:1/Merit"
+        elif percentage >= 50:
+            return "2:2/Pass"
+        else:
+            return "Fail"
+    else:
+        if percentage >= 70:
+            return "1st"
+        elif percentage >= 60:
+            return "2:1"
+        elif percentage >= 50:
+            return "2:2"
+        elif percentage >= 40:
+            return "3rd"
+        else:
+            return "Fail"
+
+
+
 # ---------------------------------------------------------------------------
 # Grade-string sets used for rubric column detection
 # ---------------------------------------------------------------------------
@@ -488,6 +513,9 @@ def configure_layout(request):
                     "enabled": enabled
                 })
                 
+        show_numeric_grade_bands = request.POST.get("show_numeric_grade_bands") == "true"
+        request.session["show_numeric_grade_bands"] = show_numeric_grade_bands
+
         if updated_layout:
             request.session["layout"] = updated_layout
             request.session.modified = True
@@ -596,7 +624,8 @@ def configure_layout(request):
                 "max_marks": max_marks,
                 "grade_awarded": grade_awarded,
                 "feedback_comment": student_row.get(cat.get("comments_column", ""), ""),
-                "is_grade": cat["type"] == "grade"
+                "is_grade": cat["type"] == "grade",
+                "calculated_grade_band": grade_for_percentage_and_degree(student_pct, degree_level)
             })
 
         overall_pct = (student_total_score / total_max_marks) * 100 if total_max_marks > 0 else 0
@@ -626,11 +655,14 @@ def configure_layout(request):
             "academic_year": mappings.get("academic_year", "2025/2026"),
         }
 
+    show_numeric_grade_bands = request.session.get("show_numeric_grade_bands", False)
+
     return render(request, "assessment_feedback/configure_layout.html", {
         "layout": layout,
         "preview_student_index": preview_student_index,
         "students_list": students_list,
         "preview_student": preview_student,
+        "show_numeric_grade_bands": show_numeric_grade_bands,
     })
 
 
@@ -643,6 +675,7 @@ def process_feedback(request):
     """
     uploaded_data = request.session.get("uploaded_data")
     mappings = request.session.get("mappings")
+    show_numeric_grade_bands = request.session.get("show_numeric_grade_bands", False)
     
     if not uploaded_data or not mappings:
         return redirect("upload_file")
@@ -750,7 +783,8 @@ def process_feedback(request):
                     "max_marks": max_marks,
                     "grade_awarded": grade_awarded,
                     "feedback_comment": student_row.get(cat.get("comments_column", ""), ""),
-                    "is_grade": cat["type"] == "grade"
+                    "is_grade": cat["type"] == "grade",
+                    "calculated_grade_band": grade_for_percentage_and_degree(student_pct, degree_level)
                 })
                 
             # Derive overall assessment grade
@@ -779,6 +813,7 @@ def process_feedback(request):
                 "degree_level": degree_level,
                 "layout": layout,
                 "layout_rows": build_feedback_sheet_layout_rows(layout),
+                "show_numeric_grade_bands": show_numeric_grade_bands,
                 # Fallback header configurations
                 "module_code": mappings.get("module_code", "COMP101"),
                 "module_title": mappings.get("module_title", "Module Performance"),

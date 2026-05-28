@@ -7,50 +7,104 @@ Depends on: feedback_blocks.css
 
 {% if block.id == "category_marks" %}
 
-    <div class="section-heading">Criterion Marks</div>
-    <table class="marks-table">
-        <thead>
-            <tr>
-                <th>Criterion</th>
-                <th class="right">Mark</th>
-                <th class="right">Grade Band</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for cat in categories %}
-            <tr>
-                <td class="label">{{ cat.label }}</td>
-                <td class="right">{{ cat.mark|floatformat:1 }} / {{ cat.max_marks }}</td>
-                <td class="band">{% if cat.is_grade %}{{ cat.grade_awarded }}{% else %}&mdash;{% endif %}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+{% if is_editor %}
+<div class="section-heading" style="display: flex; justify-content: space-between; align-items: center;">
+    <span>Criterion Marks</span>
+    <label class="toggle-numeric-grades-label"
+        style="font-size: 10px; text-transform: none; font-weight: 500; color: #8892b0; cursor: pointer; display: flex; align-items: center; gap: 6px; user-select: none; margin: 0;">
+        <input type="checkbox" class="toggle-numeric-grades-input" {% if show_numeric_grade_bands %}checked{% endif %}
+            style="cursor: pointer; margin: 0; width: 13px; height: 13px; accent-color: #c8a951;">
+        <span>Show numeric grade bands</span>
+    </label>
+</div>
+{% else %}
+<div class="section-heading">Criterion Marks</div>
+{% endif %}
+
+<table class="marks-table">
+    <thead>
+        <tr>
+            <th>Criterion</th>
+            <th class="right">Mark</th>
+            <th class="right">Grade Band</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for cat in categories %}
+        <tr>
+            <td class="label">{{ cat.label }}</td>
+            <td class="right">{{ cat.mark|floatformat:0 }} / {{ cat.max_marks }}</td>
+            <td class="band">
+                {% if cat.is_grade %}
+                {{ cat.grade_awarded }}
+                {% else %}
+                <span class="numeric-grade-band" style="{% if show_numeric_grade_bands %}display: inline;{% else %}display: none;{% endif %} color: #c8a951; font-weight: 700;">{{ cat.calculated_grade_band }}</span>
+                <span class="numeric-dash" style="{% if show_numeric_grade_bands %}display: none;{% else %}display: inline;{% endif %}">&mdash;</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% if is_editor %}
+<script>
+    (function () {
+        function handleToggleChange(e) {
+            const show = e.target.checked;
+
+            // Synchronize all toggles on the page
+            const toggles = document.querySelectorAll('.toggle-numeric-grades-input');
+            toggles.forEach(t => t.checked = show);
+
+            // Toggle visibility of numeric grade bands and dashes
+            const bands = document.querySelectorAll('.numeric-grade-band');
+            const dashes = document.querySelectorAll('.numeric-dash');
+
+            bands.forEach(b => b.style.display = show ? 'inline' : 'none');
+            dashes.forEach(d => d.style.display = show ? 'none' : 'inline');
+        }
+
+        function setupNumericGradeToggle() {
+            const toggles = document.querySelectorAll('.toggle-numeric-grades-input');
+            toggles.forEach(toggle => {
+                toggle.removeEventListener('change', handleToggleChange);
+                toggle.addEventListener('change', handleToggleChange);
+            });
+        }
+
+        // Run setup immediately and on DOMContentLoaded
+        setupNumericGradeToggle();
+        document.addEventListener('DOMContentLoaded', setupNumericGradeToggle);
+    })();
+</script>
+{% endif %}
+
 
 {% elif block.id == "feedback" %}
 
-    <div class="section-heading">Feedback Comments</div>
-    {% for cat in categories %}
-    <div class="feedback-item">
-        <div class="feedback-item-header">{{ cat.label }}</div>
-        <div class="feedback-item-body">
-            {{ cat.feedback_comment|default:"No comments provided for this criterion." }}
-        </div>
+<div class="section-heading">Feedback Comments</div>
+{% for cat in categories %}
+<div class="feedback-item">
+    <div class="feedback-item-header">{{ cat.label }}</div>
+    <div class="feedback-item-body">
+        {{ cat.feedback_comment|default:"No comments provided for this criterion." }}
     </div>
-    {% endfor %}
+</div>
+{% endfor %}
 
 {% elif block.id == "radar_chart" %}
 
-    <div class="chart-box">
-        <div class="chart-box-title">Criterion Radar — Student vs Class Average</div>
-        <img src="data:image/svg+xml;base64,{{ radar_base64 }}" alt="Radar chart">
-    </div>
+<div class="chart-box">
+    <div class="chart-box-title">Criterion Radar — Student vs Class Average</div>
+    <img src="data:image/svg+xml;base64,{{ radar_base64 }}" alt="Radar chart">
+</div>
 
 {% elif block.id == "histogram" %}
 
-    <div class="chart-box">
-        <div class="chart-box-title">Cohort Mark Distribution</div>
-        <img src="data:image/svg+xml;base64,{{ hist_base64 }}" alt="Histogram">
-    </div>
+<div class="chart-box">
+    <div class="chart-box-title">Cohort Mark Distribution</div>
+    <img src="data:image/svg+xml;base64,{{ hist_base64 }}" alt="Histogram">
+</div>
 
 {% endif %}

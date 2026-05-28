@@ -278,6 +278,7 @@
                     <input type="hidden" name="block_order" id="blockOrderInput" value="">
                     
                     <!-- Hidden inputs to preserve layout configuration states on POST -->
+                    <input type="hidden" name="show_numeric_grade_bands" id="show_numeric_grade_bands_input" value="{% if show_numeric_grade_bands %}true{% else %}false{% endif %}">
                     {% for block in layout %}
                     <input type="hidden" name="enabled_{{ block.id }}" id="enabled_input_{{ block.id }}" value="{% if block.enabled %}true{% else %}false{% endif %}">
                     <input type="hidden" name="width_{{ block.id }}" id="width_input_{{ block.id }}" value="{{ block.width|default:'full' }}">
@@ -330,7 +331,7 @@
 
                     <!-- Live Content Rendered inside the block -->
                     <div class="block-preview-content">
-                        {% include "assessment_feedback/_feedback_block.html" with categories=preview_student.categories radar_base64=preview_student.radar_base64 hist_base64=preview_student.hist_base64 block=block %}
+                        {% include "assessment_feedback/_feedback_block.html" with categories=preview_student.categories radar_base64=preview_student.radar_base64 hist_base64=preview_student.hist_base64 block=block is_editor=True show_numeric_grade_bands=show_numeric_grade_bands %}
                     </div>
 
                     <!-- Exclusion Overlay for visual indicator -->
@@ -423,6 +424,11 @@
                         hidden.value = 'false';
                     }
                     alignLoneHalfBlocks();
+                } else if (e.target.classList.contains('toggle-numeric-grades-input')) {
+                    const hidden = document.getElementById('show_numeric_grade_bands_input');
+                    if (hidden) {
+                        hidden.value = e.target.checked ? 'true' : 'false';
+                    }
                 }
             });
         }

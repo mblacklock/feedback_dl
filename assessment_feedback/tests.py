@@ -228,6 +228,10 @@ class AssessmentFeedbackViewsTest(TestCase):
             html_data = zf.read("10001_alice-smith.html").strip()
             self.assertTrue(html_data.startswith(b"<!DOCTYPE html>"),
                             msg=f"HTML content does not start with <!DOCTYPE html>: {html_data[:50]}")
+            
+            # Verify that CSS styles from feedback_blocks.css are correctly embedded inline
+            self.assertIn(b".half-pair", html_data)
+            self.assertIn(b".grade-pill", html_data)
 
     # -------------------------------------------------------------------------
     # Layout Builder tests
@@ -764,6 +768,81 @@ class AssessmentFeedbackViewsTest(TestCase):
         # </div>
         # So there should only be ONE occurrence of `<div class="half">` inside this block.
         self.assertEqual(rendered.count('<div class="half">'), 1)
+
+    def test_grade_for_percentage_and_degree_undergraduate_and_postgraduate(self):
+        """Verify grade calculations for undergraduate (BEng) and postgraduate (MEng/MSc) degree levels."""
+        from assessment_feedback.views import grade_for_percentage_and_degree
+        
+        # UG (BEng) Classifications
+        self.assertEqual(grade_for_percentage_and_degree(85, "BEng"), "1st")
+        self.assertEqual(grade_for_percentage_and_degree(65, "BEng"), "2:1")
+        self.assertEqual(grade_for_percentage_and_degree(55, "BEng"), "2:2")
+        self.assertEqual(grade_for_percentage_and_degree(45, "BEng"), "3rd")
+        self.assertEqual(grade_for_percentage_and_degree(35, "BEng"), "Fail")
+
+        # PG (MEng/MSc) Classifications
+        self.assertEqual(grade_for_percentage_and_degree(85, "MEng"), "1st/Dist")
+        self.assertEqual(grade_for_percentage_and_degree(65, "MEng"), "2:1/Merit")
+        self.assertEqual(grade_for_percentage_and_degree(55, "MEng"), "2:2/Pass")
+        self.assertEqual(grade_for_percentage_and_degree(45, "MEng"), "Fail")
+        self.assertEqual(grade_for_percentage_and_degree(35, "MEng"), "Fail")
+
+    def test_category_marks_block_renders_toggle_and_numeric_grade_bands(self):
+        """Verify that the category marks block renders toggle checkbox/scripts ONLY in editor,
+        and correctly applies static inline display styles in both viewports."""
+        from django.template.loader import render_to_string
+        
+        categories = [
+            {
+                "label": "Design",
+                "mark": 24.0,
+                "max_marks": 30,
+                "grade_awarded": None,
+                "is_grade": False,
+                "calculated_grade_band": "1st"
+            }
+        ]
+        
+        # 1. Scenaro: In Editor, show_numeric_grade_bands = False
+        context_editor_hide = {
+            "block": {"id": "category_marks"},
+            "categories": categories,
+            "is_editor": True,
+            "show_numeric_grade_bands": False
+        }
+        rendered = render_to_string("assessment_feedback/_feedback_block.html", context_editor_hide)
+        self.assertIn("Show numeric grade bands", rendered)
+        self.assertIn('class="toggle-numeric-grades-input"', rendered)
+        self.assertIn('<script>', rendered)
+        self.assertIn('style="display: none; color: #c8a951; font-weight: 700;">1st</span>', rendered)
+        self.assertIn('style="display: inline;">&mdash;</span>', rendered)
+
+        # 2. Scenario: In Editor, show_numeric_grade_bands = True
+        context_editor_show = {
+            "block": {"id": "category_marks"},
+            "categories": categories,
+            "is_editor": True,
+            "show_numeric_grade_bands": True
+        }
+        rendered = render_to_string("assessment_feedback/_feedback_block.html", context_editor_show)
+        self.assertIn("checked", rendered) # Checkbox is checked
+        self.assertIn('style="display: inline; color: #c8a951; font-weight: 700;">1st</span>', rendered)
+        self.assertIn('style="display: none;">&mdash;</span>', rendered)
+
+        # 3. Scenario: Downloaded Static Sheet, show_numeric_grade_bands = True
+        context_download = {
+            "block": {"id": "category_marks"},
+            "categories": categories,
+            "is_editor": False,
+            "show_numeric_grade_bands": True
+        }
+        rendered = render_to_string("assessment_feedback/_feedback_block.html", context_download)
+        self.assertNotIn("Show numeric grade bands", rendered) # No checkbox
+        self.assertNotIn('<script>', rendered) # No script tag
+        self.assertIn('style="display: inline; color: #c8a951; font-weight: 700;">1st</span>', rendered)
+        self.assertIn('style="display: none;">&mdash;</span>', rendered)
+
+
 
 
 
