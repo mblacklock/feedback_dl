@@ -811,11 +811,14 @@ class AssessmentFeedbackViewsTest(TestCase):
             "show_numeric_grade_bands": False
         }
         rendered = render_to_string("assessment_feedback/_feedback_block.html", context_editor_hide)
-        self.assertIn("Show numeric grade bands", rendered)
+        self.assertIn("Show numeric", rendered)
         self.assertIn('class="toggle-numeric-grades-input"', rendered)
         self.assertIn('<script>', rendered)
-        self.assertIn('style="display: none; color: #c8a951; font-weight: 700;">1st</span>', rendered)
-        self.assertIn('style="display: inline;">&mdash;</span>', rendered)
+        self.assertIn('class="numeric-grade-band"', rendered)
+        self.assertIn('1st', rendered)
+        self.assertIn('display: none', rendered)
+        self.assertIn('class="numeric-dash"', rendered)
+        self.assertIn('display: inline', rendered)
 
         # 2. Scenario: In Editor, show_numeric_grade_bands = True
         context_editor_show = {
@@ -826,8 +829,11 @@ class AssessmentFeedbackViewsTest(TestCase):
         }
         rendered = render_to_string("assessment_feedback/_feedback_block.html", context_editor_show)
         self.assertIn("checked", rendered) # Checkbox is checked
-        self.assertIn('style="display: inline; color: #c8a951; font-weight: 700;">1st</span>', rendered)
-        self.assertIn('style="display: none;">&mdash;</span>', rendered)
+        self.assertIn('class="numeric-grade-band"', rendered)
+        self.assertIn('1st', rendered)
+        self.assertIn('display: inline', rendered)
+        self.assertIn('class="numeric-dash"', rendered)
+        self.assertIn('display: none', rendered)
 
         # 3. Scenario: Downloaded Static Sheet, show_numeric_grade_bands = True
         context_download = {
@@ -837,10 +843,13 @@ class AssessmentFeedbackViewsTest(TestCase):
             "show_numeric_grade_bands": True
         }
         rendered = render_to_string("assessment_feedback/_feedback_block.html", context_download)
-        self.assertNotIn("Show numeric grade bands", rendered) # No checkbox
+        self.assertNotIn("Show numeric", rendered) # No checkbox
         self.assertNotIn('<script>', rendered) # No script tag
-        self.assertIn('style="display: inline; color: #c8a951; font-weight: 700;">1st</span>', rendered)
-        self.assertIn('style="display: none;">&mdash;</span>', rendered)
+        self.assertIn('class="numeric-grade-band"', rendered)
+        self.assertIn('1st', rendered)
+        self.assertIn('display: inline', rendered)
+        self.assertIn('class="numeric-dash"', rendered)
+        self.assertIn('display: none', rendered)
 
 
 

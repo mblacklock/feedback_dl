@@ -74,6 +74,11 @@
     line-height: 1.2;
 }
 
+.numeric-grade-band {
+    color: #c8a951;
+    font-weight: 700;
+}
+
 
 .content {
     padding: 24px 32px;

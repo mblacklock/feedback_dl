@@ -14,7 +14,7 @@ Depends on: feedback_blocks.css
         style="font-size: 10px; text-transform: none; font-weight: 500; color: #8892b0; cursor: pointer; display: flex; align-items: center; gap: 6px; user-select: none; margin: 0;">
         <input type="checkbox" class="toggle-numeric-grades-input" {% if show_numeric_grade_bands %}checked{% endif %}
             style="cursor: pointer; margin: 0; width: 13px; height: 13px; accent-color: #c8a951;">
-        <span>Show numeric grade bands</span>
+        <span>Show numeric category grade bands</span>
     </label>
 </div>
 {% else %}
@@ -38,8 +38,12 @@ Depends on: feedback_blocks.css
                 {% if cat.is_grade %}
                 {{ cat.grade_awarded }}
                 {% else %}
-                <span class="numeric-grade-band" style="{% if show_numeric_grade_bands %}display: inline;{% else %}display: none;{% endif %} color: #c8a951; font-weight: 700;">{{ cat.calculated_grade_band }}</span>
-                <span class="numeric-dash" style="{% if show_numeric_grade_bands %}display: none;{% else %}display: inline;{% endif %}">&mdash;</span>
+                <span class="numeric-grade-band" style="display: {% if show_numeric_grade_bands %}inline{% else %}none{% endif %};">
+                    {{ cat.calculated_grade_band }}
+                </span>
+                <span class="numeric-dash" style="display: {% if show_numeric_grade_bands %}none{% else %}inline{% endif %};">
+                    &mdash;
+                </span>
                 {% endif %}
             </td>
         </tr>
