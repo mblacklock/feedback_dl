@@ -123,8 +123,10 @@ def confirm_cohort_mappings(request):
         
     error = None
     if request.method == "POST":
-        mappings["col_student_name"] = request.POST.get("col_student_name")
-        mappings["col_student_id"] = request.POST.get("col_student_id")
+        if "col_student_name" in request.POST:
+            mappings["col_student_name"] = request.POST.get("col_student_name")
+        if "col_student_id" in request.POST:
+            mappings["col_student_id"] = request.POST.get("col_student_id")
         mappings["module_code"] = request.POST.get("module_code", "").strip()
         mappings["module_title"] = request.POST.get("module_title", "").strip()
         mappings["degree_level"] = request.POST.get("degree_level", "BEng")

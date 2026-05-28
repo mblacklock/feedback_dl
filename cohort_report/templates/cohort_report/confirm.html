@@ -80,7 +80,7 @@
         <div class="card main-card">
             <div class="gradient-header text-center">
                 <h2 class="fw-bold mb-2">Confirm Grade Mappings</h2>
-                <p class="mb-0 opacity-75">Verify student identity columns, assign weights to component marks, and select the degree level.</p>
+                <p class="mb-0 opacity-75">Assign weights to component marks and select the degree level.</p>
             </div>
 
             <div class="card-body p-5">
@@ -116,31 +116,8 @@
                         </div>
                     </div>
 
-                    <!-- Section 2: Core Student Details -->
-                    <h4 class="fw-bold mb-4">2. Core Identifiers</h4>
-                    <div class="row g-4 mb-5">
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold text-secondary">Student Name Column</label>
-                            <select name="col_student_name" class="form-select rounded-3" required id="col_student_name">
-                                {% for h in headers %}
-                                <option value="{{ h }}" {% if h == mappings.col_student_name %}selected{% endif %}>{{ h }}</option>
-                                {% endfor %}
-                            </select>
-                            <div class="form-text">Used for referencing names. Not stored in final report output.</div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold text-secondary">Student ID Column</label>
-                            <select name="col_student_id" class="form-select rounded-3" required id="col_student_id">
-                                {% for h in headers %}
-                                <option value="{{ h }}" {% if h == mappings.col_student_id %}selected{% endif %}>{{ h }}</option>
-                                {% endfor %}
-                            </select>
-                            <div class="form-text">Used for resolving cohorts. Not stored in final report output.</div>
-                        </div>
-                    </div>
-
-                    <!-- Section 3: Assessment Categories -->
-                    <h4 class="fw-bold mb-4">3. Assessment Component Weights</h4>
+                    <!-- Section 2: Assessment Categories -->
+                    <h4 class="fw-bold mb-4">2. Assessment Component Weights</h4>
                     <p class="text-muted mb-3 small">Specify the weight percentage for each assessment component (must sum to exactly 100%).</p>
 
                     <div class="table-responsive mb-5">
