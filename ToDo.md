@@ -20,7 +20,7 @@
 - [x] Add user-facing error messages for invalid max marks, invalid weights, and no detected components/categories.
 - [x] Add tests for malformed mapping form submissions.
 
-## Priority 4: Production Safety
+## Priority 4: Production Safety (Skipped For Now)
 
 - [ ] Move `SECRET_KEY` to an environment variable in production settings.
 - [ ] Rotate the deployed production secret key after removing the committed one.
@@ -29,10 +29,10 @@
 
 ## Priority 5: Refactoring And Maintainability
 
-- [ ] Extract duplicated assessment feedback calculation logic shared by preview and ZIP generation.
-- [ ] Extract duplicated module summary calculation logic shared by preview and ZIP generation.
-- [ ] Remove unused imports such as `Http404` where no longer needed.
-- [ ] Check duplication in unit tests and consolidate helper fixtures.
+- [x] Extract duplicated assessment feedback calculation logic shared by preview and ZIP generation.
+- [x] Extract duplicated module summary calculation logic shared by preview and ZIP generation.
+- [x] Remove unused imports such as `Http404` where no longer needed.
+- [x] Check duplication in unit tests and consolidate helper fixtures where useful.
 
 ## Future Enhancements
 

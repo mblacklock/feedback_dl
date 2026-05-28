@@ -4,7 +4,7 @@ import zipfile
 import base64
 import openpyxl
 from django.shortcuts import render, redirect
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse
 from django.utils.text import slugify
 
 from core.utils.grade_bands import calculate_grade_bands, grade_for_percentage
@@ -48,6 +48,76 @@ def parse_non_negative_int(value):
     except (TypeError, ValueError):
         return None
     return parsed if parsed >= 0 else None
+
+
+def module_numeric_mark(value):
+    try:
+        return float(value) if value is not None else 0
+    except (ValueError, TypeError):
+        return 0
+
+
+def component_percentage(student_row, component):
+    mark_val = module_numeric_mark(student_row.get(component["column"], 0))
+    max_marks = component["max_marks"]
+    return (mark_val / max_marks) * 100 if max_marks > 0 else 0
+
+
+def build_module_cohort_weighted_finals(uploaded_data, components):
+    cohort_weighted_finals = []
+
+    for row in uploaded_data:
+        row_weighted_pct = 0
+        for comp in components:
+            pct = component_percentage(row, comp)
+            row_weighted_pct += (pct * comp["weight"]) / 100
+        cohort_weighted_finals.append(row_weighted_pct)
+
+    return cohort_weighted_finals
+
+
+def build_module_student_context(student_row, student_index, mappings, cohort_weighted_finals, normalize_id=False):
+    col_name = mappings["col_student_name"]
+    col_id = mappings["col_student_id"]
+    components = mappings["components"]
+
+    student_name = str(student_row.get(col_name, f"Student {student_index+1}")).strip()
+    raw_student_id = str(student_row.get(col_id, f"ID-{student_index+1}")).strip()
+    student_id = normalize_student_id(raw_student_id) if normalize_id else raw_student_id
+    student_components_data = []
+    weighted_final_pct = 0
+
+    for comp in components:
+        col = comp["column"]
+        pct_awarded = component_percentage(student_row, comp)
+        weighted_final_pct += (pct_awarded * comp["weight"]) / 100
+        label_short = col.split(" - ")[0] if " - " in col else col
+
+        student_components_data.append({
+            "label": col,
+            "label_short": label_short,
+            "percentage": round_mark_pct(pct_awarded),
+            "weight": comp["weight"],
+            "grade": grade_for_percentage(pct_awarded),
+        })
+
+    weighted_final_pct_rounded = round_mark_pct(weighted_final_pct)
+    overall_grade = grade_for_percentage(weighted_final_pct)
+    chart_svg = generate_cohort_histogram(cohort_weighted_finals, weighted_final_pct_rounded)
+    chart_base64 = base64.b64encode(chart_svg.encode("utf-8")).decode("utf-8") if chart_svg else ""
+
+    return {
+        "student_name": student_name,
+        "student_id": student_id,
+        "components": student_components_data,
+        "weighted_final_pct": weighted_final_pct_rounded,
+        "overall_grade": overall_grade,
+        "chart_base64": chart_base64,
+        "total_score": weighted_final_pct_rounded,
+        "overall_percentage": weighted_final_pct_rounded,
+        "module_code": mappings.get("module_code", "COMP101"),
+        "module_title": mappings.get("module_title", "Module Summary"),
+    }
 
 
 def parse_mcrf_workbook(file_file):
@@ -385,25 +455,9 @@ def configure_module_layout(request):
         
     col_name = mappings["col_student_name"]
     col_id = mappings["col_student_id"]
-    subdivision = mappings["subdivision"]
     components = mappings["components"]
     
-    # Calculate all cohort weighted final percentages for the histogram
-    cohort_weighted_finals = []
-    for r in uploaded_data:
-        row_weighted_pct = 0
-        for comp in components:
-            col = comp["column"]
-            max_marks = comp["max_marks"]
-            weight = comp["weight"]
-            val = r.get(col, 0)
-            try:
-                mark_val = float(val) if val is not None else 0
-            except ValueError:
-                mark_val = 0
-            pct = (mark_val / max_marks) * 100 if max_marks > 0 else 0
-            row_weighted_pct += (pct * weight) / 100
-        cohort_weighted_finals.append(row_weighted_pct)
+    cohort_weighted_finals = build_module_cohort_weighted_finals(uploaded_data, components)
         
     # Prepare student selection list
     students_list = []
@@ -428,54 +482,12 @@ def configure_module_layout(request):
     preview_student = None
     if uploaded_data:
         student_row = uploaded_data[preview_student_index]
-        student_name = str(student_row.get(col_name, f"Student {preview_student_index+1}")).strip()
-        student_id = str(student_row.get(col_id, f"ID-{preview_student_index+1}")).strip()
-        
-        student_components_data = []
-        weighted_final_pct = 0
-        
-        for comp in components:
-            col = comp["column"]
-            max_marks = comp["max_marks"]
-            weight = comp["weight"]
-            raw_mark = student_row.get(col, 0)
-            try:
-                mark_val = float(raw_mark) if raw_mark is not None else 0
-            except ValueError:
-                mark_val = 0
-                
-            pct_awarded = (mark_val / max_marks) * 100 if max_marks > 0 else 0
-            weighted_final_pct += (pct_awarded * weight) / 100
-            
-            pct_awarded_rounded = round_mark_pct(pct_awarded)
-            comp_grade = grade_for_percentage(pct_awarded)
-            label_short = col.split(" - ")[0] if " - " in col else col
-            
-            student_components_data.append({
-                "label": col,
-                "label_short": label_short,
-                "percentage": pct_awarded_rounded,
-                "weight": weight,
-                "grade": comp_grade
-            })
-            
-        weighted_final_pct_rounded = round_mark_pct(weighted_final_pct)
-        overall_grade = grade_for_percentage(weighted_final_pct)
-        chart_svg = generate_cohort_histogram(cohort_weighted_finals, weighted_final_pct_rounded)
-        chart_base64 = base64.b64encode(chart_svg.encode('utf-8')).decode('utf-8') if chart_svg else ""
-        
-        preview_student = {
-            "student_name": student_name,
-            "student_id": student_id,
-            "components": student_components_data,
-            "weighted_final_pct": weighted_final_pct_rounded,
-            "overall_grade": overall_grade,
-            "chart_base64": chart_base64,
-            "total_score": weighted_final_pct_rounded,
-            "overall_percentage": weighted_final_pct_rounded,
-            "module_code": mappings.get("module_code", "COMP101"),
-            "module_title": mappings.get("module_title", "Module Summary"),
-        }
+        preview_student = build_module_student_context(
+            student_row,
+            preview_student_index,
+            mappings,
+            cohort_weighted_finals,
+        )
         
     return render(request, "module_summary/configure_layout.html", {
         "layout": layout,
@@ -506,25 +518,9 @@ def process_module_summary(request):
     
     col_name = mappings["col_student_name"]
     col_id = mappings["col_student_id"]
-    subdivision = mappings["subdivision"]
     components = mappings["components"]
     
-    # Pre-compute all cohort weighted final percentages for the histogram
-    cohort_weighted_finals = []
-    for r in uploaded_data:
-        row_weighted_pct = 0
-        for comp in components:
-            col = comp["column"]
-            max_marks = comp["max_marks"]
-            weight = comp["weight"]
-            val = r.get(col, 0)
-            try:
-                mark_val = float(val) if val is not None else 0
-            except ValueError:
-                mark_val = 0
-            pct = (mark_val / max_marks) * 100 if max_marks > 0 else 0
-            row_weighted_pct += (pct * weight) / 100
-        cohort_weighted_finals.append(row_weighted_pct)
+    cohort_weighted_finals = build_module_cohort_weighted_finals(uploaded_data, components)
         
     zip_buffer = io.BytesIO()
     
@@ -536,53 +532,18 @@ def process_module_summary(request):
             
             if not student_name and not student_id:
                 continue
-                
-            student_components_data = []
-            weighted_final_pct = 0
-            
-            for comp in components:
-                col = comp["column"]
-                max_marks = comp["max_marks"]
-                weight = comp["weight"]
-                raw_mark = student_row.get(col, 0)
-                try:
-                    mark_val = float(raw_mark) if raw_mark is not None else 0
-                except ValueError:
-                    mark_val = 0
-                    
-                pct_awarded = (mark_val / max_marks) * 100 if max_marks > 0 else 0
-                weighted_final_pct += (pct_awarded * weight) / 100
-                
-                pct_awarded_rounded = round_mark_pct(pct_awarded)
-                comp_grade = grade_for_percentage(pct_awarded)
-                label_short = col.split(" - ")[0] if " - " in col else col
-                
-                student_components_data.append({
-                    "label": col,
-                    "label_short": label_short,
-                    "percentage": pct_awarded_rounded,
-                    "weight": weight,
-                    "grade": comp_grade
-                })
-                
-            # Derive overall weighted module grade
-            weighted_final_pct_rounded = round_mark_pct(weighted_final_pct)
-            overall_grade = grade_for_percentage(weighted_final_pct)
-            
-            # Generate Base64 Cohort Distribution Histogram SVG
-            chart_svg = generate_cohort_histogram(cohort_weighted_finals, weighted_final_pct_rounded)
-            chart_base64 = base64.b64encode(chart_svg.encode('utf-8')).decode('utf-8') if chart_svg else ""
-            
+
+            student_context = build_module_student_context(
+                student_row,
+                idx,
+                mappings,
+                cohort_weighted_finals,
+                normalize_id=True,
+            )
             context = {
-                "student_name": student_name,
-                "student_id": student_id,
-                "components": student_components_data,
-                "weighted_final_pct": weighted_final_pct_rounded,
-                "overall_grade": overall_grade,
-                "chart_base64": chart_base64,
+                **student_context,
                 "layout": layout,
                 "layout_rows": build_feedback_sheet_layout_rows(layout),
-                "module_code": mappings.get("module_code", "COMP101"),
                 "module_title": mappings.get("module_title", "Module Performance"),
             }
             
