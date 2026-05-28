@@ -11,8 +11,7 @@
 <div class="student-bar">
     <div>
         <div class="student-name">{{ student_name }}</div>
-        <div class="student-meta">Student ID: {{ student_id }} &nbsp;&middot;&nbsp; Level:
-            {{degree_level|default:"BEng"}}</div>
+        <div class="student-meta">Student ID: {{ student_id }}</div>
     </div>
     <div class="grade-pill">
         <div class="grade-pill-score">{{ weighted_final_pct|floatformat:0 }}%</div>

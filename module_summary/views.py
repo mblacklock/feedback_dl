@@ -270,8 +270,8 @@ def configure_module_layout(request):
         return redirect("module_upload")
         
     default_layout = [
-        {"id": "assessment_table", "name": "Assessment Breakdown Table", "width": "full", "enabled": True},
-        {"id": "comparison_chart", "name": "Comparative Visual Chart", "width": "full", "enabled": True},
+        {"id": "assessment_table", "name": "Assessment Breakdown Table", "width": "half", "enabled": True},
+        {"id": "comparison_chart", "name": "Comparative Visual Chart", "width": "half", "enabled": True},
         {"id": "overall_card", "name": "Weighted Final Module Score Card", "width": "full", "enabled": True},
     ]
     layout = request.session.get("module_layout", default_layout)
@@ -311,7 +311,6 @@ def configure_module_layout(request):
         
     col_name = mappings["col_student_name"]
     col_id = mappings["col_student_id"]
-    degree_level = mappings["degree_level"]
     subdivision = mappings["subdivision"]
     components = mappings["components"]
     
@@ -387,8 +386,6 @@ def configure_module_layout(request):
             student_components_data.append({
                 "label": col,
                 "label_short": label_short,
-                "mark": mark_val,
-                "max_marks": max_marks,
                 "percentage": pct_awarded_rounded,
                 "weight": weight,
                 "grade": comp_grade
@@ -410,7 +407,6 @@ def configure_module_layout(request):
             "weighted_final_pct": weighted_final_pct_rounded,
             "overall_grade": overall_grade,
             "chart_base64": chart_base64,
-            "degree_level": degree_level,
             "total_score": weighted_final_pct_rounded,
             "overall_percentage": weighted_final_pct_rounded,
             "module_code": mappings.get("module_code", "COMP101"),
@@ -438,15 +434,14 @@ def process_module_summary(request):
         return redirect("module_upload")
         
     default_layout = [
-        {"id": "assessment_table", "name": "Assessment Breakdown Table", "width": "full", "enabled": True},
+        {"id": "assessment_table", "name": "Assessment Breakdown Table", "width": "half", "enabled": True},
+        {"id": "comparison_chart", "name": "Comparative Visual Chart", "width": "half", "enabled": True},
         {"id": "overall_card", "name": "Weighted Final Module Score Card", "width": "full", "enabled": True},
-        {"id": "comparison_chart", "name": "Comparative Visual Chart", "width": "full", "enabled": True},
     ]
     layout = request.session.get("module_layout", default_layout)
     
     col_name = mappings["col_student_name"]
     col_id = mappings["col_student_id"]
-    degree_level = mappings["degree_level"]
     subdivision = mappings["subdivision"]
     components = mappings["components"]
     
@@ -509,8 +504,6 @@ def process_module_summary(request):
                 student_components_data.append({
                     "label": col,
                     "label_short": label_short,
-                    "mark": mark_val,
-                    "max_marks": max_marks,
                     "percentage": pct_awarded_rounded,
                     "weight": weight,
                     "grade": comp_grade
@@ -535,7 +528,6 @@ def process_module_summary(request):
                 "weighted_final_pct": weighted_final_pct_rounded,
                 "overall_grade": overall_grade,
                 "chart_base64": chart_base64,
-                "degree_level": degree_level,
                 "layout": layout,
                 "layout_rows": build_feedback_sheet_layout_rows(layout),
                 "module_code": mappings.get("module_code", "COMP101"),

@@ -32,17 +32,15 @@ Depends on: feedback_blocks.css
     <thead>
         <tr>
             <th>Component</th>
-            <th class="right">Raw Score</th>
             <th class="right">Percentage</th>
             <th class="right">Weight</th>
-            <th class="right">UK Grade Band</th>
+            <th class="right">Grade Band</th>
         </tr>
     </thead>
     <tbody>
         {% for comp in components %}
         <tr>
             <td class="label">{{ comp.label_short }}</td>
-            <td class="right">{{ comp.mark|floatformat:0 }} / {{ comp.max_marks }}</td>
             <td class="right">{{ comp.percentage|floatformat:0 }}%</td>
             <td class="right">{{ comp.weight }}%</td>
             <td class="band">

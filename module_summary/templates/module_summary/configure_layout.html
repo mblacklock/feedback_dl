@@ -79,7 +79,7 @@
         {% if preview_student %}
         <div class="simulated-sheet">
             <!-- Simulated Header and Student details -->
-            {% include "module_summary/_summary_header.html" with module_code=preview_student.module_code module_title=preview_student.module_title student_name=preview_student.student_name student_id=preview_student.student_id weighted_final_pct=preview_student.weighted_final_pct overall_grade=preview_student.overall_grade degree_level=preview_student.degree_level %}
+            {% include "module_summary/_summary_header.html" with module_code=preview_student.module_code module_title=preview_student.module_title student_name=preview_student.student_name student_id=preview_student.student_id weighted_final_pct=preview_student.weighted_final_pct overall_grade=preview_student.overall_grade %}
 
             <!-- Draggable Blocks Container -->
             <div class="sheet-blocks-container" id="layoutContainer">
