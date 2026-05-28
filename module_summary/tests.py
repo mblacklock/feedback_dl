@@ -44,8 +44,8 @@ class ModuleSummaryViewsTest(TestCase):
 
     def test_normalize_student_id(self):
         """Verify the robust student number normalizer logic"""
-        self.assertEqual(normalize_student_id("w12345678"), "12345678")
-        self.assertEqual(normalize_student_id("12345679/2"), "12345679")
+        self.assertEqual(normalize_student_id("w12345678"), "w12345678")
+        self.assertEqual(normalize_student_id("12345679/2"), "w12345679")
         self.assertEqual(normalize_student_id("S7654321A"), "7654321")
         self.assertEqual(normalize_student_id("   87654   "), "87654")
         self.assertEqual(normalize_student_id("abc"), "abc")
@@ -248,11 +248,11 @@ class ModuleSummaryViewsTest(TestCase):
         with zipfile.ZipFile(zip_bytes, "r") as zf:
             namelist = zf.namelist()
             self.assertEqual(len(namelist), 2)
-            self.assertIn("module_summary_12345678_alice-smith.html", namelist)
-            self.assertIn("module_summary_12345679_bob-jones.html", namelist)
+            self.assertIn("module_summary_w12345678_alice-smith.html", namelist)
+            self.assertIn("module_summary_w12345679_bob-jones.html", namelist)
             
             # Verify HTML starts with DOCTYPE
-            html_bytes = zf.read("module_summary_12345678_alice-smith.html")
+            html_bytes = zf.read("module_summary_w12345678_alice-smith.html")
             self.assertTrue(html_bytes.startswith(b"<!DOCTYPE html>"))
 
     def test_mcrf_inference_with_header_weightings_and_blank_columns(self):
@@ -304,4 +304,3 @@ class ModuleSummaryViewsTest(TestCase):
         
         self.assertEqual(cw1_comp["weight"], 30)
         self.assertEqual(exam_comp["weight"], 70)
-

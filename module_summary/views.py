@@ -12,13 +12,22 @@ from core.utils.charts import generate_cohort_histogram
 from assessment_feedback.views import build_feedback_sheet_layout_rows
 
 
+from core.utils.student_id import format_student_id
+
+
 def normalize_student_id(id_val):
     """
     Normalizes a student number to resolve format variations (prefixes like 'w', suffixes like '/1').
-    Extracts the longest sequence of digits of length >= 5.
+    Uses format_student_id to format to 'w12345678' if there is an 8-digit sequence.
+    Otherwise, extracts the longest sequence of digits of length >= 5.
     """
     if id_val is None:
         return ""
+        
+    formatted = format_student_id(id_val)
+    if formatted.startswith('w') and len(formatted) == 9 and formatted[1:].isdigit():
+        return formatted
+
     s = str(id_val).strip().lower()
     matches = re.findall(r'\d+', s)
     if matches:

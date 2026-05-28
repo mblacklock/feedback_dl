@@ -10,7 +10,7 @@ from django.utils.text import slugify
 
 from core.utils.grade_bands import calculate_grade_bands
 from core.utils.charts import generate_radar_chart, generate_cohort_histogram
-
+from core.utils.student_id import format_student_id
 
 
 def grade_for_percentage_and_degree(percentage, degree_level=None):
@@ -312,7 +312,8 @@ def build_assessment_student_context(student_row, student_index, mappings, categ
     total_max_marks = sum(cat["max_marks"] for cat in categories if cat.get("type") != "information")
 
     student_name = str(student_row.get(col_name, f"Student {student_index+1}")).strip()
-    student_id = str(student_row.get(col_id, f"ID-{student_index+1}")).strip()
+    raw_student_id = student_row.get(col_id)
+    student_id = format_student_id(raw_student_id) if raw_student_id is not None else f"ID-{student_index+1}"
     student_total_score = 0
     student_categories_data = []
     radar_labels = []
@@ -843,7 +844,8 @@ def configure_layout(request):
     students_list = []
     for idx, r in enumerate(uploaded_data):
         s_name = str(r.get(col_name, f"Student {idx+1}")).strip()
-        s_id = str(r.get(col_id, f"ID-{idx+1}")).strip()
+        raw_s_id = r.get(col_id)
+        s_id = format_student_id(raw_s_id) if raw_s_id is not None else f"ID-{idx+1}"
         if s_name or s_id:
             students_list.append({
                 "index": idx,
@@ -915,7 +917,8 @@ def process_feedback(request):
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
         for idx, student_row in enumerate(uploaded_data):
             student_name = str(student_row.get(col_name, f"Student {idx+1}")).strip()
-            student_id = str(student_row.get(col_id, f"ID-{idx+1}")).strip()
+            raw_student_id = student_row.get(col_id)
+            student_id = format_student_id(raw_student_id) if raw_student_id is not None else f"ID-{idx+1}"
             
             if not student_name and not student_id:
                 continue
@@ -1007,7 +1010,8 @@ def download_email_xlsm(request):
     row_idx = 2
     for idx, student_row in enumerate(uploaded_data):
         student_name = str(student_row.get(col_name, f"Student {idx+1}")).strip()
-        student_id = str(student_row.get(col_id, f"ID-{idx+1}")).strip()
+        raw_student_id = student_row.get(col_id)
+        student_id = format_student_id(raw_student_id) if raw_student_id is not None else f"ID-{idx+1}"
         
         if not student_name and not student_id:
             continue

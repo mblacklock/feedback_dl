@@ -1429,6 +1429,60 @@ class AssessmentFeedbackViewsTest(TestCase):
         self.assertIn("Component 003", html_content)
         self.assertIn("Class Test", html_content)
 
+    def test_student_id_formatting_normalization(self):
+        """Format raw student numbers to w12345678 across files, preview, and Excel rows."""
+        # Setup student with non-normalised ID (e.g. "12345678/2")
+        uploaded_data = [
+            {"Student Name": "Alice Smith", "Student ID": "12345678/2", "Design /30": 20}
+        ]
+        mappings = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "degree_level": "BEng",
+            "subdivision": "none",
+            "module_code": "COMP101",
+            "module_title": "Programming",
+            "assessment_component": "001",
+            "assessment_title": "Coursework",
+            "academic_year": "2025/2026",
+            "categories": [
+                {"column": "Design /30", "max_marks": 30, "weight": None, "comments_column": "", "type": "numeric", "unit": ""}
+            ]
+        }
+        session = self.client.session
+        session["headers"] = ["Student Name", "Student ID", "Design /30"]
+        session["uploaded_data"] = uploaded_data
+        session["mappings"] = mappings
+        session.save()
+
+        # 1. Preview selection list
+        preview_resp = self.client.get(reverse("configure_layout"))
+        self.assertEqual(preview_resp.status_code, 200)
+        self.assertContains(preview_resp, "w12345678")
+        self.assertNotContains(preview_resp, "12345678/2")
+
+        # 2. Feedback ZIP filenames and rendered headers
+        process_resp = self.client.get(reverse("process_feedback"))
+        self.assertEqual(process_resp.status_code, 200)
+        zf = zipfile.ZipFile(io.BytesIO(process_resp.content))
+        namelist = zf.namelist()
+        self.assertIn("w12345678_alice-smith.html", namelist)
+
+        html_content = zf.read("w12345678_alice-smith.html").decode("utf-8")
+        self.assertIn("Student Number: w12345678", html_content)
+
+        # 3. Excel sending utility sheet columns
+        email_resp = self.client.get(reverse("download_email_xlsm"))
+        self.assertEqual(email_resp.status_code, 200)
+        import openpyxl
+        from io import BytesIO
+        wb = openpyxl.load_workbook(BytesIO(email_resp.content), keep_vba=True)
+        ws = wb['Students'] if 'Students' in wb.sheetnames else wb.active
+        
+        self.assertEqual(ws.cell(row=2, column=1).value, "w12345678")
+        self.assertEqual(ws.cell(row=2, column=2).value, "Alice Smith")
+        self.assertEqual(ws.cell(row=2, column=3).value, "w12345678_alice-smith.html")
+
 
 
 
