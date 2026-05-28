@@ -1345,6 +1345,11 @@ class AssessmentFeedbackViewsTest(TestCase):
         self.assertEqual(ws.cell(row=3, column=2).value, "Bob Jones")
         self.assertEqual(ws.cell(row=3, column=3).value, "10002_bob-jones.html")
 
+        # Verify dynamic email cells are pre-populated
+        self.assertEqual(ws['J13'].value, "COMP101 Module Performance - Feedback")
+        self.assertEqual(ws['J16'].value, "COMP101 Feedback Report Feedback")
+        self.assertEqual(ws['J19'].value, "Feedback for Feedback Report can be found attached to this email.")
+
     def test_download_email_xlsm_redirects_without_session(self):
         """GET /assessment-feedback/download-email-utility/ redirects to upload when session is empty."""
         url = reverse("download_email_xlsm")

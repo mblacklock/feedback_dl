@@ -1023,6 +1023,30 @@ def download_email_xlsm(request):
         ws.cell(row=row_idx, column=3, value=filename)
         row_idx += 1
 
+    module_code = mappings.get("module_code", "").strip() or "COMP101"
+    module_title = mappings.get("module_title", "").strip() or "Module Performance"
+    assessment_component = mappings.get("assessment_component", "").strip()
+    assessment_title = mappings.get("assessment_title", "").strip() or "Feedback Report"
+
+    # J13: <Module code> <Module Name> - <Assessment component> Feedback
+    subject_parts = [module_code, module_title]
+    subject_text = " ".join([p for p in subject_parts if p])
+    if assessment_component:
+        subject_text = f"{subject_text} - {assessment_component} Feedback"
+    else:
+        subject_text = f"{subject_text} - Feedback"
+    ws['J13'] = subject_text.replace("  ", " ").strip()
+
+    # J16: <Module code> <Assessment component> <Assessment Name> Feedback
+    header_parts = [module_code, assessment_component, assessment_title, "Feedback"]
+    header_text = " ".join([p for p in header_parts if p])
+    ws['J16'] = header_text.replace("  ", " ").strip()
+
+    # J19: Feedback for <Assessment component> <Assessment Name> can be found attached to this email.
+    text_parts = [assessment_component, assessment_title]
+    text_sub = " ".join([p for p in text_parts if p])
+    ws['J19'] = f"Feedback for {text_sub} can be found attached to this email.".replace("  ", " ").strip()
+
     buffer = BytesIO()
     wb.save(buffer)
     buffer.seek(0)
