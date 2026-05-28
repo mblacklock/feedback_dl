@@ -3,15 +3,20 @@
 {% block title %}Confirm Module Mappings{% endblock %}
 
 {% block extra_css %}
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap"
+    rel="stylesheet">
 <style>
     body {
         font-family: 'Inter', sans-serif;
         background-color: #f8fafc;
         color: #1e293b;
     }
-    
-    h1, h2, h3, h4 {
+
+    h1,
+    h2,
+    h3,
+    h4 {
         font-family: 'Outfit', sans-serif;
     }
 
@@ -25,7 +30,7 @@
         border: 1px solid rgba(255, 255, 255, 0.4);
         margin-bottom: 40px;
     }
-    
+
     .gradient-header {
         background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
         border-radius: 20px 20px 0 0;
@@ -74,27 +79,46 @@
         <div class="card main-card">
             <div class="gradient-header text-center">
                 <h2 class="fw-bold mb-2">Confirm MCRF Grade Mapping</h2>
-                <p class="mb-0 opacity-75">We parsed your MCRF spreadsheet columns. Verify student IDs, component mark columns, and assign final weightings.</p>
+                <p class="mb-0 opacity-75">We parsed your MCRF spreadsheet columns. Verify student IDs, component mark
+                    columns, and assign final weightings.</p>
             </div>
-            
+
             <div class="card-body p-5">
                 <form method="POST">
                     {% csrf_token %}
-                    
+
                     {% if error %}
                     <div class="alert alert-danger rounded-3 mb-4 text-center" role="alert">
                         <span class="fw-bold">Validation Error:</span> {{ error }}
                     </div>
                     {% endif %}
-                    
-                    <!-- Section 1: Core Student Details -->
-                    <h4 class="fw-bold mb-4">1. Core Identifiers</h4>
+
+                    <!-- Section 1: Module Details -->
+                    <h4 class="fw-bold mb-4">1. Module Details</h4>
+                    <div class="row g-4 mb-5">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold text-secondary" for="module_code">Module Code</label>
+                            <input type="text" name="module_code" id="module_code" class="form-control rounded-3"
+                                placeholder="e.g. COMP1001" value="{{ mappings.module_code|default:'' }}">
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold text-secondary" for="module_title">Module Title</label>
+                            <input type="text" name="module_title" id="module_title" class="form-control rounded-3"
+                                placeholder="e.g. Software Engineering Principles"
+                                value="{{ mappings.module_title|default:'' }}">
+                        </div>
+                    </div>
+
+                    <!-- Section 2: Core Student Details -->
+                    <h4 class="fw-bold mb-4">2. Core Identifiers</h4>
                     <div class="row g-4 mb-5">
                         <div class="col-md-6">
                             <label class="form-label fw-semibold text-secondary">Student Name Column</label>
-                            <select name="col_student_name" class="form-select rounded-3" required id="col_student_name">
+                            <select name="col_student_name" class="form-select rounded-3" required
+                                id="col_student_name">
                                 {% for h in headers %}
-                                    <option value="{{ h }}" {% if h == mappings.col_student_name %}selected{% endif %}>{{ h }}</option>
+                                <option value="{{ h }}" {% if h == mappings.col_student_name %}selected{% endif %}>{{ h }}
+                                </option>
                                 {% endfor %}
                             </select>
                             <div class="form-text">Used for identifying student names on individual HTML sheets.</div>
@@ -103,17 +127,20 @@
                             <label class="form-label fw-semibold text-secondary">Student ID Column</label>
                             <select name="col_student_id" class="form-select rounded-3" required id="col_student_id">
                                 {% for h in headers %}
-                                    <option value="{{ h }}" {% if h == mappings.col_student_id %}selected{% endif %}>{{ h }}</option>
+                                <option value="{{ h }}" {% if h == mappings.col_student_id %}selected{% endif %}>{{ h }}
+                                </option>
                                 {% endfor %}
                             </select>
                             <div class="form-text">Used for matching student grades and setting HTML filenames.</div>
                         </div>
                     </div>
 
-                    <!-- Section 2: Assessment Categories -->
-                    <h4 class="fw-bold mb-4">2. Assessment Component Weights</h4>
-                    <p class="text-muted mb-3 small">Please verify which columns contain the component grades. Assign the weight percentage for each assessment component (the sum of all weights **must equal exactly 100%**).</p>
-                    
+                    <!-- Section 3: Assessment Categories -->
+                    <h4 class="fw-bold mb-4">3. Assessment Component Weights</h4>
+                    <p class="text-muted mb-3 small">Please verify which columns contain the component grades. Assign
+                        the weight percentage for each assessment component (the sum of all weights **must equal exactly
+                        100%**).</p>
+
                     <div class="table-responsive mb-5">
                         <table class="table mapping-table">
                             <thead>
@@ -128,7 +155,10 @@
                                     <td class="fw-bold">{{ comp.column }}</td>
                                     <td>
                                         <div class="input-group input-group-sm">
-                                            <input type="number" name="weight_{{ forloop.counter0 }}" class="form-control rounded-3 weight-input" value="{{ comp.weight|default:'' }}" style="width: 80px;" required min="0" max="100">
+                                            <input type="number" name="weight_{{ forloop.counter0 }}"
+                                                class="form-control rounded-3 weight-input"
+                                                value="{{ comp.weight|default:'' }}" style="width: 80px;" required
+                                                min="0" max="100">
                                             <span class="input-group-text">%</span>
                                         </div>
                                     </td>
@@ -139,7 +169,8 @@
                     </div>
 
                     <div class="text-center">
-                        <button type="submit" class="btn btn-generate btn-lg w-100">Generate Module Summary reports</button>
+                        <button type="submit" class="btn btn-generate btn-lg w-100">Generate Module Summary
+                            reports</button>
                     </div>
                 </form>
             </div>
@@ -155,7 +186,7 @@
         weights.forEach(input => {
             sum += parseInt(input.value || 0, 10);
         });
-        
+
         if (sum !== 100) {
             e.preventDefault();
             alert(`Weight weights must sum to exactly 100%. Currently they sum to ${sum}%.`);

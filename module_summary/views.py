@@ -116,8 +116,41 @@ def parse_mcrf_workbook(file_file):
                     if h_name:
                         row_dict[h_name] = cell
             data_rows.append(row_dict)
-            
-    return headers, data_rows, is_mcrf
+
+    # --- Module details detection ---
+    # Try C7 first (row 6, col 2) — the standard MCRF cell for module info.
+    # If that's empty, scan pre-header rows for any cell matching a module code pattern.
+    module_code = ""
+    module_title = ""
+    MODULE_CODE_RE = re.compile(r'^([A-Z]{2,6}\d{3,5}[A-Z]?)\s*[-:–]?\s*(.*)$')
+
+    def _try_parse_module_cell(val):
+        """Return (code, title) if val looks like a module details cell, else ('', '')."""
+        if not val:
+            return "", ""
+        text = str(val).strip()
+        m = MODULE_CODE_RE.match(text)
+        if m:
+            return m.group(1).strip(), m.group(2).strip()
+        return "", ""
+
+    # 1. Try canonical MCRF position: row 7 (index 6), column C (index 2)
+    if len(rows) > 6:
+        c7_val = rows[6][2] if len(rows[6]) > 2 else None
+        module_code, module_title = _try_parse_module_cell(c7_val)
+
+    # 2. If not found, scan all pre-header rows for a matching cell
+    if not module_code:
+        for row in rows[:header_row_idx]:
+            for cell in row:
+                code, title = _try_parse_module_cell(cell)
+                if code:
+                    module_code, module_title = code, title
+                    break
+            if module_code:
+                break
+
+    return headers, data_rows, is_mcrf, {"module_code": module_code, "module_title": module_title}
 
 
 def upload_mcrf(request):
@@ -132,14 +165,16 @@ def upload_mcrf(request):
             return render(request, "module_summary/upload.html", {"error": "Please select a file to upload."})
             
         try:
-            headers, data_rows, is_mcrf = parse_mcrf_workbook(uploaded_file)
+            headers, data_rows, is_mcrf, module_info = parse_mcrf_workbook(uploaded_file)
             
             inferred_mappings = {
                 "col_student_name": "",
                 "col_student_id": "",
                 "components": [],
                 "degree_level": "BEng",
-                "subdivision": "none"
+                "subdivision": "none",
+                "module_code": module_info.get("module_code", ""),
+                "module_title": module_info.get("module_title", ""),
             }
             
             # Infern Name & Student ID
@@ -150,8 +185,8 @@ def upload_mcrf(request):
                 elif ("id" in hl or "number" in hl or "no" in hl or "username" in hl) and not inferred_mappings["col_student_id"]:
                     inferred_mappings["col_student_id"] = h
                     
-            if not inferred_mappings["col_student_name"] and headers:
-                inferred_mappings["col_student_name"] = headers[0]
+            if not inferred_mappings["col_student_name"] and len(headers) > 1:
+                inferred_mappings["col_student_name"] = headers[1]  # Default: Column B
             if not inferred_mappings["col_student_id"] and len(headers) > 1:
                 inferred_mappings["col_student_id"] = headers[1]
                 
@@ -222,6 +257,8 @@ def confirm_module_mappings(request):
     if request.method == "POST":
         mappings["col_student_name"] = request.POST.get("col_student_name")
         mappings["col_student_id"] = request.POST.get("col_student_id")
+        mappings["module_code"] = request.POST.get("module_code", "").strip()
+        mappings["module_title"] = request.POST.get("module_title", "").strip()
         mappings["degree_level"] = "BEng"
         mappings["subdivision"] = "none"
         
