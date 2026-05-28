@@ -63,7 +63,7 @@ class ModuleSummaryFT(FunctionalTestBase):
         self.browser.execute_script("arguments[0].click();", upload_btn)
         
         # THEN: They are redirected to the Confirmation UI
-        self.wait.until(EC.url_contains("/module-summary/confirm/"))
+        self.wait.until(EC.url_contains("/module-summary/mapping/"))
         
         # AND: They see that column roles have been auto-inferred
         confirm_title = self.browser.find_element(By.TAG_NAME, "h2")

@@ -54,7 +54,7 @@ class ModuleSummaryViewsTest(TestCase):
     def test_parse_mcrf_workbook(self):
         """Verify dynamic MCRF header discovery and row parsing"""
         self.excel_mcrf_bytes.seek(0)
-        headers, data_rows, is_mcrf = parse_mcrf_workbook(self.excel_mcrf_bytes)
+        headers, data_rows, is_mcrf, module_info = parse_mcrf_workbook(self.excel_mcrf_bytes)
         
         self.assertTrue(is_mcrf)
         self.assertIn("CW1 - Mark", headers)
@@ -62,6 +62,7 @@ class ModuleSummaryViewsTest(TestCase):
         self.assertEqual(len(data_rows), 2)
         self.assertEqual(data_rows[0]["Student ID"], "w12345678")
         self.assertEqual(data_rows[1]["CW1 - Mark"], 18)
+        self.assertIsInstance(module_info, dict)
 
     def test_parse_mcrf_workbook_legacy_xls(self):
         """Verify dynamic MCRF parser works on legacy .xls files via xlrd fallback"""
@@ -69,7 +70,7 @@ class ModuleSummaryViewsTest(TestCase):
         xls_path = r"c:\Backup Drive\Documents\django-apps\university\gradebook-merger\dummy_MCRF.xls"
         if os.path.exists(xls_path):
             with open(xls_path, "rb") as f:
-                headers, data_rows, is_mcrf = parse_mcrf_workbook(f)
+                headers, data_rows, is_mcrf, module_info = parse_mcrf_workbook(f)
                 
             self.assertTrue(is_mcrf)
             # Verify headers are processed and data rows are returned
@@ -91,7 +92,7 @@ class ModuleSummaryViewsTest(TestCase):
         
         resp = self.client.post(url, {"file": uploaded_file})
         self.assertEqual(resp.status_code, 302)
-        self.assertTrue(resp.url.endswith("/module-summary/confirm/"))
+        self.assertEqual(resp.url, reverse("module_confirm"))
         
         # Check session populated
         self.assertIn("module_headers", self.client.session)
@@ -211,7 +212,7 @@ class ModuleSummaryViewsTest(TestCase):
         wb.save(excel_bytes)
         excel_bytes.seek(0)
         
-        headers, data_rows, is_mcrf = parse_mcrf_workbook(excel_bytes)
+        headers, data_rows, is_mcrf, module_info = parse_mcrf_workbook(excel_bytes)
         
         # 1. Empty student name header cell becomes '<Column B>'
         self.assertIn("<Column B>", headers)

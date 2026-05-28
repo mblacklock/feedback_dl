@@ -51,7 +51,7 @@ class AssessmentFeedbackViewsTest(TestCase):
         
         resp = self.client.post(url, {"file": uploaded_file})
         self.assertEqual(resp.status_code, 302)
-        self.assertTrue(resp.url.endswith("/assessment-feedback/confirm/"))
+        self.assertEqual(resp.url, reverse("confirm_mappings"))
         
         # Verify session state was correctly updated
         self.assertIn("headers", self.client.session)
@@ -850,7 +850,6 @@ class AssessmentFeedbackViewsTest(TestCase):
         self.assertIn('display: inline', rendered)
         self.assertIn('class="numeric-dash"', rendered)
         self.assertIn('display: none', rendered)
-
 
 
 
