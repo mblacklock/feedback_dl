@@ -11,7 +11,7 @@ def portal_home(request):
         },
         {
             "title": "Module Summary",
-            "description": "Generate module summary sheets from a completed module marks spreadsheet.",
+            "description": "Generate module summary sheets from a completed MCRF spreadsheet.",
             "url_name": "module_upload",
             "cta": "Create module summaries",
         },
@@ -29,7 +29,7 @@ def portal_home(request):
         },
         {
             "title": "MCRF Converter",
-            "description": "Merge and convert gradebook files into a format ready for module workflows.",
+            "description": "Merge and convert gradebook and marking sheets into the MCRF sheet.",
             "url_name": "mcrf_converter",
             "cta": "Convert gradebook files",
         },
