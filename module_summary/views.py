@@ -30,6 +30,18 @@ def normalize_student_id(id_val):
     return re.sub(r'[^a-z0-9]', '', s)
 
 
+def round_mark_pct(val):
+    """
+    Rounds a percentage mark to the nearest integer.
+    Any value whose integer part ends in 9 (e.g. 39.x, 59.x) is rounded up
+    to the next decade (40, 60, etc.) per module reporting conventions.
+    """
+    rounded = round(val)
+    if rounded % 10 == 9:
+        rounded += 1
+    return rounded
+
+
 def parse_mcrf_workbook(file_file):
     """
     Parses a spreadsheet in-memory. Detects MCRF signature block
@@ -368,6 +380,7 @@ def configure_module_layout(request):
             pct_awarded = (mark_val / max_marks) * 100 if max_marks > 0 else 0
             weighted_final_pct += (pct_awarded * weight) / 100
             
+            pct_awarded_rounded = round_mark_pct(pct_awarded)
             comp_grade = grade_for_percentage(pct_awarded)
             label_short = col.split(" - ")[0] if " - " in col else col
             
@@ -376,7 +389,7 @@ def configure_module_layout(request):
                 "label_short": label_short,
                 "mark": mark_val,
                 "max_marks": max_marks,
-                "percentage": pct_awarded,
+                "percentage": pct_awarded_rounded,
                 "weight": weight,
                 "grade": comp_grade
             })
@@ -385,6 +398,7 @@ def configure_module_layout(request):
             student_chart_percentages.append(pct_awarded)
             avg_chart_percentages.append(comp_averages_pct[col])
             
+        weighted_final_pct_rounded = round_mark_pct(weighted_final_pct)
         overall_grade = grade_for_percentage(weighted_final_pct)
         chart_svg = generate_module_comparison_chart(chart_labels, student_chart_percentages, avg_chart_percentages)
         chart_base64 = base64.b64encode(chart_svg.encode('utf-8')).decode('utf-8') if chart_svg else ""
@@ -393,12 +407,12 @@ def configure_module_layout(request):
             "student_name": student_name,
             "student_id": student_id,
             "components": student_components_data,
-            "weighted_final_pct": weighted_final_pct,
+            "weighted_final_pct": weighted_final_pct_rounded,
             "overall_grade": overall_grade,
             "chart_base64": chart_base64,
             "degree_level": degree_level,
-            "total_score": round(weighted_final_pct),
-            "overall_percentage": round(weighted_final_pct),
+            "total_score": weighted_final_pct_rounded,
+            "overall_percentage": weighted_final_pct_rounded,
             "module_code": mappings.get("module_code", "COMP101"),
             "module_title": mappings.get("module_title", "Module Summary"),
         }
@@ -488,6 +502,7 @@ def process_module_summary(request):
                 pct_awarded = (mark_val / max_marks) * 100 if max_marks > 0 else 0
                 weighted_final_pct += (pct_awarded * weight) / 100
                 
+                pct_awarded_rounded = round_mark_pct(pct_awarded)
                 comp_grade = grade_for_percentage(pct_awarded)
                 label_short = col.split(" - ")[0] if " - " in col else col
                 
@@ -496,7 +511,7 @@ def process_module_summary(request):
                     "label_short": label_short,
                     "mark": mark_val,
                     "max_marks": max_marks,
-                    "percentage": pct_awarded,
+                    "percentage": pct_awarded_rounded,
                     "weight": weight,
                     "grade": comp_grade
                 })
@@ -506,6 +521,7 @@ def process_module_summary(request):
                 avg_chart_percentages.append(comp_averages_pct[col])
                 
             # Derive overall weighted module grade
+            weighted_final_pct_rounded = round_mark_pct(weighted_final_pct)
             overall_grade = grade_for_percentage(weighted_final_pct)
             
             # Generate Base64 Grouped Bar Chart SVG
@@ -516,7 +532,7 @@ def process_module_summary(request):
                 "student_name": student_name,
                 "student_id": student_id,
                 "components": student_components_data,
-                "weighted_final_pct": weighted_final_pct,
+                "weighted_final_pct": weighted_final_pct_rounded,
                 "overall_grade": overall_grade,
                 "chart_base64": chart_base64,
                 "degree_level": degree_level,

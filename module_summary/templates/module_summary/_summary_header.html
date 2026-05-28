@@ -1,6 +1,8 @@
 <!-- Header Block -->
 <div class="header">
-    <div class="header-module">{{ module_code|default:"COMP101" }} &middot; {{ module_title|default:"Module Performance" }}</div>
+    <div class="header-module">{{ module_code|default:"KB" }} &middot;
+        {{ module_title|default:"Module Performance"}}
+    </div>
     <div class="header-title">Module Summary Report</div>
     <div class="header-sub">Component Performance & Final Module Grade</div>
 </div>
@@ -9,10 +11,11 @@
 <div class="student-bar">
     <div>
         <div class="student-name">{{ student_name }}</div>
-        <div class="student-meta">Student ID: {{ student_id }} &nbsp;&middot;&nbsp; Level: {{ degree_level|default:"BEng" }}</div>
+        <div class="student-meta">Student ID: {{ student_id }} &nbsp;&middot;&nbsp; Level:
+            {{degree_level|default:"BEng"}}</div>
     </div>
     <div class="grade-pill">
-        <div class="grade-pill-score">{{ weighted_final_pct|floatformat:1 }}%</div>
+        <div class="grade-pill-score">{{ weighted_final_pct|floatformat:0 }}%</div>
         <div class="grade-pill-score">Grade: {{ overall_grade }}</div>
     </div>
 </div>
