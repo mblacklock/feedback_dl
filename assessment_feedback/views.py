@@ -62,6 +62,8 @@ def assessment_confirm_context(headers, mappings, uploaded_data, error=None):
 
     all_rubric_marks = {}
     for cat in mappings.get("categories", []):
+        if cat.get("type") == "information":
+            continue
         max_marks = cat.get("max_marks", 100)
         col = cat["column"]
         all_rubric_marks[col] = {
@@ -130,6 +132,55 @@ def clean_category_title(title):
     cleaned = re.sub(r'\b\d+\b\s*$', '', cleaned)
     # Strip whitespace and trailing punctuation/special characters
     return cleaned.strip()
+
+
+def is_information_column(header):
+    """
+    Check if a column header suggests it contains information/experimental data
+    rather than a numeric or grade-based mark.
+    """
+    hl = header.lower()
+    # If it contains grading-related terms, it is a mark, not information
+    if any(term in hl for term in ("mark", "grade", "score", "total", "final")):
+        return False
+    # Check info keywords
+    info_keywords = (
+        "load", "time", "duration", "performance", "speed", "distance",
+        "mass", "force", "height", "temp", "sec", "ms", "kg", "velocity",
+        "acceleration"
+    )
+    return any(kw in hl for kw in info_keywords)
+
+
+def infer_unit(header):
+    """
+    Infer the unit label from the column header.
+    E.g. "Max Load (N)" -> "N"
+         "Time / s" -> "s"
+         "Mass [kg]" -> "kg"
+    """
+    hl = header.lower()
+    # Try / unit
+    match = re.search(r'/\s*([a-zA-Z]+)\b', header)
+    if not match:
+        # Try (unit)
+        match = re.search(r'\(\s*([a-zA-Z]+)\s*\)', header)
+    if not match:
+        # Try [unit]
+        match = re.search(r'\[\s*([a-zA-Z]+)\s*\]', header)
+
+    if match:
+        unit = match.group(1).strip()
+        # Ensure it's not a number/denominator and is reasonably short
+        if not unit.isdigit() and len(unit) <= 7:
+            return unit
+
+    # Basic substring fallbacks
+    for unit_word in ("seconds", "ms", "kg", "meters", "sec"):
+        if f" {unit_word}" in hl or f"({unit_word}" in hl:
+            return unit_word
+
+    return ""
 
 
 def infer_rubric_type(column_values):
@@ -240,7 +291,8 @@ def build_assessment_cohort_stats(uploaded_data, categories, degree_level):
         for cat in categories:
             mark_val, _ = category_mark_value(row, cat, degree_level)
             category_cohort_marks[cat["column"]].append(mark_val)
-            student_total += mark_val
+            if cat.get("type") != "information":
+                student_total += mark_val
         cohort_final_marks.append(student_total)
 
     category_averages = {}
@@ -257,7 +309,7 @@ def build_assessment_student_context(student_row, student_index, mappings, categ
     degree_level = mappings["degree_level"]
     subdivision = mappings["subdivision"]
     categories = mappings["categories"]
-    total_max_marks = sum(cat["max_marks"] for cat in categories)
+    total_max_marks = sum(cat["max_marks"] for cat in categories if cat.get("type") != "information")
 
     student_name = str(student_row.get(col_name, f"Student {student_index+1}")).strip()
     student_id = str(student_row.get(col_id, f"ID-{student_index+1}")).strip()
@@ -269,16 +321,22 @@ def build_assessment_student_context(student_row, student_index, mappings, categ
 
     for cat in categories:
         col = cat["column"]
-        max_marks = cat["max_marks"]
+        max_marks = cat.get("max_marks")
         mark_val, grade_awarded = category_mark_value(student_row, cat, degree_level)
 
-        student_total_score += mark_val
-        student_pct = (mark_val / max_marks) * 100 if max_marks > 0 else 0
-        avg_pct = (category_averages[col] / max_marks) * 100 if max_marks > 0 else 0
+        if cat.get("type") != "information":
+            student_total_score += mark_val
+            student_pct = (mark_val / max_marks) * 100 if max_marks and max_marks > 0 else 0
+            avg_pct = (category_averages[col] / max_marks) * 100 if max_marks and max_marks > 0 else 0
 
-        radar_labels.append(clean_category_title(col))
-        student_radar_percentages.append(student_pct)
-        avg_radar_percentages.append(avg_pct)
+            radar_labels.append(clean_category_title(col))
+            student_radar_percentages.append(student_pct)
+            avg_radar_percentages.append(avg_pct)
+
+            calculated_grade_band = grade_for_percentage_and_degree(student_pct, degree_level)
+        else:
+            student_pct = 0
+            calculated_grade_band = None
 
         student_categories_data.append({
             "label": clean_category_title(col),
@@ -287,7 +345,9 @@ def build_assessment_student_context(student_row, student_index, mappings, categ
             "grade_awarded": grade_awarded,
             "feedback_comment": student_row.get(cat.get("comments_column", ""), ""),
             "is_grade": cat["type"] == "grade",
-            "calculated_grade_band": grade_for_percentage_and_degree(student_pct, degree_level),
+            "is_information": cat["type"] == "information",
+            "unit": cat.get("unit", ""),
+            "calculated_grade_band": calculated_grade_band,
         })
 
     overall_pct = (student_total_score / total_max_marks) * 100 if total_max_marks > 0 else 0
@@ -307,8 +367,8 @@ def build_assessment_student_context(student_row, student_index, mappings, categ
         "total_max_marks": total_max_marks,
         "overall_grade": grade_for_percentage_and_degree(overall_pct, degree_level),
         "overall_percentage": round(overall_pct),
-        "radar_base64": base64.b64encode(radar_svg.encode("utf-8")).decode("utf-8"),
-        "hist_base64": base64.b64encode(hist_svg.encode("utf-8")).decode("utf-8"),
+        "radar_base64": base64.b64encode(radar_svg.encode("utf-8")).decode("utf-8") if radar_svg else "",
+        "hist_base64": base64.b64encode(hist_svg.encode("utf-8")).decode("utf-8") if hist_svg else "",
         "degree_level": degree_level,
         "module_code": mappings.get("module_code", "COMP101"),
         "module_title": mappings.get("module_title", "Module Performance"),
@@ -415,44 +475,52 @@ def upload_file(request):
             
             # Build category configurations with max marks, comments, and rubric detection
             for cat in candidate_categories:
-                # Infer max marks (denominator) from header (e.g. Design /30, Design (30), Design 30)
-                max_marks = 100  # default fallback
-                denom_match = re.search(r'/(\d+)', cat)
-                if not denom_match:
-                    denom_match = re.search(r'\((\d+)\)', cat)
-                if not denom_match:
-                    denom_match = re.search(r'\b(\d+)$', cat)
-
-                if denom_match:
-                    max_marks = int(denom_match.group(1))
+                if is_information_column(cat):
+                    cat_type = "information"
+                    max_marks = None
+                    cat_subdivision = "none"
+                    rubric_marks = []
+                    unit = infer_unit(cat)
                 else:
-                    # check maximum value in data
-                    max_val = 0
-                    for r in data_rows:
-                        val = r.get(cat)
-                        if val is not None:
-                            try:
-                                max_val = max(max_val, float(val))
-                            except ValueError:
-                                pass
-                    if max_val > 0:
-                        if max_val <= 10:
-                            max_marks = 10
-                        elif max_val <= 20:
-                            max_marks = 20
-                        elif max_val <= 30:
-                            max_marks = 30
-                        elif max_val <= 50:
-                            max_marks = 50
-                        else:
-                            max_marks = 100
+                    unit = ""
+                    # Infer max marks (denominator) from header (e.g. Design /30, Design (30), Design 30)
+                    max_marks = 100  # default fallback
+                    denom_match = re.search(r'/(\d+)', cat)
+                    if not denom_match:
+                        denom_match = re.search(r'\((\d+)\)', cat)
+                    if not denom_match:
+                        denom_match = re.search(r'\b(\d+)$', cat)
+
+                    if denom_match:
+                        max_marks = int(denom_match.group(1))
+                    else:
+                        # check maximum value in data
+                        max_val = 0
+                        for r in data_rows:
+                            val = r.get(cat)
+                            if val is not None:
+                                try:
+                                    max_val = max(max_val, float(val))
+                                except ValueError:
+                                    pass
+                        if max_val > 0:
+                            if max_val <= 10:
+                                max_marks = 10
+                            elif max_val <= 20:
+                                max_marks = 20
+                            elif max_val <= 30:
+                                max_marks = 30
+                            elif max_val <= 50:
+                                max_marks = 50
+                            else:
+                                max_marks = 100
+                
+                    # Detect rubric (grade string) columns
+                    col_values = [r.get(cat) for r in data_rows]
+                    cat_type, cat_subdivision = infer_rubric_type(col_values)
                 
                 # Weighting is no longer used
                 weight = None
-
-                # Detect rubric (grade string) columns
-                col_values = [r.get(cat) for r in data_rows]
-                cat_type, cat_subdivision = infer_rubric_type(col_values)
 
                 # Find matching feedback comments column
                 comments_col = ""
@@ -480,6 +548,7 @@ def upload_file(request):
                     "type": cat_type,
                     "subdivision": cat_subdivision,
                     "rubric_marks": rubric_marks,
+                    "unit": unit,
                 })
 
             # Set global subdivision to the most common one detected across rubric columns
@@ -491,7 +560,8 @@ def upload_file(request):
                 from collections import Counter
                 inferred_mappings["subdivision"] = Counter(rubric_subdivisions).most_common(1)[0][0]
 
-            if not inferred_mappings["categories"]:
+            has_mark_or_rubric = any(c["type"] in ("numeric", "grade") for c in inferred_mappings["categories"])
+            if not inferred_mappings["categories"] or not has_mark_or_rubric:
                 return render(request, "assessment_feedback/upload.html", {
                     "error": "No grading categories were detected. Please upload a sheet with numeric mark columns or rubric grade columns."
                 })
@@ -560,19 +630,28 @@ def confirm_mappings(request):
         
         # Read updated categories configs
         updated_categories = []
+        has_mark_or_rubric = False
         for idx, cat_dict in enumerate(mappings["categories"]):
             col_name = cat_dict["column"]
-            max_marks = parse_positive_int(request.POST.get(f"max_{idx}"))
-            if max_marks is None:
-                return render(request, "assessment_feedback/confirm.html",
-                              assessment_confirm_context(
-                                  headers,
-                                  mappings,
-                                  uploaded_data,
-                                  f"Max marks for {col_name} must be a positive whole number.",
-                              ))
-            comments_col = request.POST.get(f"comments_{idx}")
             cat_type = request.POST.get(f"type_{idx}", "numeric")
+            comments_col = request.POST.get(f"comments_{idx}")
+            
+            if cat_type in ("numeric", "grade"):
+                has_mark_or_rubric = True
+                max_marks = parse_positive_int(request.POST.get(f"max_{idx}"))
+                if max_marks is None:
+                    return render(request, "assessment_feedback/confirm.html",
+                                  assessment_confirm_context(
+                                      headers,
+                                      mappings,
+                                      uploaded_data,
+                                      f"Max marks for {col_name} must be a positive whole number.",
+                                  ))
+                unit_val = ""
+            else:
+                max_marks = None
+                unit_val = request.POST.get(f"unit_{idx}", "").strip()
+
             cat_subdivision = cat_dict.get("subdivision", "none")
 
             # Rebuild rubric_marks from submitted band mark inputs (user may have edited them)
@@ -602,8 +681,18 @@ def confirm_mappings(request):
                 "type": cat_type,
                 "subdivision": cat_subdivision,
                 "rubric_marks": rubric_marks,
+                "unit": unit_val,
             })
             
+        if not has_mark_or_rubric:
+            return render(request, "assessment_feedback/confirm.html",
+                          assessment_confirm_context(
+                              headers,
+                              mappings,
+                              uploaded_data,
+                              "You must have at least one numeric Mark or Rubric grade category.",
+                          ))
+
         mappings["categories"] = updated_categories
 
         # Recalculate global subdivision based on the most common subdivision of active grade columns

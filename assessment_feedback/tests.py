@@ -694,8 +694,8 @@ class AssessmentFeedbackViewsTest(TestCase):
 
     def test_mixed_fixture_detects_all_five_columns(self):
         """Uploading the real fixture must detect all five grading columns:
-        two numeric (Design, Implementation) and two rubric (Testing, Analysis),
-        and assign correct types and subdivisions to each."""
+        two numeric (Design, Implementation), two rubric (Testing, Analysis),
+        and one information (Max Load), and assign correct types and subdivisions to each."""
         resp = self.client.post(reverse("upload_file"), {"file": self._load_fixture_excel()})
         self.assertEqual(resp.status_code, 302)
 
@@ -703,11 +703,12 @@ class AssessmentFeedbackViewsTest(TestCase):
         by_col = {c["column"]: c for c in mappings["categories"]}
         found = list(by_col.keys())
 
-        # All four grading columns must be found
+        # All five columns must be found
         self.assertIn("Design /30", by_col, msg=f"Missing Design /30, found: {found}")
         self.assertIn("Implementation (40)", by_col, msg=f"Missing Implementation (40), found: {found}")
         self.assertIn("Testing 30", by_col, msg=f"Missing Testing 30, found: {found}")
         self.assertIn("Analysis", by_col, msg=f"Missing Analysis, found: {found}")
+        self.assertIn("Max Load (N)", by_col, msg=f"Missing Max Load (N), found: {found}")
 
         # Numeric columns must have type 'numeric'
         self.assertEqual(by_col["Design /30"]["type"], "numeric")
@@ -718,6 +719,11 @@ class AssessmentFeedbackViewsTest(TestCase):
                          msg="Testing 30 contains grade strings, should be type='grade'")
         self.assertEqual(by_col["Analysis"]["type"], "grade",
                          msg="Analysis contains grade strings, should be type='grade'")
+
+        # Information column must have type 'information' and correctly extract unit
+        self.assertEqual(by_col["Max Load (N)"]["type"], "information")
+        self.assertEqual(by_col["Max Load (N)"]["unit"], "N")
+        self.assertIsNone(by_col["Max Load (N)"]["max_marks"])
 
         # Testing 30 contains "High 2:1", "Low 2:2" → high_low subdivision
         self.assertEqual(by_col["Testing 30"]["subdivision"], "high_low")
@@ -757,7 +763,8 @@ class AssessmentFeedbackViewsTest(TestCase):
         }
         for idx, cat in enumerate(categories):
             form[f"type_{idx}"]     = cat["type"]
-            form[f"max_{idx}"]      = str(cat["max_marks"])
+            form[f"max_{idx}"]      = str(cat["max_marks"]) if cat["max_marks"] is not None else ""
+            form[f"unit_{idx}"]     = cat.get("unit", "")
             form[f"weight_{idx}"]   = str(cat["weight"]) if cat["weight"] else ""
             form[f"comments_{idx}"] = cat.get("comments_column", "")
             for band_idx, band in enumerate(cat.get("rubric_marks", [])):
@@ -995,5 +1002,165 @@ class AssessmentFeedbackViewsTest(TestCase):
         self.assertIn('display: inline', rendered)
         self.assertIn('class="numeric-dash"', rendered)
         self.assertIn('display: none', rendered)
+
+    def test_upload_detects_information_column_and_unit(self):
+        """Verify that heuristics identify non-mark columns like 'Max Load (N)' as information."""
+        resp = self.client.post(reverse("upload_file"), {"file": self._load_fixture_excel()})
+        self.assertEqual(resp.status_code, 302)
+        
+        mappings = self.client.session["mappings"]
+        by_col = {c["column"]: c for c in mappings["categories"]}
+        
+        self.assertIn("Max Load (N)", by_col)
+        cat = by_col["Max Load (N)"]
+        self.assertEqual(cat["type"], "information")
+        self.assertEqual(cat["unit"], "N")
+        self.assertIsNone(cat["max_marks"])
+
+    def test_confirm_information_posts_successfully_without_max_marks(self):
+        """Verify that an information category can post successfully with blank max_marks."""
+        session = self.client.session
+        session["headers"] = ["Student Name", "Student ID", "Design /30", "Max Load (N)"]
+        session["uploaded_data"] = [
+            {"Student Name": "Alice", "Student ID": "1", "Design /30": 20, "Max Load (N)": 150}
+        ]
+        session["mappings"] = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "degree_level": "BEng",
+            "subdivision": "none",
+            "categories": [
+                {"column": "Design /30", "max_marks": 30, "weight": None, "comments_column": "", "type": "numeric", "unit": ""},
+                {"column": "Max Load (N)", "max_marks": None, "weight": None, "comments_column": "", "type": "information", "unit": "N"}
+            ]
+        }
+        session.save()
+
+        form_data = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "degree_level": "BEng",
+            "type_0": "numeric",
+            "max_0": "30",
+            "type_1": "information",
+            "max_1": "",  # Blank max marks for information
+            "unit_1": "N",
+        }
+        resp = self.client.post(reverse("confirm_mappings"), form_data)
+        self.assertEqual(resp.status_code, 302)
+        self.assertTrue(resp.url.endswith("/assessment-feedback/layout/"))
+
+        saved_cats = self.client.session["mappings"]["categories"]
+        self.assertEqual(saved_cats[1]["type"], "information")
+        self.assertIsNone(saved_cats[1]["max_marks"])
+        self.assertEqual(saved_cats[1]["unit"], "N")
+
+    def test_confirm_rejects_all_information_columns(self):
+        """Verify that mapping confirmation fails if there are no grading (numeric/rubric) columns."""
+        session = self.client.session
+        session["headers"] = ["Student Name", "Student ID", "Max Load (N)"]
+        session["uploaded_data"] = [
+            {"Student Name": "Alice", "Student ID": "1", "Max Load (N)": 150}
+        ]
+        session["mappings"] = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "degree_level": "BEng",
+            "subdivision": "none",
+            "categories": [
+                {"column": "Max Load (N)", "max_marks": None, "weight": None, "comments_column": "", "type": "information", "unit": "N"}
+            ]
+        }
+        session.save()
+
+        form_data = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "degree_level": "BEng",
+            "type_0": "information",
+            "max_0": "",
+            "unit_0": "N",
+        }
+        resp = self.client.post(reverse("confirm_mappings"), form_data)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "You must have at least one numeric Mark or Rubric grade category.")
+
+    def test_process_excludes_information_from_score_and_radar(self):
+        """Verify information categories are rendered properly but excluded from score & radar."""
+        uploaded_data = [
+            {"Student Name": "Alice", "Student ID": "1", "Design /30": 20, "Max Load (N)": 42.5}
+        ]
+        mappings = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "degree_level": "BEng",
+            "subdivision": "none",
+            "categories": [
+                {"column": "Design /30", "max_marks": 30, "weight": None, "comments_column": "", "type": "numeric", "unit": ""},
+                {"column": "Max Load (N)", "max_marks": None, "weight": None, "comments_column": "", "type": "information", "unit": "N"}
+            ]
+        }
+        session = self.client.session
+        session["headers"] = ["Student Name", "Student ID", "Design /30", "Max Load (N)"]
+        session["uploaded_data"] = uploaded_data
+        session["mappings"] = mappings
+        session.save()
+
+        # Check preview score/grade
+        preview_resp = self.client.get(reverse("configure_layout"))
+        self.assertEqual(preview_resp.status_code, 200)
+        
+        # Design /30 with 20/30 marks is 66.7%, which is 2:1.
+        # Max Load (N) is 42.5. If it contributed, total score would be affected.
+        # But it should be excluded, so:
+        # Total Score: 20, Total Max: 30, overall_pct: 67%.
+        self.assertContains(preview_resp, "67%")
+        self.assertContains(preview_resp, "Grade: 2:1")
+
+        # Now test ZIP processing
+        process_resp = self.client.get(reverse("process_feedback"))
+        self.assertEqual(process_resp.status_code, 200)
+        
+        zf = zipfile.ZipFile(io.BytesIO(process_resp.content))
+        html_content = zf.read("1_alice.html").decode("utf-8")
+        
+        # Verify rendered value: "42.5 N" under Criterion Marks
+        self.assertIn("Max Load (N)", html_content)
+        # Should render 42.5 N in the table cell
+        self.assertIn("42.5 N", html_content)
+        
+        # Verify no "/ None" or "/ max" for Max Load
+        self.assertNotIn("42.5 /", html_content)
+        self.assertNotIn("/ None", html_content)
+
+    def test_regression_numeric_marks_behave_same(self):
+        """Verify normal numeric columns are rendered with denominator and calculated grade bands as before."""
+        uploaded_data = [
+            {"Student Name": "Alice", "Student ID": "1", "Design /30": 20}
+        ]
+        mappings = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "degree_level": "BEng",
+            "subdivision": "none",
+            "categories": [
+                {"column": "Design /30", "max_marks": 30, "weight": None, "comments_column": "", "type": "numeric", "unit": ""}
+            ]
+        }
+        session = self.client.session
+        session["headers"] = ["Student Name", "Student ID", "Design /30"]
+        session["uploaded_data"] = uploaded_data
+        session["mappings"] = mappings
+        session.save()
+
+        process_resp = self.client.get(reverse("process_feedback"))
+        self.assertEqual(process_resp.status_code, 200)
+        
+        zf = zipfile.ZipFile(io.BytesIO(process_resp.content))
+        html_content = zf.read("1_alice.html").decode("utf-8")
+        
+        # Check standard mark format: "20 / 30"
+        self.assertIn("20 / 30", html_content)
+
 
 

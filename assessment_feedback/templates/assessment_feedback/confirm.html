@@ -150,7 +150,7 @@
                                 <tr>
                                     <th>Grading Category (Excel Header)</th>
                                     <th>Category Type</th>
-                                    <th>Max Marks</th>
+                                    <th>Max Marks / Unit</th>
                                     <th>Matched Comments/Feedback Column</th>
                                 </tr>
                             </thead>
@@ -161,21 +161,23 @@
                                         {{ cat.column }}
                                     </td>
                                     <td>
-                                        {% if cat.type == 'grade' %}
-                                        <span class="badge badge-inferred rounded-2 px-2 py-1" style="font-size: 0.8rem;">
-                                            ✦ Rubric — {{ cat.subdivision|default:"none" }}
-                                        </span>
-                                        {% else %}
-                                        <span class="badge rounded-2 px-2 py-1" style="font-size: 0.8rem; background-color: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;">
-                                            Numeric Score
-                                        </span>
-                                        {% endif %}
-                                        <input type="hidden" name="type_{{ forloop.counter0 }}" value="{{ cat.type }}">
+                                        <select name="type_{{ forloop.counter0 }}" class="form-select form-select-sm rounded-3 type-select" data-idx="{{ forloop.counter0 }}">
+                                            <option value="numeric" {% if cat.type == 'numeric' %}selected{% endif %}>Mark</option>
+                                            <option value="grade" {% if cat.type == 'grade' %}selected{% endif %}>Rubric grade</option>
+                                            <option value="information" {% if cat.type == 'information' %}selected{% endif %}>Information data</option>
+                                        </select>
                                     </td>
                                     <td>
-                                        <input type="number" name="max_{{ forloop.counter0 }}"
-                                            class="form-control form-control-sm rounded-3" value="{{ cat.max_marks }}"
-                                            style="width: 80px;">
+                                        <div class="max-marks-container-{{ forloop.counter0 }}">
+                                            <input type="number" name="max_{{ forloop.counter0 }}"
+                                                class="form-control form-control-sm rounded-3 max-marks-input" value="{{ cat.max_marks|default:'' }}"
+                                                style="width: 80px;" {% if cat.type == 'information' %}disabled style="display:none;"{% endif %}>
+                                        </div>
+                                        <div class="unit-container-{{ forloop.counter0 }} {% if cat.type != 'information' %}d-none{% endif %}">
+                                            <input type="text" name="unit_{{ forloop.counter0 }}"
+                                                class="form-control form-control-sm rounded-3 unit-input" value="{{ cat.unit|default:'' }}"
+                                                placeholder="e.g. N, kg, ms" style="width: 100px;" {% if cat.type != 'information' %}disabled{% endif %}>
+                                        </div>
                                     </td>
                                     <td>
                                         <select name="comments_{{ forloop.counter0 }}"
@@ -292,6 +294,56 @@
     }
 
 
+    // ── Type select changes ──────────────────────────────────────────────────
+    document.querySelectorAll('.type-select').forEach(select => {
+        select.addEventListener('change', function () {
+            const idx = this.getAttribute('data-idx');
+            const type = this.value;
+            const maxInput = document.querySelector(`input[name="max_${idx}"]`);
+            const unitContainer = document.querySelector(`.unit-container-${idx}`);
+            const unitInput = document.querySelector(`input[name="unit_${idx}"]`);
+            const panel = document.getElementById(`rubric-panel-${idx}`);
+
+            if (type === 'information') {
+                if (maxInput) {
+                    maxInput.disabled = true;
+                    maxInput.style.display = 'none';
+                    maxInput.required = false;
+                }
+                if (unitContainer && unitInput) {
+                    unitContainer.classList.remove('d-none');
+                    unitInput.disabled = false;
+                }
+                if (panel) {
+                    panel.classList.add('d-none');
+                }
+            } else {
+                if (maxInput) {
+                    maxInput.disabled = false;
+                    maxInput.style.display = 'block';
+                    maxInput.required = true;
+                    if (!maxInput.value) {
+                        maxInput.value = 100;
+                    }
+                }
+                if (unitContainer && unitInput) {
+                    unitContainer.classList.add('d-none');
+                    unitInput.disabled = true;
+                }
+                if (type === 'grade') {
+                    if (panel) {
+                        panel.classList.remove('d-none');
+                        fetchAndRenderBands(idx, panel, currentSubdivision(idx), 0);
+                    }
+                } else {
+                    if (panel) {
+                        panel.classList.add('d-none');
+                    }
+                }
+            }
+        });
+    });
+
     // ── Max marks input ──────────────────────────────────────────────────────
     document.querySelectorAll('input[name^="max_"]').forEach(input => {
         input.addEventListener('input', function () {
@@ -299,8 +351,8 @@
             const panel = document.getElementById(`rubric-panel-${idx}`);
             if (!panel || panel.classList.contains('d-none')) return;
 
-            const typeInput = document.querySelector(`input[name="type_${idx}"]`);
-            if (!typeInput || typeInput.value !== 'grade') return;
+            const typeSelect = document.querySelector(`select[name="type_${idx}"]`);
+            if (!typeSelect || typeSelect.value !== 'grade') return;
 
             const maxMarks = parseInt(this.value, 10);
             if (isNaN(maxMarks) || maxMarks <= 0) return;

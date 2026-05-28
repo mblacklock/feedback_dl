@@ -34,7 +34,9 @@ Depends on: feedback_blocks.css
         <tr>
             <td class="label">{{ cat.label }}</td>
             <td class="band">
-                {% if cat.is_grade %}
+                {% if cat.is_information %}
+                &mdash;
+                {% elif cat.is_grade %}
                 {{ cat.grade_awarded }}
                 {% else %}
                 <span class="numeric-grade-band" style="display: {% if show_numeric_grade_bands %}inline{% else %}none{% endif %};">
@@ -45,7 +47,13 @@ Depends on: feedback_blocks.css
                 </span>
                 {% endif %}
             </td>
-            <td class="right">{{ cat.mark|floatformat:0 }} / {{ cat.max_marks }}</td>
+            <td class="right">
+                {% if cat.is_information %}
+                {{ cat.mark }} {% if cat.unit %}{{ cat.unit }}{% endif %}
+                {% else %}
+                {{ cat.mark|floatformat:0 }} / {{ cat.max_marks }}
+                {% endif %}
+            </td>
         </tr>
         {% endfor %}
     </tbody>

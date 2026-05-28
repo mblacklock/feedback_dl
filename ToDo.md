@@ -1,6 +1,6 @@
 # TODO
 
-## Priority 4: Production Safety (Skipped For Now)
+## Production Safety (Skipped For Now)
 
 - [ ] Move `SECRET_KEY` to an environment variable in production settings.
 - [ ] Rotate the deployed production secret key after removing the committed one.
@@ -9,7 +9,7 @@
 
 ## Future Enhancements
 
-- [ ] Ability to have non-mark categories, e.g. for performance data.
+- [x] Ability to have non-mark categories, e.g. for performance data.
 - [ ] General assessment feedback/freeform comments.
 - [ ] Create a marking spreadsheet from a template.
 - [ ] Add a changelog file.
