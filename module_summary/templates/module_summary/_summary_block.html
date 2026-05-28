@@ -1,0 +1,57 @@
+{% comment %}
+Partial: _summary_block.html
+Renders a single layout block by its block.id for the module summary app.
+Expects: block, components, weighted_final_pct, overall_grade, chart_base64
+Depends on: feedback_blocks.css
+{% endcomment %}
+
+{% if block.id == "overall_card" %}
+<div class="overall-card" style="background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%); color: white; border-radius: 8px; padding: 18px 24px; margin-bottom: 20px; border-bottom: 4px solid #c8a951; display: flex; justify-content: space-between; align-items: center; width: 100%;">
+    <div>
+        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: #cbd5e1; margin-bottom: 4px; font-weight: 600;">Weighted Final Module Score</div>
+        <div style="font-size: 24px; font-weight: 800; color: #ffffff; font-family: 'Outfit', sans-serif;">{{ weighted_final_pct|floatformat:1 }}%</div>
+    </div>
+    <div style="text-align: right;">
+        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: #cbd5e1; margin-bottom: 4px; font-weight: 600;">Awarded Final Module Grade</div>
+        <div style="background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 30px; padding: 4px 14px; font-weight: 700; font-size: 12px; display: inline-block; color: #ffffff; font-family: 'Outfit', sans-serif;">{{ overall_grade }}</div>
+    </div>
+</div>
+
+{% elif block.id == "assessment_table" %}
+<div class="section-heading">Assessment Breakdown</div>
+<table class="marks-table">
+    <thead>
+        <tr>
+            <th>Component</th>
+            <th class="right">Raw Score</th>
+            <th class="right">Percentage</th>
+            <th class="right">Weight</th>
+            <th class="right">UK Grade Band</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for comp in components %}
+        <tr>
+            <td class="label">{{ comp.label_short }}</td>
+            <td class="right">{{ comp.mark|floatformat:1 }} / {{ comp.max_marks }}</td>
+            <td class="right">{{ comp.percentage|floatformat:1 }}%</td>
+            <td class="right">{{ comp.weight }}%</td>
+            <td class="band">
+                <span class="numeric-grade-band">
+                    {{ comp.grade }}
+                </span>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% elif block.id == "comparison_chart" %}
+{% if chart_base64 %}
+<div class="chart-box" style="margin-bottom: 20px;">
+    <div class="chart-box-title">Component Performance Comparison</div>
+    <img src="data:image/svg+xml;base64,{{ chart_base64 }}" alt="Comparison Chart" style="max-width: 480px; width: 100%; height: auto; display: block; margin: 0 auto;">
+</div>
+{% endif %}
+
+{% endif %}

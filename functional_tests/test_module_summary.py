@@ -40,7 +40,7 @@ class ModuleSummaryFT(FunctionalTestBase):
         """
         GIVEN: An academic has a completed MCRF spreadsheet.
         WHEN: They visit the Module Summary tool, upload the file, and confirm weights.
-        THEN: They receive a ZIP download containing single-page summary PDFs.
+        THEN: They design the layout and receive a ZIP download containing summary HTML sheets.
         """
         # WHEN: They visit the module summary tool
         self.browser.get(f"{self.live_server_url}/module-summary/")
@@ -49,7 +49,7 @@ class ModuleSummaryFT(FunctionalTestBase):
         page_title = self.wait.until(
             EC.presence_of_element_located((By.TAG_NAME, "h1"))
         )
-        self.assertIn("Module Summary PDF Generator", page_title.text)
+        self.assertIn("Module Summary Sheet Generator", page_title.text)
         
         file_input = self.browser.find_element(By.NAME, "file")
         self.assertIsNotNone(file_input)
@@ -80,10 +80,22 @@ class ModuleSummaryFT(FunctionalTestBase):
         self.assertIn("CW1 - Mark", page_content)
         self.assertIn("Exam - Mark", page_content)
         
-        # WHEN: They submit the confirmation form to trigger PDF generation
+        # WHEN: They submit the confirmation form to proceed to layout builder
         generate_btn = self.browser.find_element(By.CSS_SELECTOR, "button[type='submit']")
         self.browser.execute_script("arguments[0].scrollIntoView(true);", generate_btn)
         self.browser.execute_script("arguments[0].click();", generate_btn)
+        
+        # THEN: They are redirected to the WYSIWYG Layout UI
+        self.wait.until(EC.url_contains("/module-summary/layout/"))
+        
+        # AND: They see that they are in the Designer view
+        layout_title = self.browser.find_element(By.TAG_NAME, "h3")
+        self.assertIn("Module Summary Designer", layout_title.text)
+        
+        # WHEN: They submit the layout design form
+        layout_submit_btn = self.browser.find_element(By.CSS_SELECTOR, "form#layoutForm button[type='submit']")
+        self.browser.execute_script("arguments[0].scrollIntoView(true);", layout_submit_btn)
+        self.browser.execute_script("arguments[0].click();", layout_submit_btn)
         
         # THEN: They receive the ZIP file response
         time.sleep(2)

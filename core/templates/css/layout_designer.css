@@ -1,0 +1,182 @@
+/* ============================================================
+   layout_designer.css
+   Shared styles for the WYSIWYG Interactive Layout Designer.
+   Used in both configure_layout.html files.
+   ============================================================ */
+
+/* ── Page & card chrome ── */
+.main-card {
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.gradient-header {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border-radius: 20px 20px 0 0;
+    padding: 30px;
+    color: white;
+    border-bottom: 4px solid #c8a951;
+}
+
+.control-pane {
+    position: sticky;
+    top: 24px;
+}
+
+.info-badge {
+    background: #f1f5f9;
+    color: #475569;
+    font-weight: 600;
+    font-size: 0.8rem;
+    padding: 4px 12px;
+    border-radius: 20px;
+    display: inline-block;
+}
+
+.btn-premium {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    color: white;
+    border: 1px solid #c8a951;
+    border-radius: 12px;
+    padding: 14px 40px;
+    font-weight: 700;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 15px rgba(15, 23, 42, 0.2);
+}
+
+.btn-premium:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(200, 169, 81, 0.35);
+    color: #c8a951;
+    border-color: #c8a951;
+}
+
+/* ── Simulated sheet chrome ── */
+.simulated-sheet {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 25px rgba(0, 0, 0, 0.08);
+    padding: 24px;
+    border: 1px solid #e2e8f0;
+}
+
+/* ── Drag & drop block chrome ── */
+.sheet-blocks-container {
+    display: flex;
+    flex-wrap: wrap;
+    margin: -8px;
+}
+
+.draggable-block {
+    padding: 8px;
+    box-sizing: border-box;
+    transition: width 0.25s ease, opacity 0.25s ease, margin 0.25s ease;
+    position: relative;
+    border: 2px dashed transparent;
+    border-radius: 12px;
+    margin-bottom: 12px;
+}
+
+.draggable-block.width-half { width: 50%; }
+.draggable-block.width-half.lone-half { margin-left: 25%; margin-right: 25%; }
+.draggable-block.width-full { width: 100%; }
+
+.draggable-block:hover {
+    border-color: #cbd5e1;
+    background-color: rgba(248, 250, 252, 0.45);
+}
+
+.draggable-block.dragging {
+    opacity: 0.35;
+    border-color: #4361ee;
+    border-style: solid;
+}
+
+.draggable-block.drag-over {
+    border-color: #4361ee;
+    background-color: #f0f4ff;
+    border-style: solid;
+}
+
+.draggable-block.disabled .block-preview-content {
+    opacity: 0.25;
+    pointer-events: none;
+}
+
+.draggable-block.disabled {
+    border-color: #e2e8f0;
+    background-color: #f8fafc;
+}
+
+.excluded-overlay {
+    display: none;
+    position: absolute;
+    top: 48px;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    background: rgba(248, 250, 252, 0.65);
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #64748b;
+    border-radius: 8px;
+    border: 1px dashed #cbd5e1;
+    z-index: 5;
+}
+
+.draggable-block.disabled .excluded-overlay { display: flex; }
+
+/* ── Block editor bar ── */
+.block-editor-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 6px 12px;
+    margin-bottom: 8px;
+    user-select: none;
+}
+
+.drag-handle {
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #334155;
+    cursor: grab;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.drag-icon { font-size: 1.1rem; color: #64748b; }
+
+.block-editor-controls { display: flex; align-items: center; }
+
+.width-selector-mini {
+    display: flex;
+    background: #e2e8f0;
+    padding: 2px;
+    border-radius: 6px;
+}
+
+.btn-size {
+    border: none;
+    background: none;
+    padding: 3px 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 4px;
+    color: #475569;
+    transition: all 0.15s ease;
+}
+
+.btn-size.active {
+    background: white;
+    color: #1a1a2e;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}

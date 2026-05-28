@@ -1,6 +1,6 @@
 {% extends "rubric_generator/base.html" %}
 
-{% block title %}Configure Feedback Sheet Layout{% endblock %}
+{% block title %}Configure Module Summary Layout{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -17,7 +17,7 @@
     <div class="col-lg-4 mb-4 mb-lg-0">
         <div class="card main-card control-pane">
             <div class="gradient-header text-center py-4">
-                <h3 class="fw-bold mb-1">Feedback Designer</h3>
+                <h3 class="fw-bold mb-1">Module Summary Designer</h3>
                 <p class="mb-0 opacity-75 small">Interactive WYSIWYG Layout Editor</p>
             </div>
             
@@ -56,14 +56,13 @@
                     <input type="hidden" name="block_order" id="blockOrderInput" value="">
                     
                     <!-- Hidden inputs to preserve layout configuration states on POST -->
-                    <input type="hidden" name="show_numeric_grade_bands" id="show_numeric_grade_bands_input" value="{% if show_numeric_grade_bands %}true{% else %}false{% endif %}">
                     {% for block in layout %}
                     <input type="hidden" name="enabled_{{ block.id }}" id="enabled_input_{{ block.id }}" value="{% if block.enabled %}true{% else %}false{% endif %}">
                     <input type="hidden" name="width_{{ block.id }}" id="width_input_{{ block.id }}" value="{{ block.width|default:'full' }}">
                     {% endfor %}
 
                     <button type="submit" class="btn btn-premium btn-lg w-100 py-3 d-flex align-items-center justify-content-center gap-2">
-                        <span>Generate Student Feedback Sheets</span>
+                        <span>Generate Student Summary Sheets</span>
                     </button>
                 </form>
             </div>
@@ -73,14 +72,14 @@
     <!-- Right Column: Draggable Live WYSIWYG Template Preview -->
     <div class="col-lg-8">
         <h4 class="fw-bold mb-3 d-flex align-items-center gap-2">
-            <span>Feedback Sheet Live Preview</span>
+            <span>Summary Sheet Live Preview</span>
             <span class="badge bg-secondary fs-6 rounded-pill">WYSIWYG Workspace</span>
         </h4>
 
         {% if preview_student %}
         <div class="simulated-sheet">
             <!-- Simulated Header and Student details -->
-            {% include "assessment_feedback/_feedback_header.html" with module_code=preview_student.module_code module_title=preview_student.module_title assessment_title=preview_student.assessment_title academic_year=preview_student.academic_year student_name=preview_student.student_name student_id=preview_student.student_id total_score=preview_student.total_score total_max_marks=preview_student.total_max_marks overall_grade=preview_student.overall_grade overall_percentage=preview_student.overall_percentage %}
+            {% include "module_summary/_summary_header.html" with module_code=preview_student.module_code module_title=preview_student.module_title student_name=preview_student.student_name student_id=preview_student.student_id weighted_final_pct=preview_student.weighted_final_pct overall_grade=preview_student.overall_grade degree_level=preview_student.degree_level %}
 
             <!-- Draggable Blocks Container -->
             <div class="sheet-blocks-container" id="layoutContainer">
@@ -103,25 +102,25 @@
                             <div class="form-check form-switch mb-0 ms-3">
                                 <input class="form-check-input block-toggle-switch shadow-sm" type="checkbox" role="switch" 
                                        id="switch_{{ block.id }}" {% if block.enabled %}checked{% endif %} title="Toggle visibility in output">
-                            </div>
+                             </div>
                         </div>
                     </div>
 
                     <!-- Live Content Rendered inside the block -->
                     <div class="block-preview-content">
-                        {% include "assessment_feedback/_feedback_block.html" with categories=preview_student.categories radar_base64=preview_student.radar_base64 hist_base64=preview_student.hist_base64 block=block is_editor=True show_numeric_grade_bands=show_numeric_grade_bands %}
+                        {% include "module_summary/_summary_block.html" with components=preview_student.components weighted_final_pct=preview_student.weighted_final_pct overall_grade=preview_student.overall_grade chart_base64=preview_student.chart_base64 block=block %}
                     </div>
 
                     <!-- Exclusion Overlay for visual indicator -->
                     <div class="excluded-overlay">
-                        <span>Excluded from feedback report</span>
+                        <span>Excluded from module summary report</span>
                     </div>
                 </div>
                 {% endfor %}
             </div>
 
             <!-- Overall Summary and Disclaimer -->
-            {% include "assessment_feedback/_feedback_footer.html" with overall_percentage=preview_student.overall_percentage overall_grade=preview_student.overall_grade %}
+            {% include "module_summary/_summary_footer.html" %}
         </div>
         {% else %}
         <div class="alert alert-warning rounded-3 shadow-sm" role="alert">
@@ -183,129 +182,135 @@
             }
         }
 
+        // Initialize state hidden inputs value immediately
         updateBlockOrder();
         alignLoneHalfBlocks();
 
-        // ── Enable / Disable switch ───────────────────────────────────────────
+        // ── Form Submit sync check ───────────────────────────────────────────
+        const form = document.getElementById('layoutForm');
+        form.addEventListener('submit', () => {
+            updateBlockOrder();
+        });
 
+        // ── Drag and Drop Event Listeners ────────────────────────────────────
         if (container) {
-            container.addEventListener('change', (e) => {
-                if (e.target.classList.contains('block-toggle-switch')) {
-                    const card    = e.target.closest('.draggable-block');
-                    const blockId = card.getAttribute('data-id');
-                    const hidden  = document.getElementById(`enabled_input_${blockId}`);
-                    if (e.target.checked) {
-                        card.classList.remove('disabled');
-                        hidden.value = 'true';
-                    } else {
-                        card.classList.add('disabled');
-                        hidden.value = 'false';
-                    }
-                    alignLoneHalfBlocks();
-                } else if (e.target.classList.contains('toggle-numeric-grades-input')) {
-                    const hidden = document.getElementById('show_numeric_grade_bands_input');
-                    if (hidden) {
-                        hidden.value = e.target.checked ? 'true' : 'false';
-                    }
+            let dragSourceEl = null;
+
+            function handleDragStart(e) {
+                const draggableEl = this.closest('.draggable-block');
+                if (!draggableEl) return;
+                
+                draggableEl.classList.add('dragging');
+                dragSourceEl = draggableEl;
+                e.dataTransfer.effectAllowed = 'move';
+                // Necessary for Firefox
+                e.dataTransfer.setData('text/plain', draggableEl.getAttribute('data-id'));
+            }
+
+            function handleDragOver(e) {
+                if (e.preventDefault) e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                
+                const overEl = this.closest('.draggable-block');
+                if (overEl && overEl !== dragSourceEl) {
+                    overEl.classList.add('drag-over');
                 }
-            });
-        }
+                return false;
+            }
 
-        // ── Width selector ────────────────────────────────────────────────────
+            function handleDragLeave(e) {
+                const overEl = this.closest('.draggable-block');
+                if (overEl) {
+                    overEl.classList.remove('drag-over');
+                }
+            }
 
-        if (container) {
+            function handleDrop(e) {
+                if (e.stopPropagation) e.stopPropagation();
+                
+                const targetEl = this.closest('.draggable-block');
+                if (dragSourceEl && targetEl && dragSourceEl !== targetEl) {
+                    // Decide where to insert based on relative layout container position
+                    const rect = targetEl.getBoundingClientRect();
+                    const next = (e.clientY - rect.top) / (rect.bottom - rect.top) > 0.5;
+                    
+                    container.insertBefore(dragSourceEl, next ? targetEl.nextSibling : targetEl);
+                    
+                    updateBlockOrder();
+                    alignLoneHalfBlocks();
+                }
+                return false;
+            }
+
+            function handleDragEnd(e) {
+                const blocks = container.querySelectorAll('.draggable-block');
+                blocks.forEach(b => {
+                    b.classList.remove('dragging');
+                    b.classList.remove('drag-over');
+                });
+                dragSourceEl = null;
+            }
+
+            function setupDraggable(element) {
+                const handle = element.querySelector('.drag-handle');
+                handle.setAttribute('draggable', 'true');
+                handle.addEventListener('dragstart', handleDragStart);
+                
+                element.addEventListener('dragover', handleDragOver);
+                element.addEventListener('dragleave', handleDragLeave);
+                element.addEventListener('drop', handleDrop);
+                element.addEventListener('dragend', handleDragEnd);
+            }
+
+            const blocks = container.querySelectorAll('.draggable-block');
+            blocks.forEach(setupDraggable);
+
+            // ── Dynamic Width selection mini controllers ────────────────────
             container.addEventListener('click', (e) => {
-                const widthBtn = e.target.closest('.btn-size');
-                if (!widthBtn) return;
-                const card    = widthBtn.closest('.draggable-block');
-                const blockId = card.getAttribute('data-id');
-                const hidden  = document.getElementById(`width_input_${blockId}`);
-                card.querySelectorAll('.btn-size').forEach(b => b.classList.remove('active'));
-                widthBtn.classList.add('active');
-                
-                const newWidth = widthBtn.getAttribute('data-width');
-                hidden.value = newWidth;
-                
-                if (newWidth === 'half') {
-                    card.classList.remove('width-full');
-                    card.classList.add('width-half');
-                } else {
-                    card.classList.remove('width-half');
-                    card.classList.add('width-full');
-                }
-                alignLoneHalfBlocks();
-            });
-        }
-
-        // ── HTML5 Drag-and-Drop ───────────────────────────────────────────────
-
-        let dragSrc = null;
-
-        function getDragHandles() {
-            return container ? container.querySelectorAll('.draggable-block') : [];
-        }
-
-        function initDraggable() {
-            getDragHandles().forEach(card => {
-                const handle = card.querySelector('.drag-handle');
-                if (!handle) return;
-                
-                // Allow dragging on the card itself, but coordinate via handle hover/state
-                card.setAttribute('draggable', 'true');
-
-                card.addEventListener('dragstart', (e) => {
-                    dragSrc = card;
-                    e.dataTransfer.effectAllowed = 'move';
-                    setTimeout(() => card.classList.add('dragging'), 0);
-                });
-
-                card.addEventListener('dragend', () => {
-                    card.classList.remove('dragging');
-                    container.querySelectorAll('.draggable-block').forEach(c => {
-                        c.classList.remove('drag-over');
-                    });
-                    dragSrc = null;
-                    updateBlockOrder();
-                    alignLoneHalfBlocks();
-                });
-
-                card.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    e.dataTransfer.dropEffect = 'move';
-                    if (card !== dragSrc) {
-                        container.querySelectorAll('.draggable-block').forEach(c => c.classList.remove('drag-over'));
-                        card.classList.add('drag-over');
-                    }
-                });
-
-                card.addEventListener('dragleave', () => {
-                    card.classList.remove('drag-over');
-                });
-
-                card.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (!dragSrc || dragSrc === card) return;
-
-                    const rect   = card.getBoundingClientRect();
-                    const midY   = rect.top + rect.height / 2;
-                    const before = e.clientY < midY;
-
-                    if (before) {
-                        container.insertBefore(dragSrc, card);
+                const btn = e.target.closest('.btn-size');
+                if (btn) {
+                    const block = btn.closest('.draggable-block');
+                    const size = btn.getAttribute('data-width');
+                    const blockId = block.getAttribute('data-id');
+                    
+                    // Update active button indicators
+                    const selector = btn.closest('.width-selector-mini');
+                    selector.querySelectorAll('.btn-size').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    // Toggle DOM layout classes
+                    if (size === 'half') {
+                        block.classList.remove('width-full');
+                        block.classList.add('width-half');
                     } else {
-                        container.insertBefore(dragSrc, card.nextSibling);
+                        block.classList.remove('width-half');
+                        block.classList.add('width-full');
                     }
-
-                    card.classList.remove('drag-over');
-                    updateBlockOrder();
+                    
+                    // Update the hidden state form values
+                    const stateInput = document.getElementById(`width_input_${blockId}`);
+                    if (stateInput) stateInput.value = size;
+                    
                     alignLoneHalfBlocks();
-                });
-            });
-        }
+                }
 
-        if (container) {
-            initDraggable();
+                // ── Enabled switch toggler action ────────────────────────────
+                const toggle = e.target.closest('.block-toggle-switch');
+                if (toggle) {
+                    const block = toggle.closest('.draggable-block');
+                    const blockId = block.getAttribute('data-id');
+                    const checked = toggle.checked;
+                    
+                    if (checked) {
+                        block.classList.remove('disabled');
+                    } else {
+                        block.classList.add('disabled');
+                    }
+                    
+                    const stateInput = document.getElementById(`enabled_input_${blockId}`);
+                    if (stateInput) stateInput.value = checked ? "true" : "false";
+                }
+            });
         }
     });
 </script>

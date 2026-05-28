@@ -9,7 +9,7 @@ from django.utils.text import slugify
 
 from core.utils.grade_bands import calculate_grade_bands, grade_for_percentage
 from core.utils.charts import generate_module_comparison_chart
-from core.utils.pdf_renderer import render_html_to_pdf
+from assessment_feedback.views import build_feedback_sheet_layout_rows
 
 
 def normalize_student_id(id_val):
@@ -237,7 +237,7 @@ def confirm_module_mappings(request):
         if total_weight != 100:
             error = f"Total component weight must sum to exactly 100% (currently {total_weight}%)."
         else:
-            return redirect("module_process")
+            return redirect("module_layout")
             
     return render(request, "module_summary/confirm.html", {
         "headers": headers,
@@ -247,11 +247,9 @@ def confirm_module_mappings(request):
     })
 
 
-def process_module_summary(request):
+def configure_module_layout(request):
     """
-    Step 3: PDF Generation & ZIP Download View
-    Calculates weighted marks, generates side-by-side comparison bar charts,
-    and returns a downloadable ZIP of summary feedback cards.
+    Step 2.5: Interactive WYSIWYG Layout Editor for Module Summary sheets.
     """
     uploaded_data = request.session.get("module_uploaded_data")
     mappings = request.session.get("module_mappings")
@@ -259,6 +257,179 @@ def process_module_summary(request):
     if not uploaded_data or not mappings:
         return redirect("module_upload")
         
+    default_layout = [
+        {"id": "assessment_table", "name": "Assessment Breakdown Table", "width": "full", "enabled": True},
+        {"id": "comparison_chart", "name": "Comparative Visual Chart", "width": "full", "enabled": True},
+        {"id": "overall_card", "name": "Weighted Final Module Score Card", "width": "full", "enabled": True},
+    ]
+    layout = request.session.get("module_layout", default_layout)
+    
+    if request.method == "POST":
+        block_order = request.POST.get("block_order", "").split(",")
+        if not any(block_order):
+            block_order = [b["id"] for b in default_layout]
+            
+        updated_layout = []
+        name_map = {
+            "assessment_table": "Assessment Breakdown Table",
+            "overall_card": "Weighted Final Module Score Card",
+            "comparison_chart": "Comparative Visual Chart",
+        }
+        
+        for bid in block_order:
+            bid = bid.strip()
+            if bid in name_map:
+                enabled = request.POST.get(f"enabled_{bid}") == "true"
+                width = request.POST.get(f"width_{bid}", "full")
+                if width not in ["half", "full"]:
+                    width = "full"
+                    
+                updated_layout.append({
+                    "id": bid,
+                    "name": name_map[bid],
+                    "width": width,
+                    "enabled": enabled
+                })
+                
+        if updated_layout:
+            request.session["module_layout"] = updated_layout
+            request.session.modified = True
+            
+        return redirect("module_process")
+        
+    col_name = mappings["col_student_name"]
+    col_id = mappings["col_student_id"]
+    degree_level = mappings["degree_level"]
+    subdivision = mappings["subdivision"]
+    components = mappings["components"]
+    
+    # Calculate Cohort Component Averages in percentage terms
+    comp_cohort_percentages = {comp["column"]: [] for comp in components}
+    for r in uploaded_data:
+        for comp in components:
+            col = comp["column"]
+            max_marks = comp["max_marks"]
+            val = r.get(col, 0)
+            try:
+                mark_val = float(val) if val is not None else 0
+            except ValueError:
+                mark_val = 0
+            pct = (mark_val / max_marks) * 100 if max_marks > 0 else 0
+            comp_cohort_percentages[col].append(pct)
+            
+    comp_averages_pct = {}
+    for comp in components:
+        col = comp["column"]
+        pcts = comp_cohort_percentages[col]
+        comp_averages_pct[col] = sum(pcts) / len(pcts) if pcts else 0
+        
+    # Prepare student selection list
+    students_list = []
+    for idx, r in enumerate(uploaded_data):
+        s_name = str(r.get(col_name, f"Student {idx+1}")).strip()
+        s_id = str(r.get(col_id, f"ID-{idx+1}")).strip()
+        if s_name or s_id:
+            students_list.append({
+                "index": idx,
+                "name": s_name,
+                "id": s_id,
+            })
+            
+    # Read selected student index from query param
+    try:
+        preview_student_index = int(request.GET.get("student_index", 0))
+        if preview_student_index < 0 or preview_student_index >= len(uploaded_data):
+            preview_student_index = 0
+    except (ValueError, TypeError):
+        preview_student_index = 0
+        
+    preview_student = None
+    if uploaded_data:
+        student_row = uploaded_data[preview_student_index]
+        student_name = str(student_row.get(col_name, f"Student {preview_student_index+1}")).strip()
+        student_id = str(student_row.get(col_id, f"ID-{preview_student_index+1}")).strip()
+        
+        student_components_data = []
+        chart_labels = []
+        student_chart_percentages = []
+        avg_chart_percentages = []
+        weighted_final_pct = 0
+        
+        for comp in components:
+            col = comp["column"]
+            max_marks = comp["max_marks"]
+            weight = comp["weight"]
+            raw_mark = student_row.get(col, 0)
+            try:
+                mark_val = float(raw_mark) if raw_mark is not None else 0
+            except ValueError:
+                mark_val = 0
+                
+            pct_awarded = (mark_val / max_marks) * 100 if max_marks > 0 else 0
+            weighted_final_pct += (pct_awarded * weight) / 100
+            
+            comp_grade = grade_for_percentage(pct_awarded)
+            label_short = col.split(" - ")[0] if " - " in col else col
+            
+            student_components_data.append({
+                "label": col,
+                "label_short": label_short,
+                "mark": mark_val,
+                "max_marks": max_marks,
+                "percentage": pct_awarded,
+                "weight": weight,
+                "grade": comp_grade
+            })
+            
+            chart_labels.append(label_short)
+            student_chart_percentages.append(pct_awarded)
+            avg_chart_percentages.append(comp_averages_pct[col])
+            
+        overall_grade = grade_for_percentage(weighted_final_pct)
+        chart_svg = generate_module_comparison_chart(chart_labels, student_chart_percentages, avg_chart_percentages)
+        chart_base64 = base64.b64encode(chart_svg.encode('utf-8')).decode('utf-8') if chart_svg else ""
+        
+        preview_student = {
+            "student_name": student_name,
+            "student_id": student_id,
+            "components": student_components_data,
+            "weighted_final_pct": weighted_final_pct,
+            "overall_grade": overall_grade,
+            "chart_base64": chart_base64,
+            "degree_level": degree_level,
+            "total_score": round(weighted_final_pct),
+            "overall_percentage": round(weighted_final_pct),
+            "module_code": mappings.get("module_code", "COMP101"),
+            "module_title": mappings.get("module_title", "Module Summary"),
+        }
+        
+    return render(request, "module_summary/configure_layout.html", {
+        "layout": layout,
+        "preview_student_index": preview_student_index,
+        "students_list": students_list,
+        "preview_student": preview_student,
+    })
+
+
+def process_module_summary(request):
+    """
+    Step 3: HTML Generation & ZIP Download View
+    Calculates weighted marks, generates side-by-side comparison bar charts,
+    and returns a downloadable ZIP of self-contained summary HTML sheets.
+    """
+    uploaded_data = request.session.get("module_uploaded_data")
+    mappings = request.session.get("module_mappings")
+    
+    if not uploaded_data or not mappings:
+        return redirect("module_upload")
+        
+    default_layout = [
+        {"id": "assessment_table", "name": "Assessment Breakdown Table", "width": "full", "enabled": True},
+        {"id": "overall_card", "name": "Weighted Final Module Score Card", "width": "full", "enabled": True},
+        {"id": "comparison_chart", "name": "Comparative Visual Chart", "width": "full", "enabled": True},
+    ]
+    layout = request.session.get("module_layout", default_layout)
+    
     col_name = mappings["col_student_name"]
     col_id = mappings["col_student_id"]
     degree_level = mappings["degree_level"]
@@ -317,11 +488,7 @@ def process_module_summary(request):
                 pct_awarded = (mark_val / max_marks) * 100 if max_marks > 0 else 0
                 weighted_final_pct += (pct_awarded * weight) / 100
                 
-                # Component Grade bands mapping
-                comp_bands = calculate_grade_bands(max_marks, subdivision, degree_level=degree_level)
                 comp_grade = grade_for_percentage(pct_awarded)
-                
-                # Component label short name (e.g. "CW1" from "CW1 - Mark")
                 label_short = col.split(" - ")[0] if " - " in col else col
                 
                 student_components_data.append({
@@ -352,16 +519,19 @@ def process_module_summary(request):
                 "weighted_final_pct": weighted_final_pct,
                 "overall_grade": overall_grade,
                 "chart_base64": chart_base64,
-                "degree_level": degree_level
+                "degree_level": degree_level,
+                "layout": layout,
+                "layout_rows": build_feedback_sheet_layout_rows(layout),
+                "module_code": mappings.get("module_code", "COMP101"),
+                "module_title": mappings.get("module_title", "Module Performance"),
             }
             
-            # Render HTML to PDF
+            # Render HTML to String
             from django.template.loader import render_to_string
-            html_content = render_to_string("module_summary/summary_pdf.html", context, request=request)
-            pdf_bytes = render_html_to_pdf(html_content)
+            html_content = render_to_string("module_summary/summary_sheet.html", context, request=request)
             
-            filename = f"module_summary_{slugify(student_id)}_{slugify(student_name)}.pdf"
-            zip_file.writestr(filename, pdf_bytes)
+            filename = f"module_summary_{slugify(student_id)}_{slugify(student_name)}.html"
+            zip_file.writestr(filename, html_content.encode('utf-8'))
             
     response = HttpResponse(zip_buffer.getvalue(), content_type="application/zip")
     response["Content-Disposition"] = "attachment; filename=module_summary_reports.zip"

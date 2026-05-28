@@ -81,7 +81,7 @@ class ModuleSummaryViewsTest(TestCase):
         url = reverse("module_upload")
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
-        self.assertContains(resp, "Module Summary PDF Generator")
+        self.assertContains(resp, "Module Summary Sheet Generator")
 
     def test_upload_mcrf_post_redirects_to_confirm(self):
         """POST /module-summary/ with valid MCRF redirects to confirm mappings"""
@@ -113,7 +113,7 @@ class ModuleSummaryViewsTest(TestCase):
         self.assertContains(resp, "CW1 - Mark")
 
     def test_confirm_module_mappings_post_validates_weight_and_redirects(self):
-        """POST /module-summary/confirm/ saves valid weights and redirects"""
+        """POST /module-summary/confirm/ saves valid weights and redirects to layout"""
         session = self.client.session
         session["module_headers"] = self.sample_headers
         session["module_uploaded_data"] = self.sample_uploaded_data
@@ -130,7 +130,7 @@ class ModuleSummaryViewsTest(TestCase):
         
         resp = self.client.post(url, form_data)
         self.assertEqual(resp.status_code, 302)
-        self.assertTrue(resp.url.endswith("/module-summary/process/"))
+        self.assertTrue(resp.url.endswith("/module-summary/layout/"))
 
     def test_confirm_module_mappings_post_invalid_weight_renders_error(self):
         """POST /module-summary/confirm/ with invalid weights (sum != 100) displays error"""
@@ -153,8 +153,22 @@ class ModuleSummaryViewsTest(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "Total component weight must sum to exactly 100%")
 
+    def test_configure_module_layout_get_renders_designer(self):
+        """GET /module-summary/layout/ renders layout builder screen"""
+        session = self.client.session
+        session["module_headers"] = self.sample_headers
+        session["module_uploaded_data"] = self.sample_uploaded_data
+        session["module_mappings"] = self.sample_mappings
+        session.save()
+
+        url = reverse("module_layout")
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Module Summary Designer")
+        self.assertContains(resp, "Summary Sheet Live Preview")
+
     def test_process_module_summary_generates_zip(self):
-        """GET /module-summary/process/ aggregates data and streams ZIP containing PDFs"""
+        """GET /module-summary/process/ aggregates data and streams ZIP containing HTML sheets"""
         session = self.client.session
         session["module_headers"] = self.sample_headers
         session["module_uploaded_data"] = self.sample_uploaded_data
@@ -172,12 +186,12 @@ class ModuleSummaryViewsTest(TestCase):
         with zipfile.ZipFile(zip_bytes, "r") as zf:
             namelist = zf.namelist()
             self.assertEqual(len(namelist), 2)
-            self.assertIn("module_summary_12345678_alice-smith.pdf", namelist)
-            self.assertIn("module_summary_12345679_bob-jones.pdf", namelist)
+            self.assertIn("module_summary_12345678_alice-smith.html", namelist)
+            self.assertIn("module_summary_12345679_bob-jones.html", namelist)
             
-            # Verify PDF starts with %PDF- header
-            pdf_bytes = zf.read("module_summary_12345678_alice-smith.pdf")
-            self.assertEqual(pdf_bytes[:5], b"%PDF-")
+            # Verify HTML starts with DOCTYPE
+            html_bytes = zf.read("module_summary_12345678_alice-smith.html")
+            self.assertTrue(html_bytes.startswith(b"<!DOCTYPE html>"))
 
     def test_mcrf_inference_with_header_weightings_and_blank_columns(self):
         """Verify MCRF auto-inference logic:

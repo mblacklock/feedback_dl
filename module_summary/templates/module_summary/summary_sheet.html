@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Assessment Feedback — {{ student_name }}</title>
+    <title>Module Summary — {{ student_name }}</title>
     <style>
         *,
         *::before,
@@ -37,10 +37,8 @@
 <body>
     <div class="page">
 
-        <!-- Header -->
-        {% include "assessment_feedback/_feedback_header.html" %}
-
-
+        <!-- Header Block -->
+        {% include "module_summary/_summary_header.html" with module_code=module_code module_title=module_title student_name=student_name student_id=student_id weighted_final_pct=weighted_final_pct overall_grade=overall_grade degree_level=degree_level %}
 
         <!-- Dynamic layout blocks -->
         <div class="content">
@@ -49,7 +47,7 @@
             {% if row.type == "full" %}
             <div class="block-full">
                 {% with block=row.blocks.0 %}
-                {% include "assessment_feedback/_feedback_block.html" %}
+                {% include "module_summary/_summary_block.html" %}
                 {% endwith %}
             </div>
 
@@ -57,12 +55,12 @@
             <div class="half-pair">
                 <div class="half">
                     {% with block=row.blocks.0 %}
-                    {% include "assessment_feedback/_feedback_block.html" %}
+                    {% include "module_summary/_summary_block.html" %}
                     {% endwith %}
                 </div>
                 <div class="half">
                     {% with block=row.blocks.1 %}
-                    {% include "assessment_feedback/_feedback_block.html" %}
+                    {% include "module_summary/_summary_block.html" %}
                     {% endwith %}
                 </div>
             </div>
@@ -71,7 +69,7 @@
             <div class="half-pair">
                 <div class="half">
                     {% with block=row.blocks.0 %}
-                    {% include "assessment_feedback/_feedback_block.html" %}
+                    {% include "module_summary/_summary_block.html" %}
                     {% endwith %}
                 </div>
             </div>
@@ -83,7 +81,9 @@
         </div>
 
         <!-- Overall Summary and Disclaimer -->
-        {% include "assessment_feedback/_feedback_footer.html" %}
+        <div style="padding-bottom: 24px; margin-left: 32px; margin-right: 32px;">
+            {% include "module_summary/_summary_footer.html" %}
+        </div>
 
     </div>
 </body>
