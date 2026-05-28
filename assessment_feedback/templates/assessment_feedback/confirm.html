@@ -171,11 +171,11 @@
                                         </select>
                                     </td>
                                     <td>
-                                        <div class="max-marks-container-{{ forloop.counter0 }}">
-                                            <input type="number" name="max_{{ forloop.counter0 }}"
-                                                class="form-control form-control-sm rounded-3 max-marks-input"
-                                                value="{{ cat.max_marks|default:'' }}" style="width: 80px;"
-                                                {% if cat.type == 'information' %}disabled style="display:none;"{% endif %}>
+                                        <div class="max-marks-container-{{ forloop.counter0 }} {% if cat.type == 'information' %}d-none{% endif %}">
+                                             <input type="number" name="max_{{ forloop.counter0 }}"
+                                                 class="form-control form-control-sm rounded-3 max-marks-input"
+                                                 value="{{ cat.max_marks|default:'' }}" style="width: 80px;"
+                                                 {% if cat.type == 'information' %}disabled{% endif %}>
                                         </div>
                                         <div
                                             class="unit-container-{{ forloop.counter0 }} {% if cat.type != 'information' %}d-none{% endif %}">
@@ -306,15 +306,18 @@
         select.addEventListener('change', function () {
             const idx = this.getAttribute('data-idx');
             const type = this.value;
+            const maxContainer = document.querySelector(`.max-marks-container-${idx}`);
             const maxInput = document.querySelector(`input[name="max_${idx}"]`);
             const unitContainer = document.querySelector(`.unit-container-${idx}`);
             const unitInput = document.querySelector(`input[name="unit_${idx}"]`);
             const panel = document.getElementById(`rubric-panel-${idx}`);
 
             if (type === 'information') {
+                if (maxContainer) {
+                    maxContainer.classList.add('d-none');
+                }
                 if (maxInput) {
                     maxInput.disabled = true;
-                    maxInput.style.display = 'none';
                     maxInput.required = false;
                 }
                 if (unitContainer && unitInput) {
@@ -325,9 +328,11 @@
                     panel.classList.add('d-none');
                 }
             } else {
+                if (maxContainer) {
+                    maxContainer.classList.remove('d-none');
+                }
                 if (maxInput) {
                     maxInput.disabled = false;
-                    maxInput.style.display = 'block';
                     maxInput.required = true;
                     if (!maxInput.value) {
                         maxInput.value = 100;
