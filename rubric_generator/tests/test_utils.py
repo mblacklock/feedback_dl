@@ -66,3 +66,4 @@ class GradeBandUtilsTests(TestCase):
         # Level 7 bands should include Merit/Pass labels and a 50 mark representative
         self.assertTrue(('Merit' in grades) or ('Pass' in grades))
         self.assertIn('50', marks_text)
+        self.assertNotIn('3rd', grades)

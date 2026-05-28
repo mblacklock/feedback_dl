@@ -248,6 +248,11 @@
         return input ? (parseInt(input.value, 10) || 100) : 100;
     }
 
+    function currentDegreeLevel() {
+        const input = document.querySelector('select[name="degree_level"]');
+        return input ? input.value : 'BEng';
+    }
+
     /** Render a rubric panel from a pre-fetched bands array. */
     function renderBands(container, idx, bands) {
         container.innerHTML = bands.map((band, bandIdx) => `
@@ -273,7 +278,7 @@
             const maxMarks = currentMaxMarks(idx);
             const container = panel.querySelector('.rubric-bands-container');
             if (!container) return;
-            fetch(`${RUBRIC_BANDS_URL}?max_marks=${maxMarks}&subdivision=${subdivision}`)
+            fetch(`${RUBRIC_BANDS_URL}?max_marks=${maxMarks}&subdivision=${subdivision}&degree_level=${encodeURIComponent(currentDegreeLevel())}`)
                 .then(r => r.json())
                 .then(bands => renderBands(container, idx, bands))
                 .catch(() => {/* silent — leave existing values in place */ });
@@ -297,6 +302,17 @@
             fetchAndRenderBands(idx, panel, currentSubdivision(idx), 400);
         });
     });
+
+    const degreeLevelInput = document.querySelector('select[name="degree_level"]');
+    if (degreeLevelInput) {
+        degreeLevelInput.addEventListener('change', function () {
+            document.querySelectorAll('.rubric-panel').forEach(panel => {
+                if (panel.classList.contains('d-none')) return;
+                const idx = panel.getAttribute('data-idx');
+                fetchAndRenderBands(idx, panel, currentSubdivision(idx), 0);
+            });
+        });
+    }
 </script>
 
 {% endblock %}

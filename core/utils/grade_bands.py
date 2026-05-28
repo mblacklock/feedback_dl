@@ -233,8 +233,9 @@ def calculate_grade_bands(max_marks, subdivision, degree_level=None):
                 mapped.append({'grade': name.replace('2:1', '2:1/Merit'), 'marks': marks})
             elif '2:2' in name:
                 mapped.append({'grade': name.replace('2:2', '2:2/Pass'), 'marks': marks})
+            elif '3rd' in name:
+                continue
             else:
-                # preserve other bands (e.g., 3rd variants) to maintain ordering
                 mapped.append({'grade': name, 'marks': marks})
 
         # Append M-level fail bands built from UG anchors

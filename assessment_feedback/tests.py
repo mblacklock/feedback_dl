@@ -201,6 +201,48 @@ class AssessmentFeedbackViewsTest(TestCase):
         updated_mappings = self.client.session["mappings"]
         self.assertEqual(updated_mappings["subdivision"], "high_mid_low")
 
+    def test_confirm_mappings_switch_to_m_level_regenerates_rubric_labels(self):
+        """Changing degree level to MEng must rebuild stored rubric labels without 3rd bands."""
+        from core.utils.grade_bands import calculate_grade_bands
+
+        session = self.client.session
+        session["headers"] = self.sample_headers
+        session["uploaded_data"] = self.sample_uploaded_data
+        session["mappings"] = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "degree_level": "BEng",
+            "subdivision": "high_low",
+            "categories": [
+                {
+                    "column": "Design /30",
+                    "max_marks": 30,
+                    "weight": None,
+                    "comments_column": "Design Comments",
+                    "type": "grade",
+                    "subdivision": "high_low",
+                    "rubric_marks": calculate_grade_bands(30, "high_low", degree_level="BEng"),
+                }
+            ],
+        }
+        session.save()
+
+        form_data = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "degree_level": "MEng",
+            "max_0": "30",
+            "comments_0": "Design Comments",
+            "type_0": "grade",
+        }
+        resp = self.client.post(reverse("confirm_mappings"), form_data)
+        self.assertEqual(resp.status_code, 302)
+
+        saved_rubric = self.client.session["mappings"]["categories"][0]["rubric_marks"]
+        labels = [b["grade"] for b in saved_rubric]
+        self.assertTrue(any("Merit" in label or "Pass" in label for label in labels))
+        self.assertFalse(any("3rd" in label for label in labels))
+
     def test_process_feedback_generates_valid_zip(self):
         """GET /assessment-feedback/process/ processes data and returns a downloadable ZIP of HTMLs"""
         session = self.client.session
@@ -232,6 +274,44 @@ class AssessmentFeedbackViewsTest(TestCase):
             # Verify that CSS styles from feedback_blocks.css are correctly embedded inline
             self.assertIn(b".half-pair", html_data)
             self.assertIn(b".grade-pill", html_data)
+
+    def test_m_level_preview_and_generated_sheet_use_fail_below_50(self):
+        """M-level preview and final HTML must classify 40-49% as Fail, not 3rd."""
+        uploaded_data = [
+            {"Student Name": "Alice Smith", "Student ID": "10001", "Design /100": 45},
+        ]
+        mappings = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "degree_level": "MEng",
+            "subdivision": "none",
+            "categories": [
+                {
+                    "column": "Design /100",
+                    "max_marks": 100,
+                    "weight": None,
+                    "comments_column": "",
+                    "type": "numeric",
+                }
+            ],
+        }
+        session = self.client.session
+        session["headers"] = ["Student Name", "Student ID", "Design /100"]
+        session["uploaded_data"] = uploaded_data
+        session["mappings"] = mappings
+        session.save()
+
+        preview_resp = self.client.get(reverse("configure_layout"))
+        self.assertEqual(preview_resp.status_code, 200)
+        self.assertContains(preview_resp, "Grade: Fail")
+        self.assertNotContains(preview_resp, "Grade: 3rd")
+
+        process_resp = self.client.get(reverse("process_feedback"))
+        self.assertEqual(process_resp.status_code, 200)
+        with zipfile.ZipFile(io.BytesIO(process_resp.content), "r") as zf:
+            html = zf.read("10001_alice-smith.html").decode("utf-8")
+        self.assertIn("Grade: Fail", html)
+        self.assertNotIn("Grade: 3rd", html)
 
     # -------------------------------------------------------------------------
     # Layout Builder tests
@@ -687,6 +767,23 @@ class AssessmentFeedbackViewsTest(TestCase):
         bands3 = json.loads(resp3.content)
         self.assertIsInstance(bands3, list)
 
+    def test_rubric_bands_api_respects_m_level_degree(self):
+        """M-level rubric bands use Dist/Merit/Pass labels and omit 3rd bands."""
+        import json
+
+        resp = self.client.get(reverse("rubric_bands_api"), {
+            "max_marks": "100",
+            "subdivision": "high_low",
+            "degree_level": "MEng",
+        })
+        self.assertEqual(resp.status_code, 200)
+        labels = [b["grade"] for b in json.loads(resp.content)]
+
+        self.assertTrue(any("Dist" in label for label in labels))
+        self.assertTrue(any("Merit" in label for label in labels))
+        self.assertTrue(any("Pass" in label for label in labels))
+        self.assertFalse(any("3rd" in label for label in labels))
+
     # -------------------------------------------------------------------------
     # Grade band rounding tests (TDD — user reported Low 1st = 6/10, should be 7)
     # -------------------------------------------------------------------------
@@ -850,9 +947,6 @@ class AssessmentFeedbackViewsTest(TestCase):
         self.assertIn('display: inline', rendered)
         self.assertIn('class="numeric-dash"', rendered)
         self.assertIn('display: none', rendered)
-
-
-
 
 
 

@@ -9,9 +9,9 @@
 
 ## Priority 2: Feedback Accuracy
 
-- [ ] Fix M-level rubric band generation so postgraduate reports do not include undergraduate `3rd` bands when fail is below 50%.
-- [ ] Pass `degree_level` consistently when calculating rubric bands in upload, confirm, API, preview, and final generation paths.
-- [ ] Add tests for M-level rubric upload, mapping confirmation, preview, and generated HTML output.
+- [x] Fix M-level rubric band generation so postgraduate reports do not include undergraduate `3rd` bands when fail is below 50%.
+- [x] Pass `degree_level` consistently when calculating rubric bands in upload, confirm, API, preview, and final generation paths.
+- [x] Add tests for M-level rubric upload, mapping confirmation, preview, and generated HTML output.
 
 ## Priority 3: Input Validation
 

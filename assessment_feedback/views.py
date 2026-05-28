@@ -7,14 +7,13 @@ from django.http import HttpResponse, Http404
 from django.template.loader import render_to_string
 from django.utils.text import slugify
 
-from core.utils.grade_bands import calculate_grade_bands, grade_for_percentage
+from core.utils.grade_bands import calculate_grade_bands
 from core.utils.charts import generate_radar_chart, generate_cohort_histogram
 
 
 
 def grade_for_percentage_and_degree(percentage, degree_level=None):
-    is_m_level = bool(degree_level and isinstance(degree_level, str) and degree_level.strip().lower().startswith('m'))
-    if is_m_level:
+    if is_m_level_degree(degree_level):
         if percentage >= 70:
             return "1st/Dist"
         elif percentage >= 60:
@@ -34,6 +33,19 @@ def grade_for_percentage_and_degree(percentage, degree_level=None):
             return "3rd"
         else:
             return "Fail"
+
+
+def is_m_level_degree(degree_level):
+    return bool(degree_level and isinstance(degree_level, str) and degree_level.strip().lower().startswith('m'))
+
+
+def rubric_marks_match_degree(rubric_marks, degree_level):
+    labels = [str(b.get("grade", "")) for b in rubric_marks or []]
+    has_m_level_labels = any(any(s in label for s in ("Dist", "Merit", "Pass")) for label in labels)
+    has_third_labels = any("3rd" in label for label in labels)
+    if is_m_level_degree(degree_level):
+        return has_m_level_labels and not has_third_labels
+    return not has_m_level_labels
 
 
 
@@ -313,7 +325,11 @@ def upload_file(request):
                 # Pre-compute rubric band marks so confirm page can display them
                 rubric_marks = []
                 if cat_type == "grade":
-                    rubric_marks = calculate_grade_bands(max_marks, cat_subdivision)
+                    rubric_marks = calculate_grade_bands(
+                        max_marks,
+                        cat_subdivision,
+                        degree_level=inferred_mappings["degree_level"],
+                    )
 
                 inferred_mappings["categories"].append({
                     "column": cat,
@@ -360,9 +376,10 @@ def rubric_bands_api(request):
     try:
         max_marks  = int(request.GET.get("max_marks", 100))
         subdivision = request.GET.get("subdivision", "none")
+        degree_level = request.GET.get("degree_level", "BEng")
         if subdivision not in ("none", "high_low", "high_mid_low"):
             subdivision = "none"
-        bands = calculate_grade_bands(max_marks, subdivision)
+        bands = calculate_grade_bands(max_marks, subdivision, degree_level=degree_level)
         return HttpResponse(_json.dumps(bands), content_type="application/json")
     except (ValueError, TypeError):
         return HttpResponse(
@@ -404,7 +421,7 @@ def confirm_mappings(request):
             existing_rubric = cat_dict.get("rubric_marks", [])
             rubric_marks = []
             if cat_type == "grade":
-                if existing_rubric:
+                if existing_rubric and rubric_marks_match_degree(existing_rubric, mappings["degree_level"]):
                     for band_idx, band in enumerate(existing_rubric):
                         submitted_mark = request.POST.get(f"rubric_mark_{idx}_{band_idx}")
                         try:
@@ -413,7 +430,11 @@ def confirm_mappings(request):
                             mark_val = band["marks"]
                         rubric_marks.append({"grade": band["grade"], "marks": mark_val})
                 else:
-                    rubric_marks = calculate_grade_bands(max_marks, cat_subdivision)
+                    rubric_marks = calculate_grade_bands(
+                        max_marks,
+                        cat_subdivision,
+                        degree_level=mappings["degree_level"],
+                    )
 
             updated_categories.append({
                 "column": col_name,
@@ -452,7 +473,7 @@ def confirm_mappings(request):
         max_marks = cat.get("max_marks", 100)
         col = cat["column"]
         all_rubric_marks[col] = {
-            sub: calculate_grade_bands(max_marks, sub)
+            sub: calculate_grade_bands(max_marks, sub, degree_level=mappings.get("degree_level", "BEng"))
             for sub in ("none", "high_low", "high_mid_low")
         }
 
@@ -629,7 +650,7 @@ def configure_layout(request):
             })
 
         overall_pct = (student_total_score / total_max_marks) * 100 if total_max_marks > 0 else 0
-        overall_grade = grade_for_percentage(overall_pct)
+        overall_grade = grade_for_percentage_and_degree(overall_pct, degree_level)
 
         radar_svg = generate_radar_chart(radar_labels, student_radar_percentages, avg_radar_percentages)
         hist_svg = generate_cohort_histogram(cohort_final_marks, student_total_score, max_score=total_max_marks, subdivision=subdivision)
@@ -789,7 +810,7 @@ def process_feedback(request):
                 
             # Derive overall assessment grade
             overall_pct = (student_total_score / total_max_marks) * 100 if total_max_marks > 0 else 0
-            overall_grade = grade_for_percentage(overall_pct)
+            overall_grade = grade_for_percentage_and_degree(overall_pct, degree_level)
             
             # Generate SVGs and base64-encode them
             radar_svg = generate_radar_chart(radar_labels, student_radar_percentages, avg_radar_percentages)
