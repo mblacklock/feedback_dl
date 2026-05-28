@@ -42,6 +42,14 @@ def round_mark_pct(val):
     return rounded
 
 
+def parse_non_negative_int(value):
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return None
+    return parsed if parsed >= 0 else None
+
+
 def parse_mcrf_workbook(file_file):
     """
     Parses a spreadsheet in-memory. Detects MCRF signature block
@@ -227,6 +235,11 @@ def upload_mcrf(request):
                             comp["weight"] = 100 - (even_weight * (num_comps - 1))
                         else:
                             comp["weight"] = even_weight
+
+            if not inferred_mappings["components"]:
+                return render(request, "module_summary/upload.html", {
+                    "error": "No component mark columns were detected. Please upload an MCRF with columns containing component marks."
+                })
                         
             request.session["module_headers"] = headers
             request.session["module_uploaded_data"] = data_rows
@@ -252,6 +265,14 @@ def confirm_module_mappings(request):
     
     if not headers or not mappings or not uploaded_data:
         return redirect("module_upload")
+
+    if not mappings.get("components"):
+        return render(request, "module_summary/confirm.html", {
+            "headers": headers,
+            "mappings": mappings,
+            "sample_rows": uploaded_data[:3],
+            "error": "No component mark columns were detected.",
+        })
         
     error = None
     if request.method == "POST":
@@ -268,7 +289,23 @@ def confirm_module_mappings(request):
         
         for idx, comp_dict in enumerate(mappings["components"]):
             col_name = comp_dict["column"]
-            weight = int(request.POST.get(f"weight_{idx}", 0))
+            weight = parse_non_negative_int(request.POST.get(f"weight_{idx}"))
+            if weight is None:
+                error = f"Weight for {col_name} must be a whole number between 0 and 100."
+                return render(request, "module_summary/confirm.html", {
+                    "headers": headers,
+                    "mappings": mappings,
+                    "sample_rows": uploaded_data[:3],
+                    "error": error,
+                })
+            if weight > 100:
+                error = f"Weight for {col_name} must be a whole number between 0 and 100."
+                return render(request, "module_summary/confirm.html", {
+                    "headers": headers,
+                    "mappings": mappings,
+                    "sample_rows": uploaded_data[:3],
+                    "error": error,
+                })
             
             total_weight += weight
             updated_comps.append({

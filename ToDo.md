@@ -15,10 +15,10 @@
 
 ## Priority 3: Input Validation
 
-- [ ] Handle invalid or blank max-mark values in `assessment_feedback.confirm_mappings()` without a 500.
-- [ ] Handle invalid or blank component weights in `module_summary.confirm_module_mappings()` without a 500.
-- [ ] Add user-facing error messages for invalid max marks, invalid weights, and no detected components/categories.
-- [ ] Add tests for malformed mapping form submissions.
+- [x] Handle invalid or blank max-mark values in `assessment_feedback.confirm_mappings()` without a 500.
+- [x] Handle invalid or blank component weights in `module_summary.confirm_module_mappings()` without a 500.
+- [x] Add user-facing error messages for invalid max marks, invalid weights, and no detected components/categories.
+- [x] Add tests for malformed mapping form submissions.
 
 ## Priority 4: Production Safety
 

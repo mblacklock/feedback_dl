@@ -48,6 +48,35 @@ def rubric_marks_match_degree(rubric_marks, degree_level):
     return not has_m_level_labels
 
 
+def parse_positive_int(value):
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return None
+    return parsed if parsed > 0 else None
+
+
+def assessment_confirm_context(headers, mappings, uploaded_data, error=None):
+    import json as _json
+
+    all_rubric_marks = {}
+    for cat in mappings.get("categories", []):
+        max_marks = cat.get("max_marks", 100)
+        col = cat["column"]
+        all_rubric_marks[col] = {
+            sub: calculate_grade_bands(max_marks, sub, degree_level=mappings.get("degree_level", "BEng"))
+            for sub in ("none", "high_low", "high_mid_low")
+        }
+
+    return {
+        "headers": headers,
+        "mappings": mappings,
+        "sample_rows": uploaded_data[:3],
+        "all_rubric_marks_json": _json.dumps(all_rubric_marks),
+        "error": error,
+    }
+
+
 
 # ---------------------------------------------------------------------------
 # Grade-string sets used for rubric column detection
@@ -349,6 +378,11 @@ def upload_file(request):
             if rubric_subdivisions:
                 from collections import Counter
                 inferred_mappings["subdivision"] = Counter(rubric_subdivisions).most_common(1)[0][0]
+
+            if not inferred_mappings["categories"]:
+                return render(request, "assessment_feedback/upload.html", {
+                    "error": "No grading categories were detected. Please upload a sheet with numeric mark columns or rubric grade columns."
+                })
             
             # Save parsed state inside session
             request.session["headers"] = headers
@@ -401,6 +435,10 @@ def confirm_mappings(request):
     
     if not headers or not mappings or not uploaded_data:
         return redirect("upload_file")
+
+    if not mappings.get("categories"):
+        return render(request, "assessment_feedback/confirm.html",
+                      assessment_confirm_context(headers, mappings, uploaded_data, "No grading categories were detected."))
         
     if request.method == "POST":
         # Read student identifiers mapping
@@ -412,7 +450,15 @@ def confirm_mappings(request):
         updated_categories = []
         for idx, cat_dict in enumerate(mappings["categories"]):
             col_name = cat_dict["column"]
-            max_marks = int(request.POST.get(f"max_{idx}", 100))
+            max_marks = parse_positive_int(request.POST.get(f"max_{idx}"))
+            if max_marks is None:
+                return render(request, "assessment_feedback/confirm.html",
+                              assessment_confirm_context(
+                                  headers,
+                                  mappings,
+                                  uploaded_data,
+                                  f"Max marks for {col_name} must be a positive whole number.",
+                              ))
             comments_col = request.POST.get(f"comments_{idx}")
             cat_type = request.POST.get(f"type_{idx}", "numeric")
             cat_subdivision = cat_dict.get("subdivision", "none")
@@ -464,25 +510,8 @@ def confirm_mappings(request):
         
         return redirect("configure_layout")
         
-    # Pre-compute rubric bands for every subdivision for each category so the
-    # JS can dynamically populate the rubric panel when the user switches type
-    # or changes the global subdivision dropdown.
-    import json as _json
-    all_rubric_marks = {}   # {col: {"none": [...], "high_low": [...], "high_mid_low": [...]}}
-    for cat in mappings.get("categories", []):
-        max_marks = cat.get("max_marks", 100)
-        col = cat["column"]
-        all_rubric_marks[col] = {
-            sub: calculate_grade_bands(max_marks, sub, degree_level=mappings.get("degree_level", "BEng"))
-            for sub in ("none", "high_low", "high_mid_low")
-        }
-
-    return render(request, "assessment_feedback/confirm.html", {
-        "headers": headers,
-        "mappings": mappings,
-        "sample_rows": uploaded_data[:3],
-        "all_rubric_marks_json": _json.dumps(all_rubric_marks),
-    })
+    return render(request, "assessment_feedback/confirm.html",
+                  assessment_confirm_context(headers, mappings, uploaded_data))
 
 
 def configure_layout(request):

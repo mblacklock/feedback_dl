@@ -154,6 +154,67 @@ class ModuleSummaryViewsTest(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "Total component weight must sum to exactly 100%")
 
+    def test_confirm_module_mappings_post_non_numeric_weight_renders_error(self):
+        """POST /module-summary/mapping/ with a non-numeric weight should not raise a 500."""
+        session = self.client.session
+        session["module_headers"] = self.sample_headers
+        session["module_uploaded_data"] = self.sample_uploaded_data
+        session["module_mappings"] = self.sample_mappings
+        session.save()
+
+        form_data = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "weight_0": "not-a-number",
+            "weight_1": "60",
+        }
+
+        resp = self.client.post(reverse("module_confirm"), form_data)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Validation Error")
+        self.assertContains(resp, "Weight for CW1 - Mark must be a whole number between 0 and 100.")
+
+    def test_confirm_module_mappings_post_weight_over_100_renders_error(self):
+        """Individual component weights over 100 are rejected before processing."""
+        session = self.client.session
+        session["module_headers"] = self.sample_headers
+        session["module_uploaded_data"] = self.sample_uploaded_data
+        session["module_mappings"] = self.sample_mappings
+        session.save()
+
+        form_data = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "weight_0": "101",
+            "weight_1": "0",
+        }
+
+        resp = self.client.post(reverse("module_confirm"), form_data)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Weight for CW1 - Mark must be a whole number between 0 and 100.")
+
+    def test_upload_mcrf_with_no_component_marks_renders_error(self):
+        """An uploaded workbook with no component mark columns should show an upload error."""
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.append(["Module Marks Record Form (MCRF)"])
+        ws.append([])
+        ws.append(["Student ID", "Student Name", "Grade", "Comment"])
+        ws.append(["w12345678", "Alice Smith", "A", "No mark columns"])
+
+        excel_bytes = io.BytesIO()
+        wb.save(excel_bytes)
+        excel_bytes.seek(0)
+        uploaded_file = SimpleUploadedFile(
+            "no_mark_columns.xlsx",
+            excel_bytes.read(),
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+
+        resp = self.client.post(reverse("module_upload"), {"file": uploaded_file})
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "No component mark columns were detected")
+
     def test_configure_module_layout_get_renders_designer(self):
         """GET /module-summary/layout/ renders layout builder screen"""
         session = self.client.session

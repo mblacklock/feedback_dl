@@ -9,6 +9,23 @@ class DegreeLevelFT(FunctionalTestBase):
     and ensuring grade bands update accordingly.
     """
 
+    def wait_for_grid_text(self, selector, required_text, forbidden_text=None):
+        """Wait for a grade-band grid to contain text, re-finding it to avoid stale elements."""
+        required_text = required_text if isinstance(required_text, (list, tuple)) else [required_text]
+        forbidden_text = forbidden_text if isinstance(forbidden_text, (list, tuple)) else ([forbidden_text] if forbidden_text else [])
+
+        def grid_text_ready(driver):
+            try:
+                grid = driver.find_element(By.CSS_SELECTOR, selector)
+                text = grid.text
+                if all(item in text for item in required_text) and all(item not in text for item in forbidden_text):
+                    return text
+            except Exception:
+                return False
+            return False
+
+        return self.wait.until(grid_text_ready)
+
     def test_degree_level_selector_changes_grade_bands_for_level7(self):
         """
         GIVEN: A staff member creates a new template and adds a grade category
@@ -26,8 +43,7 @@ class DegreeLevelFT(FunctionalTestBase):
         self.fill_category(0, "Module Knowledge", 100, category_type='grade', subdivision='none')
 
         # Wait for grade bands preview to appear and assert BEng defaults (3rd, 40)
-        grid = self.get_grade_bands_grid()
-        grid_text = grid.text
+        grid_text = self.wait_for_grid_text('.grade-bands-grid', ['3rd', '40'])
         self.assertIn('3rd', grid_text)
         # Expect a 40 mark badge for 3rd band on a 100-mark category for BEng
         self.assertIn('40', grid_text)
@@ -41,20 +57,8 @@ class DegreeLevelFT(FunctionalTestBase):
         except Exception:
             self.fail('Degree level selector (id="degree_level") not found or selection failed')
 
-        # Wait for preview to refresh and include Master-level terms and 50 mark pass
-        def master_preview_ready(d):
-            try:
-                g = d.find_element(By.CSS_SELECTOR, '.grade-bands-grid')
-                t = g.text
-                return ('Merit' in t or 'Pass' in t) and '50' in t
-            except Exception:
-                return False
-
-        self.wait.until(master_preview_ready)
-
         # Final assertions
-        updated_grid = self.browser.find_element(By.CSS_SELECTOR, '.grade-bands-grid')
-        updated_text = updated_grid.text
+        updated_text = self.wait_for_grid_text('.grade-bands-grid', ['Merit', 'Pass', '50'], forbidden_text='40')
         self.assertIn('Merit', updated_text)
         self.assertIn('Pass', updated_text)
         self.assertIn('50', updated_text)
@@ -78,13 +82,13 @@ class DegreeLevelFT(FunctionalTestBase):
         self.fill_category(1, "Application", 50, category_type='grade', subdivision='none')
 
         # Wait for both previews to render and assert BEng content appears
-        g0 = self.get_grade_bands_grid(row_index=0)
-        self.assertIn('1st', g0.text)
-        self.assertIn('40', g0.text)  # 3rd band anchor for 100-mark BEng
+        g0_text = self.wait_for_grid_text('#categories .category-row:nth-of-type(1) .grade-bands-grid', ['1st', '40'])
+        self.assertIn('1st', g0_text)
+        self.assertIn('40', g0_text)  # 3rd band anchor for 100-mark BEng
 
-        g1 = self.get_grade_bands_grid(row_index=1)
         # For 50-mark category, BEng pass/anchors will differ; ensure a known label present
-        self.assertIn('1st', g1.text)
+        g1_text = self.wait_for_grid_text('#categories .category-row:nth-of-type(2) .grade-bands-grid', '1st')
+        self.assertIn('1st', g1_text)
 
         # Switch degree level to M-level using the helper to ensure stable selection
         try:
@@ -108,11 +112,11 @@ class DegreeLevelFT(FunctionalTestBase):
         self.wait.until(all_previews_updated)
 
         # Final assertions: both grids include M-level labels and include a '50' anchor for pass when appropriate
-        updated_g0 = self.get_grade_bands_grid(row_index=0)
-        updated_g1 = self.get_grade_bands_grid(row_index=1)
+        updated_g0_text = self.wait_for_grid_text('#categories .category-row:nth-of-type(1) .grade-bands-grid', ['Merit'])
+        updated_g1_text = self.wait_for_grid_text('#categories .category-row:nth-of-type(2) .grade-bands-grid', ['Merit'])
 
-        self.assertTrue(('Merit' in updated_g0.text) or ('Dist' in updated_g0.text) or ('Pass' in updated_g0.text))
-        self.assertTrue(('Merit' in updated_g1.text) or ('Dist' in updated_g1.text) or ('Pass' in updated_g1.text))
+        self.assertTrue(('Merit' in updated_g0_text) or ('Dist' in updated_g0_text) or ('Pass' in updated_g0_text))
+        self.assertTrue(('Merit' in updated_g1_text) or ('Dist' in updated_g1_text) or ('Pass' in updated_g1_text))
 
 
     def test_degree_level_change_persists_after_reload(self):
@@ -131,8 +135,8 @@ class DegreeLevelFT(FunctionalTestBase):
         self.fill_category(0, "Synthesis", 100, category_type='grade', subdivision='none')
 
         # Verify BEng preview present initially
-        grid = self.get_grade_bands_grid(row_index=0)
-        self.assertIn('1st', grid.text)
+        grid_text = self.wait_for_grid_text('#categories .category-row:nth-of-type(1) .grade-bands-grid', '1st')
+        self.assertIn('1st', grid_text)
 
         # Change degree level to M-level using the Select helper which waits for selection
         try:
@@ -170,6 +174,5 @@ class DegreeLevelFT(FunctionalTestBase):
         self.assertEqual(select_after.get_attribute('value'), 'MEng/MSc')
 
         # Also assert the grade bands preview now shows M-level labels (e.g., Merit/Pass)
-        updated_grid = self.get_grade_bands_grid(row_index=0)
-        updated_text = updated_grid.text
+        updated_text = self.wait_for_grid_text('#categories .category-row:nth-of-type(1) .grade-bands-grid', 'Merit')
         self.assertTrue(('Merit' in updated_text) or ('Pass' in updated_text) or ('Dist' in updated_text))

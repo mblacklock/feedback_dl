@@ -154,6 +154,54 @@ class AssessmentFeedbackViewsTest(TestCase):
         self.assertEqual(updated_mappings["col_student_name"], "Student Name")
         self.assertEqual(updated_mappings["categories"][0]["max_marks"], 30)
 
+    def test_confirm_mappings_post_invalid_max_marks_renders_error(self):
+        """Invalid max marks should redisplay the confirmation page instead of raising a 500."""
+        session = self.client.session
+        session["headers"] = self.sample_headers
+        session["uploaded_data"] = self.sample_uploaded_data
+        session["mappings"] = self.sample_mappings
+        session.save()
+
+        form_data = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "degree_level": "BEng",
+            "max_0": "",
+            "comments_0": "Design Comments",
+            "type_0": "numeric",
+            "max_1": "40",
+            "comments_1": "Implementation Comments",
+            "type_1": "numeric",
+            "max_2": "30",
+            "comments_2": "Testing Comments",
+            "type_2": "numeric",
+        }
+        resp = self.client.post(reverse("confirm_mappings"), form_data)
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Validation Error")
+        self.assertContains(resp, "Max marks for Design /30 must be a positive whole number.")
+
+    def test_upload_with_no_detected_categories_renders_error(self):
+        """A sheet with identifiers only should produce a useful upload error."""
+        wb = __import__("openpyxl").Workbook()
+        ws = wb.active
+        ws.append(["Student Name", "Student ID", "General Comment"])
+        ws.append(["Alice Smith", "10001", "No marks here"])
+        excel_bytes = io.BytesIO()
+        wb.save(excel_bytes)
+        excel_bytes.seek(0)
+
+        uploaded_file = SimpleUploadedFile(
+            "no_marks.xlsx",
+            excel_bytes.read(),
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        resp = self.client.post(reverse("upload_file"), {"file": uploaded_file})
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "No grading categories were detected")
+
     def test_confirm_mappings_post_recalculates_global_subdivision(self):
         """POST /assessment-feedback/confirm/ must dynamically recalculate the global subdivision
         based on the subdivisions of the active 'grade' categories, ignoring any POSTed subdivision value."""
@@ -947,6 +995,5 @@ class AssessmentFeedbackViewsTest(TestCase):
         self.assertIn('display: inline', rendered)
         self.assertIn('class="numeric-dash"', rendered)
         self.assertIn('display: none', rendered)
-
 
 
