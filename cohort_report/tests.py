@@ -187,7 +187,25 @@ class CohortReportTests(TestCase):
         """Verify format_component_header successfully splits codes, names, and column types"""
         from cohort_report.views import format_component_header
         
-        # 3 parts
+        # With comp_names_map
+        comp_names_map = {
+            "001": "Industry compatible written submission (2500 words or equivalent)",
+            "002": "Examination"
+        }
+        self.assertEqual(
+            format_component_header("001 - Mark", comp_names_map),
+            "001 - Industry compatible written submission (2500 words or equivalent)"
+        )
+        self.assertEqual(
+            format_component_header("002 - Mark", comp_names_map),
+            "002 - Examination"
+        )
+        self.assertEqual(
+            format_component_header("001 - 30% - Mark", comp_names_map),
+            "001 - Industry compatible written submission (2500 words or equivalent)"
+        )
+        
+        # 3 parts fallback
         self.assertEqual(
             format_component_header("Industry compatible written submission (2500 words or equivalent) - 001 - Mark"),
             "001 - Industry compatible written submission (2500 words or equivalent)"
@@ -208,3 +226,38 @@ class CohortReportTests(TestCase):
             format_component_header("Exam"),
             "Exam"
         )
+
+    def test_mcrf_parser_numerical_code_descriptions(self):
+        """Verify MCRF parser correctly handles integer/float code representations and multi-cell mapping rows"""
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.append(["Module Marks Record Form (MCRF)"])
+        ws.append(["COMP3002 - Advanced Engineering Software"])
+        ws.append([])
+        ws.append([])
+        ws.append(["Component", "Description", "", "", "", "Weighting"])
+        # Rows mimicking the screenshot layout: Column A is integer, Column B is text description
+        ws.append([1, "Industry compatible written submission (2500 words or equivalent)", "", "", "", "30%"])
+        ws.append([2.0, "Timed online examination, (3 hours)", "", "", "", "70%"])
+        ws.append([])
+        ws.append([])
+        ws.append(["Student ID", "Student Name", "Mark", "Grade", "Mark", "Grade"])
+        ws.append(["w12345678", "Alpha Student", 92, "A", 29, "F"])
+
+        buf = io.BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+
+        headers, data_rows, is_mcrf, module_info = parse_mcrf_workbook(buf)
+        comp_names_map = module_info.get("comp_names_map", {})
+
+        # Assert map contains normalized keys and correct descriptive titles (with length/duration stripped)
+        self.assertEqual(
+            comp_names_map.get("001"), 
+            "Industry compatible written submission"
+        )
+        self.assertEqual(
+            comp_names_map.get("002"), 
+            "Timed online examination"
+        )
+

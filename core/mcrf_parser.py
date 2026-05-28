@@ -111,4 +111,51 @@ def parse_mcrf_workbook(file_file):
             if module_code:
                 break
 
-    return headers, data_rows, is_mcrf, {"module_code": module_code, "module_title": module_title}
+    # --- Assessment components mapping and descriptions scan ---
+    comp_names_map = {}
+
+    def normalize_comp_code(code_str):
+        if not code_str:
+            return ""
+        s = str(code_str).strip().split('.')[0]
+        if s.isdigit():
+            return f"{int(s):03d}"
+        return s.upper()
+
+    # 1. Locate the row where Column A says "Component"
+    component_row_idx = -1
+    for idx, row in enumerate(rows[:header_row_idx]):
+        if row and row[0] and str(row[0]).strip().lower() == "component":
+            component_row_idx = idx
+            break
+
+    def clean_component_title(title):
+        if not title:
+            return ""
+        # Remove parenthesized limits/durations (e.g. " (2500 words or equivalent)", " (3 hours)")
+        cleaned = re.sub(
+            r'\s*\([^)]*\b(words?|hrs?|hours?|mins?|minutes?)\b[^)]*\)',
+            '',
+            title,
+            flags=re.IGNORECASE
+        )
+        cleaned = re.sub(r'\s*\(\s*equivalent\s*\)', '', cleaned, flags=re.IGNORECASE)
+        return cleaned.strip().rstrip(',').strip()
+
+    # 2. Extract component codes (Col A) and titles (Col B) from rows directly below it
+    if component_row_idx != -1:
+        for row in rows[component_row_idx + 1:header_row_idx]:
+            if row and row[0] is not None:
+                code_val = str(row[0]).strip()
+                if not code_val:
+                    break
+                code_norm = normalize_comp_code(code_val)
+                if len(row) > 1 and row[1]:
+                    title_clean = clean_component_title(str(row[1]).strip())
+                    comp_names_map[code_norm] = title_clean
+
+    return headers, data_rows, is_mcrf, {
+        "module_code": module_code,
+        "module_title": module_title,
+        "comp_names_map": comp_names_map
+    }

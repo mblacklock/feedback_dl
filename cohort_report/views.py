@@ -34,6 +34,7 @@ def upload_cohort_data(request):
                 "degree_level": "BEng",
                 "module_code": module_info.get("module_code", ""),
                 "module_title": module_info.get("module_title", ""),
+                "comp_names_map": module_info.get("comp_names_map", {}),
             }
             
             # Infer Name & Student ID
@@ -216,30 +217,54 @@ def clean_svg(svg_str):
         return match.group(0)
     return svg_str
 
-def format_component_header(column_name):
+def normalize_comp_code(code_str):
+    if not code_str:
+        return ""
+    s = str(code_str).strip().split('.')[0]
+    if s.isdigit():
+        return f"{int(s):03d}"
+    return s.upper()
+
+def format_component_header(column_name, comp_names_map=None):
     """
     Parses column name to build formatted header like "001 - Industry compatible written submission".
     """
     if not column_name:
         return ""
-    parts = [p.strip() for p in column_name.split(" - ")]
+        
+    # 1. Extract the component code using robust regex
+    CODE_EXTRACT_RE = re.compile(r'\b(\d{1,3}|CW\d|EX\d|EXAM\d?)\b', re.IGNORECASE)
+    m = CODE_EXTRACT_RE.search(column_name)
+    code = m.group(1) if m else ""
+    code_norm = normalize_comp_code(code)
+    
+    # 2. Look up in comp_names_map
+    if comp_names_map and code_norm:
+        code_upper = code_norm.upper()
+        if code_upper in comp_names_map:
+            return f"{code_norm} - {comp_names_map[code_upper]}"
+            
+    # 3. Fallback: split by space-dash-space or other dashes
+    parts = [p.strip() for p in re.split(r'\s*[-:–—]\s*', column_name)]
     if len(parts) >= 3:
-        code = ""
         name = ""
         for p in parts:
             p_lower = p.lower()
             if p_lower in ["mark", "grade", "result", "score"]:
                 continue
             if len(p) <= 6 and any(c.isdigit() for c in p):
-                code = p
-            else:
-                name = p
-        if code and name:
-            return f"{code} - {name}"
+                continue
+            name = p
+        if code_norm and name:
+            return f"{code_norm} - {name}"
         elif name:
             return name
-    if len(parts) == 2:
-        return parts[0]
+            
+    # Fallback to standard split
+    parts_standard = [p.strip() for p in column_name.split(" - ")]
+    if len(parts_standard) == 2:
+        return parts_standard[0]
+        
     return column_name
 
 def get_report_context(request):
@@ -255,6 +280,7 @@ def get_report_context(request):
         
     components = mappings.get("components", [])
     degree_level = mappings.get("degree_level", "BEng")
+    comp_names_map = mappings.get("comp_names_map", {})
     
     # Calculate per-component stats & charts
     components_stats = []
@@ -282,7 +308,7 @@ def get_report_context(request):
         components_stats.append({
             "column": col_name,
             "label_short": label_short,
-            "header_formatted": format_component_header(col_name),
+            "header_formatted": format_component_header(col_name, comp_names_map),
             "stats": stats,
             "chart_svg": chart_svg_clean,
             "weight": comp["weight"]
