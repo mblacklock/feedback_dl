@@ -152,27 +152,8 @@
     color: #c8a951;
 }
 
-/* Component-specific metrics overrides inside col-xl-6 to prevent wrapping */
-.col-xl-6 .stats-grid {
-    grid-template-columns: repeat(3, 1fr) !important;
-}
 
-.col-xl-6 .stats-grid:first-of-type {
-    grid-template-columns: repeat(4, 1fr) !important;
-}
 
-.col-xl-6 .stat-box {
-    padding: 10px 4px;
-}
-
-.col-xl-6 .stat-label {
-    font-size: 9px;
-    letter-spacing: 0.02em;
-}
-
-.col-xl-6 .stat-value {
-    font-size: 18px;
-}
 
 /* Chart container */
 .chart-container {

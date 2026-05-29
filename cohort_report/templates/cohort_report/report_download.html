@@ -24,12 +24,13 @@
         }
 
         .page {
-            max-width: 1000px;
+            max-width: 1100px;
             margin: 0 auto;
             background: #ffffff;
             border-radius: 16px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             overflow: hidden;
+            padding: 32px;
         }
 
         /* Shared block style sheet variables */
@@ -41,122 +42,10 @@
 </head>
 <body>
     <div class="page">
-        <!-- Header -->
-        <header class="header">
-            <div class="header-module">{{ module_code }}</div>
-            <h1 class="header-title">{{ module_title }}</h1>
-            <div class="header-sub">
-                Degree Level: {{ degree_level }} &nbsp;&middot;&nbsp; 
-                Cohort Size: {{ cohort_size }} students &nbsp;&middot;&nbsp; 
-                These results are internally moderated &nbsp;&middot;&nbsp;
-                Aggregated Offline Record
-            </div>
-        </header>
-
-        <!-- Main stats content -->
-        <main class="content">
-            <!-- Overall Module performance -->
-            <h2 class="section-label">Overall Weighted Module Performance</h2>
-            <div class="dashboard-grid">
-                <div>
-                    <!-- Primary summary stats -->
-                    <div class="metrics-container">
-                        <div class="metric-card metric-card-highlight">
-                            <div class="metric-label">Mean Score</div>
-                            <div class="metric-val">{{ overall_stats.mean|floatformat:1 }}%</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-label">Std Dev</div>
-                            <div class="metric-val">{{ overall_stats.std_dev|floatformat:1 }}</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-label">Max Mark</div>
-                            <div class="metric-val">{{ overall_stats.max|floatformat:0 }}%</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-label">Cohort Size</div>
-                            <div class="metric-val">{{ cohort_size }}</div>
-                        </div>
-                    </div>
-                    <!-- Degree classifications distributions -->
-                    <div class="metrics-container" style="grid-template-columns: repeat(3, 1fr);">
-                        <div class="metric-card" style="border-top: 3px solid #74c476;">
-                            <div class="metric-label">% 1st</div>
-                            <div class="metric-val" style="font-size: 18px;">{{ overall_stats.pct_1st|floatformat:1 }}%</div>
-                        </div>
-                        <div class="metric-card" style="border-top: 3px solid #4a90d9;">
-                            <div class="metric-label">% 2:1 & above</div>
-                            <div class="metric-val" style="font-size: 18px;">{{ overall_stats.pct_21_above|floatformat:1 }}%</div>
-                        </div>
-                        <div class="metric-card" style="border-top: 3px solid #d9534f;">
-                            <div class="metric-label">% Fail</div>
-                            <div class="metric-val" style="font-size: 18px;">{{ overall_stats.pct_fail|floatformat:1 }}%</div>
-                        </div>
-                    </div>
-                </div>
-                <div>
-                    <!-- Histogram box -->
-                    <div class="chart-box">
-                        {{ overall_chart_svg|safe }}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Components Breakdown -->
-            <h2 class="section-label" style="margin-top: 40px; margin-bottom: 24px;">Assessment Component Breakdowns</h2>
-            <div class="component-grid">
-                {% for comp in components_stats %}
-                <div class="comp-card">
-                    <div class="comp-title-bar">
-                        <div class="comp-title">{{ comp.header_formatted }}</div>
-                        <div class="comp-weight-pill">Weight: {{ comp.weight }}%</div>
-                    </div>
-                    <div class="comp-body">
-                        <div class="metrics-container" style="grid-template-columns: repeat(4, 1fr); gap: 8px;">
-                            <div class="metric-card metric-card-highlight">
-                                <div class="metric-label">Mean Score</div>
-                                <div class="metric-val">{{ comp.stats.mean|floatformat:1 }}%</div>
-                            </div>
-                            <div class="metric-card">
-                                <div class="metric-label">Std Dev</div>
-                                <div class="metric-val">{{ comp.stats.std_dev|floatformat:1 }}</div>
-                            </div>
-                            <div class="metric-card">
-                                <div class="metric-label">Max Mark</div>
-                                <div class="metric-val">{{ comp.stats.max|floatformat:0 }}%</div>
-                            </div>
-                            <div class="metric-card">
-                                <div class="metric-label">Cohort Size</div>
-                                <div class="metric-val">{{ cohort_size }}</div>
-                            </div>
-                        </div>
-                        
-                        <div class="metrics-container" style="grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 12px;">
-                            <div class="metric-card" style="border-top: 3px solid #74c476;">
-                                <div class="metric-label">% 1st</div>
-                                <div class="metric-val">{{ comp.stats.pct_1st|floatformat:1 }}%</div>
-                            </div>
-                            <div class="metric-card" style="border-top: 3px solid #4a90d9;">
-                                <div class="metric-label">% 2:1 +</div>
-                                <div class="metric-val">{{ comp.stats.pct_21_above|floatformat:1 }}%</div>
-                            </div>
-                            <div class="metric-card" style="border-top: 3px solid #d9534f;">
-                                <div class="metric-label">% Fail</div>
-                                <div class="metric-val">{{ comp.stats.pct_fail|floatformat:1 }}%</div>
-                            </div>
-                        </div>
-                        
-                        <div class="chart-box" style="padding: 0; margin-top: 20px;">
-                            {{ comp.chart_svg|safe }}
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </main>
+        {% include "cohort_report/_report_content.html" %}
 
         <!-- Footer -->
-        <footer class="disclaimer" style="font-size: 10px; color: #8892b0; text-align: center; padding: 20px 32px; border-top: 1px solid #e8e8e8; background: #fafafa;">
+        <footer class="disclaimer" style="font-size: 10px; color: #8892b0; text-align: center; padding: 20px 32px; border-top: 1px solid #e8e8e8; background: #fafafa; margin-top: 40px; border-radius: 8px;">
             This document is generated by the Feedback Portal. It contains aggregate statistical data for class performance review and is subject to departmental moderation.
         </footer>
     </div>
