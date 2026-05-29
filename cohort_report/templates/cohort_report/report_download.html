@@ -74,8 +74,8 @@
                             <div class="metric-val">{{ overall_stats.max|floatformat:0 }}%</div>
                         </div>
                         <div class="metric-card">
-                            <div class="metric-label">Min Mark</div>
-                            <div class="metric-val">{{ overall_stats.min|floatformat:0 }}%</div>
+                            <div class="metric-label">Cohort Size</div>
+                            <div class="metric-val">{{ cohort_size }}</div>
                         </div>
                     </div>
                     <!-- Degree classifications distributions -->
@@ -112,44 +112,42 @@
                         <div class="comp-weight-pill">Weight: {{ comp.weight }}%</div>
                     </div>
                     <div class="comp-body">
-                        <div class="dashboard-grid" style="grid-template-columns: 1fr; gap: 16px;">
-                            <div class="metrics-container" style="grid-template-columns: repeat(2, 1fr); gap: 8px;">
-                                <div class="metric-card metric-card-highlight" style="padding: 10px;">
-                                    <div class="metric-label" style="font-size: 8px;">Mean Score</div>
-                                    <div class="metric-val" style="font-size: 18px;">{{ comp.stats.mean|floatformat:1 }}%</div>
-                                </div>
-                                <div class="metric-card" style="padding: 10px;">
-                                    <div class="metric-label" style="font-size: 8px;">Std Dev</div>
-                                    <div class="metric-val" style="font-size: 18px;">{{ comp.stats.std_dev|floatformat:1 }}</div>
-                                </div>
-                                <div class="metric-card" style="padding: 10px;">
-                                    <div class="metric-label" style="font-size: 8px;">Max Mark</div>
-                                    <div class="metric-val" style="font-size: 18px;">{{ comp.stats.max|floatformat:0 }}%</div>
-                                </div>
-                                <div class="metric-card" style="padding: 10px;">
-                                    <div class="metric-label" style="font-size: 8px;">Min Mark</div>
-                                    <div class="metric-val" style="font-size: 18px;">{{ comp.stats.min|floatformat:0 }}%</div>
-                                </div>
+                        <div class="metrics-container" style="grid-template-columns: repeat(4, 1fr); gap: 8px;">
+                            <div class="metric-card metric-card-highlight">
+                                <div class="metric-label">Mean Score</div>
+                                <div class="metric-val">{{ comp.stats.mean|floatformat:1 }}%</div>
                             </div>
-                            
-                            <div class="metrics-container" style="grid-template-columns: repeat(3, 1fr); gap: 6px;">
-                                <div class="metric-card" style="border-top: 3px solid #74c476; padding: 8px 4px;">
-                                    <div class="metric-label" style="font-size: 7px;">% 1st</div>
-                                    <div class="metric-val" style="font-size: 13px;">{{ comp.stats.pct_1st|floatformat:1 }}%</div>
-                                </div>
-                                <div class="metric-card" style="border-top: 3px solid #4a90d9; padding: 8px 4px;">
-                                    <div class="metric-label" style="font-size: 7px;">% 2:1 +</div>
-                                    <div class="metric-val" style="font-size: 13px;">{{ comp.stats.pct_21_above|floatformat:1 }}%</div>
-                                </div>
-                                <div class="metric-card" style="border-top: 3px solid #d9534f; padding: 8px 4px;">
-                                    <div class="metric-label" style="font-size: 7px;">% Fail</div>
-                                    <div class="metric-val" style="font-size: 13px;">{{ comp.stats.pct_fail|floatformat:1 }}%</div>
-                                </div>
+                            <div class="metric-card">
+                                <div class="metric-label">Std Dev</div>
+                                <div class="metric-val">{{ comp.stats.std_dev|floatformat:1 }}</div>
                             </div>
-                            
-                            <div class="chart-box" style="padding: 10px;">
-                                {{ comp.chart_svg|safe }}
+                            <div class="metric-card">
+                                <div class="metric-label">Max Mark</div>
+                                <div class="metric-val">{{ comp.stats.max|floatformat:0 }}%</div>
                             </div>
+                            <div class="metric-card">
+                                <div class="metric-label">Cohort Size</div>
+                                <div class="metric-val">{{ cohort_size }}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="metrics-container" style="grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 12px;">
+                            <div class="metric-card" style="border-top: 3px solid #74c476;">
+                                <div class="metric-label">% 1st</div>
+                                <div class="metric-val">{{ comp.stats.pct_1st|floatformat:1 }}%</div>
+                            </div>
+                            <div class="metric-card" style="border-top: 3px solid #4a90d9;">
+                                <div class="metric-label">% 2:1 +</div>
+                                <div class="metric-val">{{ comp.stats.pct_21_above|floatformat:1 }}%</div>
+                            </div>
+                            <div class="metric-card" style="border-top: 3px solid #d9534f;">
+                                <div class="metric-label">% Fail</div>
+                                <div class="metric-val">{{ comp.stats.pct_fail|floatformat:1 }}%</div>
+                            </div>
+                        </div>
+                        
+                        <div class="chart-box" style="padding: 0; margin-top: 20px;">
+                            {{ comp.chart_svg|safe }}
                         </div>
                     </div>
                 </div>

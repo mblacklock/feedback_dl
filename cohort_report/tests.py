@@ -178,7 +178,7 @@ class CohortReportTests(TestCase):
         # Verify self-contained inline features
         content = resp.content.decode("utf-8")
         self.assertIn("<svg", content)
-        self.assertIn(".header {", content) # Inline CSS styling verified
+        self.assertIn(".report-header {", content) # Inline CSS styling verified
         self.assertNotIn("extends", content) # Standalone layout, no base templates
 
     def test_format_component_header(self):

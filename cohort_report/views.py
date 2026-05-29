@@ -340,6 +340,8 @@ def render_cohort_report(request):
     if not context:
         return redirect("cohort_report_upload")
         
+    context["base_template"] = "rubric_generator/base.html"
+    context["is_download"] = False
     return render(request, "cohort_report/report.html", context)
 
 def download_cohort_report(request):
@@ -352,8 +354,10 @@ def download_cohort_report(request):
     if not context:
         return redirect("cohort_report_upload")
         
-    # Render static report template with embedded charts and CSS styles
-    rendered_html = render_to_string("cohort_report/report_download.html", context)
+    context["base_template"] = "cohort_report/report_download_base.html"
+    context["is_download"] = True
+    # Render unified report template with embedded charts and CSS styles
+    rendered_html = render_to_string("cohort_report/report.html", context)
     
     filename = f"cohort_report_{context['module_code'].replace(' ', '_')}.html"
     response = HttpResponse(rendered_html, content_type="text/html")

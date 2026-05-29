@@ -1,4 +1,4 @@
-{% extends "rubric_generator/base.html" %}
+{% extends base_template %}
 
 {% block title %}Cohort Summary - {{ module_code }}{% endblock %}
 
@@ -12,7 +12,9 @@
 {% endblock %}
 
 {% block content %}
+{% if not is_download %}
 <div class="container py-4">
+{% endif %}
     <!-- Header Block -->
     <div class="report-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
         <div>
@@ -24,6 +26,7 @@
                 These results are aggregated and anonymised
             </div>
         </div>
+        {% if not is_download %}
         <div>
             <a href="{% url 'cohort_report_download' %}" class="btn-premium-action">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download" viewBox="0 0 16 16">
@@ -33,13 +36,13 @@
                 Download Offline Report
             </a>
         </div>
+        {% endif %}
     </div>
 
     <!-- Overall Performance Section -->
     <div class="glass-card">
         <div class="card-title-bar">
             <h3 class="fw-bold mb-0 text-slate-800">Overall Weighted Module Performance</h3>
-            <span class="badge bg-dark px-3 py-2 text-gold border border-gold" style="color: #c8a951;">Module Outcome</span>
         </div>
         <div class="card-body-pad">
             <div class="row g-4 align-items-center">
@@ -59,8 +62,8 @@
                             <div class="stat-value">{{ overall_stats.max|floatformat:0 }}%</div>
                         </div>
                         <div class="stat-box">
-                            <div class="stat-label">Min Mark</div>
-                            <div class="stat-value">{{ overall_stats.min|floatformat:0 }}%</div>
+                            <div class="stat-label">Cohort Size</div>
+                            <div class="stat-value">{{ cohort_size }}</div>
                         </div>
                     </div>
                     
@@ -101,54 +104,55 @@
                     <span class="badge bg-secondary">Weight: {{ comp.weight }}%</span>
                 </div>
                 <div class="card-body-pad">
-                    <div class="row g-4 align-items-center">
-                        <div class="col-12 col-md-6">
-                            <div class="stats-grid" style="grid-template-columns: repeat(2, 1fr);">
-                                <div class="stat-box stat-highlight">
-                                    <div class="stat-label">Mean Score</div>
-                                    <div class="stat-value">{{ comp.stats.mean|floatformat:1 }}%</div>
-                                </div>
-                                <div class="stat-box">
-                                    <div class="stat-label">Std Dev</div>
-                                    <div class="stat-value">{{ comp.stats.std_dev|floatformat:1 }}</div>
-                                </div>
-                                <div class="stat-box">
-                                    <div class="stat-label">Max Mark</div>
-                                    <div class="stat-value">{{ comp.stats.max|floatformat:0 }}%</div>
-                                </div>
-                                <div class="stat-box">
-                                    <div class="stat-label">Min Mark</div>
-                                    <div class="stat-value">{{ comp.stats.min|floatformat:0 }}%</div>
-                                </div>
-                            </div>
-                            
-                            <hr class="my-3 text-slate-300">
-                            
-                            <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
-                                <div class="stat-box p-2" style="border-top: 3px solid #74c476;">
-                                    <div class="stat-label" style="font-size: 8px;">% 1st</div>
-                                    <div class="stat-value" style="font-size: 16px;">{{ comp.stats.pct_1st|floatformat:1 }}%</div>
-                                </div>
-                                <div class="stat-box p-2" style="border-top: 3px solid #4a90d9;">
-                                    <div class="stat-label" style="font-size: 8px;">% 2:1 +</div>
-                                    <div class="stat-value" style="font-size: 16px;">{{ comp.stats.pct_21_above|floatformat:1 }}%</div>
-                                </div>
-                                <div class="stat-box p-2" style="border-top: 3px solid #d9534f;">
-                                    <div class="stat-label" style="font-size: 8px;">% Fail</div>
-                                    <div class="stat-value" style="font-size: 16px;">{{ comp.stats.pct_fail|floatformat:1 }}%</div>
-                                </div>
-                            </div>
+                    <!-- Summary Metrics Grid -->
+                    <h5 class="fw-bold mb-3 text-secondary">Summary Metrics</h5>
+                    <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));">
+                        <div class="stat-box stat-highlight">
+                            <div class="stat-label">Mean Score</div>
+                            <div class="stat-value">{{ comp.stats.mean|floatformat:1 }}%</div>
                         </div>
-                        <div class="col-12 col-md-6">
-                            <div class="chart-container">
-                                {{ comp.chart_svg|safe }}
-                            </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Std Dev</div>
+                            <div class="stat-value">{{ comp.stats.std_dev|floatformat:1 }}</div>
                         </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Max Mark</div>
+                            <div class="stat-value">{{ comp.stats.max|floatformat:0 }}%</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Cohort Size</div>
+                            <div class="stat-value">{{ cohort_size }}</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Grade Distributions Grid -->
+                    <h5 class="fw-bold mb-3 mt-4 text-secondary">Grade Classification Distribution</h5>
+                    <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));">
+                        <div class="stat-box" style="border-top: 3px solid #74c476;">
+                            <div class="stat-label">% 1st</div>
+                            <div class="stat-value">{{ comp.stats.pct_1st|floatformat:1 }}%</div>
+                        </div>
+                        <div class="stat-box" style="border-top: 3px solid #4a90d9;">
+                            <div class="stat-label">% 2:1 & above</div>
+                            <div class="stat-value">{{ comp.stats.pct_21_above|floatformat:1 }}%</div>
+                        </div>
+                        <div class="stat-box" style="border-top: 3px solid #d9534f;">
+                            <div class="stat-label">% Fail</div>
+                            <div class="stat-value">{{ comp.stats.pct_fail|floatformat:1 }}%</div>
+                        </div>
+                    </div>
+
+                    <!-- Histogram Chart below -->
+                    <h5 class="fw-bold mb-3 mt-4 text-secondary">Marks Distribution Histogram</h5>
+                    <div class="chart-container">
+                        {{ comp.chart_svg|safe }}
                     </div>
                 </div>
             </div>
         </div>
         {% endfor %}
     </div>
+{% if not is_download %}
 </div>
+{% endif %}
 {% endblock %}

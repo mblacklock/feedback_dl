@@ -1274,9 +1274,9 @@ class AssessmentFeedbackViewsTest(TestCase):
         scores = [45]
         student_score = 45
         
-        # 1. BEng (Undergraduate): 40-49% is a passing 3rd class (colored #f0a070)
+        # 1. BEng (Undergraduate): 40-49% is a passing 3rd class (colored #4a90d9, blue — same as 2:1/2:2)
         svg_beng = generate_cohort_histogram(scores, student_score, degree_level="BEng")
-        self.assertIn('#f0a070', svg_beng)
+        self.assertIn('#4a90d9', svg_beng)
         
         # 2. MEng/MSc (Postgraduate): 40-49% is a Fail (colored #d9534f)
         svg_meng = generate_cohort_histogram(scores, student_score, degree_level="MEng/MSc")

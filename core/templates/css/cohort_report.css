@@ -10,7 +10,11 @@ body {
     color: #1e293b;
 }
 
-h1, h2, h3, h4, .brand-font {
+h1,
+h2,
+h3,
+h4,
+.brand-font {
     font-family: 'Outfit', sans-serif;
 }
 
@@ -187,6 +191,7 @@ h1, h2, h3, h4, .brand-font {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    min-height: 96px;
 }
 
 .card-body-pad {
@@ -215,7 +220,7 @@ h1, h2, h3, h4, .brand-font {
 }
 
 .stat-label {
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 600;
     text-transform: uppercase;
     color: #64748b;
@@ -239,15 +244,14 @@ h1, h2, h3, h4, .brand-font {
 }
 
 .chart-container {
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    background: white;
-    padding: 16px;
     text-align: center;
-    min-height: 250px;
+    background: transparent;
+    border: none;
+    padding: 0;
 }
 
 .chart-container svg {
+    width: 100%;
     max-width: 100%;
     height: auto;
 }
