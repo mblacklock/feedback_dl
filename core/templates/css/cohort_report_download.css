@@ -205,8 +205,9 @@
     color: #1a1a2e;
     border-bottom: 2px solid #c8a951;
     padding-bottom: 6px;
-    margin-top: 40px;
+    margin-top: 10px;
     margin-bottom: 24px;
+    margin-left: 20px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }

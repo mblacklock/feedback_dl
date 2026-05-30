@@ -158,7 +158,7 @@ class CohortReportTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "COMP3002")
         self.assertContains(resp, "Advanced Engineering Software")
-        self.assertContains(resp, "Overall Weighted Module Performance")
+        self.assertContains(resp, "Overall Module Performance")
         self.assertContains(resp, "<svg") # Inline SVG chart rendered
 
     def test_download_cohort_report(self):
