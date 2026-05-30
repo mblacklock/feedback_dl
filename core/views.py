@@ -39,5 +39,11 @@ def portal_home(request):
             "url_name": "marking_converters",
             "cta": "Convert and populate",
         },
+        {
+            "title": "Marking Sheet Builder",
+            "description": "Build a blank assessment marking spreadsheet with marks, rubric dropdowns, notes, and feedback columns.",
+            "url_name": "marking_sheet_builder",
+            "cta": "Create marking template",
+        },
     ]
     return render(request, "core/home.html", {"tools": tools})

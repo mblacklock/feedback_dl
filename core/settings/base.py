@@ -34,6 +34,7 @@ INSTALLED_APPS += [
     'comments_generator',
     'assessment_feedback',
     'marking_converters',
+    'marking_sheet_builder',
     'module_summary',
     'cohort_report'
 ]

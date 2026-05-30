@@ -25,6 +25,7 @@ urlpatterns = [
     path("comments-generator/", include("comments_generator.urls")),
     path("assessment-feedback/", include("assessment_feedback.urls")),
     path("marking-converters/", include("marking_converters.urls")),
+    path("marking-sheet-builder/", include("marking_sheet_builder.urls")),
     path("module-summary/", include("module_summary.urls")),
     path("cohort-report/", include("cohort_report.urls")),
 ]

@@ -1,0 +1,473 @@
+{% extends "rubric_generator/base.html" %}
+
+{% block title %}Marking Sheet Builder{% endblock %}
+
+{% block extra_css %}
+<style>
+    {% include "css/brand_design.css" %}
+
+    body {
+        background: #f7f9fc;
+    }
+
+    .builder-shell {
+        margin-bottom: 2rem;
+    }
+
+    .builder-panel,
+    .preview-panel {
+        background: #fff;
+        border: 1px solid #dde4ef;
+        border-radius: 8px;
+        box-shadow: 0 8px 22px rgba(23, 32, 51, 0.06);
+    }
+
+    .builder-panel {
+        padding: 1rem;
+    }
+
+    .builder-panel h1 {
+        font-size: 1.45rem;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+    }
+
+    .builder-toolbar {
+        align-items: end;
+        display: grid;
+        gap: 0.75rem;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        margin-top: 1rem;
+    }
+
+    .builder-actions {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+    }
+
+    .builder-actions .btn-premium-action {
+        margin-left: auto;
+    }
+
+    .sheet-header-editor {
+        align-items: center;
+        display: grid;
+        gap: 0.5rem;
+        grid-template-columns: 1fr;
+    }
+
+    .mark-settings,
+    .rubric-settings {
+        display: none;
+    }
+
+    .sheet-header-editor[data-column-type="numeric"] .mark-settings,
+    .sheet-header-editor[data-column-type="rubric"] .mark-settings,
+    .sheet-header-editor[data-column-type="rubric"] .rubric-settings {
+        display: block;
+    }
+
+    .sheet-header-editor .form-control,
+    .sheet-header-editor .form-select {
+        font-size: 0.75rem;
+        min-width: 128px;
+    }
+
+    .sheet-header-actions {
+        display: flex;
+        gap: 0.35rem;
+    }
+
+    .sheet-fixed-header {
+        min-width: 120px;
+    }
+
+    .sheet-output-header {
+        min-width: 100px;
+    }
+
+    .mark-total {
+        align-items: center;
+        background: #f8fafc;
+        border: 1px solid #dbe3ee;
+        border-radius: 8px;
+        display: flex;
+        justify-content: space-between;
+        min-width: 150px;
+        padding: 0.65rem 0.75rem;
+    }
+
+    .mark-total.invalid {
+        background: #fff7ed;
+        border-color: #fdba74;
+        color: #9a3412;
+    }
+
+    .preview-panel {
+        overflow: hidden;
+    }
+
+    .preview-toolbar {
+        align-items: center;
+        background: #eef3f8;
+        border-bottom: 1px solid #dde4ef;
+        display: flex;
+        justify-content: space-between;
+        padding: 0.8rem 1rem;
+    }
+
+    .preview-table-wrap {
+        overflow-x: auto;
+    }
+
+    .preview-table {
+        border-collapse: separate;
+        border-spacing: 0;
+        min-width: 760px;
+        table-layout: fixed;
+        width: 100%;
+    }
+
+    .preview-table th {
+        background: #1f4e79;
+        color: #fff;
+        font-size: 0.85rem;
+        height: 44px;
+        padding: 0.55rem;
+        vertical-align: middle;
+    }
+
+    .preview-table td {
+        border-bottom: 1px solid #e3e8f0;
+        border-right: 1px solid #e3e8f0;
+        color: #6b7280;
+        height: 44px;
+        padding: 0.45rem 0.55rem;
+        vertical-align: middle;
+    }
+
+    .preview-table td:first-child,
+    .preview-table th:first-child {
+        border-left: 1px solid #e3e8f0;
+    }
+
+    .cell-pill {
+        background: #f8fafc;
+        border: 1px solid #dbe3ee;
+        border-radius: 6px;
+        color: #4b5563;
+        display: inline-flex;
+        max-width: 100%;
+        min-height: 26px;
+        min-width: 68px;
+        padding: 0.15rem 0.45rem;
+    }
+
+    .cell-pill.dropdown::after {
+        content: "v";
+        margin-left: auto;
+        padding-left: 0.6rem;
+    }
+
+    @media (max-width: 900px) {
+        .builder-actions .btn-premium-action {
+            margin-left: 0;
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<form method="post" id="builderForm">
+    {% csrf_token %}
+    <input type="hidden" name="builder_payload" id="builderPayload">
+
+    <div class="builder-shell">
+        <section class="builder-panel">
+            <h1>Marking Sheet Builder</h1>
+            <p class="text-muted mb-0">Edit the sheet directly, then download a blank Excel workbook.</p>
+
+            {% if builder_errors %}
+                <div class="alert alert-warning mt-3" role="alert">
+                    {% for error in builder_errors %}
+                        <div>{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="builder-toolbar">
+                <div>
+                    <label class="form-label" for="nameMode">Name columns</label>
+                    <select class="form-select" id="nameMode">
+                        <option value="full">Student name</option>
+                        <option value="split">Last name, first name</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label" for="rowCount">Rows</label>
+                    <input class="form-control" id="rowCount" type="number" min="1" max="500" value="100">
+                </div>
+                <div>
+                    <label class="form-label" for="maxMark">Total mark</label>
+                    <input class="form-control" id="maxMark" type="number" min="1" max="10000" value="100">
+                </div>
+                <div>
+                    <label class="form-label" for="degreeLevel">Degree level</label>
+                    <select class="form-select" id="degreeLevel">
+                        <option value="BEng">BEng / undergraduate</option>
+                        <option value="MEng/MSc">MEng / MSc</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="builder-actions">
+                <button class="btn btn-outline-primary" type="button" data-add-column="numeric">Add numeric mark</button>
+                <button class="btn btn-outline-primary" type="button" data-add-column="rubric">Add rubric mark</button>
+                <button class="btn btn-outline-secondary" type="button" data-add-column="information">Add information</button>
+                <button class="btn btn-outline-secondary" type="button" data-add-column="feedback">Add feedback comment</button>
+                <div class="mark-total" id="markTotal">
+                    <span>Mark total</span>
+                    <strong id="markTotalValue">0 / 100</strong>
+                </div>
+                <button class="btn btn-premium-action justify-content-center" type="submit">Download Excel Template</button>
+            </div>
+        </section>
+
+        <section class="preview-panel" aria-label="Workbook preview">
+            <div class="preview-toolbar">
+                <div>
+                    <strong>Live Preview</strong>
+                    <div class="text-muted small">First rows of the generated sheet</div>
+                </div>
+                <span class="badge text-bg-light" id="columnCount">0 columns</span>
+            </div>
+            <div class="preview-table-wrap">
+                <table class="preview-table">
+                    <thead>
+                        <tr id="previewHeader"></tr>
+                    </thead>
+                    <tbody id="previewBody"></tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</form>
+{{ initial_config|json_script:"initialConfig" }}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const columnLabels = {
+        numeric: "Numeric mark",
+        rubric: "Rubric mark",
+        information: "Information",
+        feedback: "Feedback comment",
+    };
+    const defaultTitles = {
+        numeric: "Mark",
+        rubric: "Rubric grade",
+        information: "Notes",
+        feedback: "Feedback",
+    };
+
+    const initialConfig = JSON.parse(document.getElementById("initialConfig").textContent);
+    const state = {
+        columns: initialConfig.columns || [
+            { type: "numeric", title: "Numeric mark", max_mark: 50 },
+            { type: "rubric", title: "Rubric grade", max_mark: 50, subdivision: "none" },
+            { type: "feedback", title: "Feedback" },
+        ],
+    };
+
+    const previewHeader = document.getElementById("previewHeader");
+    const previewBody = document.getElementById("previewBody");
+    const columnCount = document.getElementById("columnCount");
+    const markTotal = document.getElementById("markTotal");
+    const markTotalValue = document.getElementById("markTotalValue");
+
+    document.getElementById("nameMode").value = initialConfig.name_mode || "full";
+    document.getElementById("rowCount").value = initialConfig.rows || 100;
+    document.getElementById("maxMark").value = initialConfig.max_mark || 100;
+    document.getElementById("degreeLevel").value = initialConfig.degree_level || "BEng";
+
+    function renderPreview() {
+        const baseHeaders = document.getElementById("nameMode").value === "split"
+            ? ["Student ID", "Last Name", "First Name"]
+            : ["Student ID", "Student Name"];
+        const outputHeaders = [`Mark (${document.getElementById("maxMark").value || 0})`, "%"];
+        const headers = [...baseHeaders, ...state.columns.map((column) => displayColumnTitle(column)), ...outputHeaders];
+        previewHeader.innerHTML = [
+            ...baseHeaders.map((header) => `<th class="sheet-fixed-header">${escapeHtml(header)}</th>`),
+            ...state.columns.map((column, index) => renderEditableHeader(column, index)),
+            ...outputHeaders.map((header) => `<th class="sheet-output-header">${escapeHtml(header)}</th>`),
+        ].join("");
+        bindHeaderEditors();
+        previewBody.innerHTML = "";
+        for (let rowIndex = 0; rowIndex < 5; rowIndex += 1) {
+            const row = document.createElement("tr");
+            row.innerHTML = headers.map((_, index) => {
+                const column = state.columns[index - baseHeaders.length];
+                const isRubric = column && column.type === "rubric";
+                return `<td><span class="cell-pill ${isRubric ? "dropdown" : ""}"></span></td>`;
+            }).join("");
+            previewBody.appendChild(row);
+        }
+        columnCount.textContent = `${headers.length} columns`;
+        updateMarkTotal();
+    }
+
+    function renderEditableHeader(column, index) {
+        return `
+            <th>
+                <div class="sheet-header-editor" data-column-index="${index}" data-column-type="${column.type}">
+                    <input class="form-control form-control-sm column-title-input" value="${escapeHtml(column.title)}" aria-label="Column title">
+                    <select class="form-select form-select-sm column-type-select" aria-label="Column type">
+                        ${Object.entries(columnLabels).map(([value, label]) => `<option value="${value}" ${value === column.type ? "selected" : ""}>${label}</option>`).join("")}
+                    </select>
+                    <div class="mark-settings">
+                        <input class="form-control form-control-sm column-max-input" type="number" min="1" max="10000" value="${escapeHtml(column.max_mark || 100)}" aria-label="Column max">
+                    </div>
+                    <div class="rubric-settings">
+                        <select class="form-select form-select-sm column-subdivision-select" aria-label="Rubric boundaries">
+                            <option value="none" ${column.subdivision === "none" ? "selected" : ""}>Standard</option>
+                            <option value="high_low" ${column.subdivision === "high_low" ? "selected" : ""}>High / low</option>
+                            <option value="high_mid_low" ${column.subdivision === "high_mid_low" ? "selected" : ""}>High / mid / low</option>
+                        </select>
+                    </div>
+                    <div class="sheet-header-actions">
+                        <button class="btn btn-light btn-sm remove-column-button" type="button" aria-label="Remove column">Remove</button>
+                    </div>
+                </div>
+            </th>
+        `;
+    }
+
+    function bindHeaderEditors() {
+        document.querySelectorAll(".sheet-header-editor").forEach((editor) => {
+            const index = Number.parseInt(editor.dataset.columnIndex, 10);
+            editor.querySelector(".column-title-input").addEventListener("input", (event) => {
+                state.columns[index].title = event.target.value;
+                updateMarkTotal();
+            });
+            editor.querySelector(".column-max-input").addEventListener("input", (event) => {
+                state.columns[index].max_mark = event.target.value;
+                updateMarkTotal();
+            });
+            editor.querySelector(".column-subdivision-select").addEventListener("change", (event) => {
+                state.columns[index].subdivision = event.target.value;
+                renderPreview();
+            });
+            editor.querySelector(".column-type-select").addEventListener("change", (event) => {
+                state.columns[index].type = event.target.value;
+                if ((event.target.value === "numeric" || event.target.value === "rubric") && !state.columns[index].max_mark) {
+                    state.columns[index].max_mark = remainingAssessedMark();
+                }
+                if (event.target.value === "rubric" && !state.columns[index].subdivision) {
+                    state.columns[index].subdivision = "none";
+                }
+                if (!state.columns[index].title.trim()) {
+                    state.columns[index].title = defaultTitles[event.target.value];
+                }
+                renderPreview();
+            });
+            editor.querySelector(".remove-column-button").addEventListener("click", () => {
+                state.columns.splice(index, 1);
+                renderPreview();
+            });
+        });
+    }
+
+    function updateMarkTotal() {
+        const total = Number.parseInt(document.getElementById("maxMark").value, 10) || 0;
+        const numericTotal = state.columns.reduce((sum, column) => {
+            if (column.type !== "numeric" && column.type !== "rubric") {
+                return sum;
+            }
+            return sum + (Number.parseInt(column.max_mark, 10) || 0);
+        }, 0);
+        markTotalValue.textContent = `${numericTotal} / ${total}`;
+        markTotal.classList.toggle("invalid", numericTotal !== total);
+    }
+
+    function remainingAssessedMark() {
+        const total = Number.parseInt(document.getElementById("maxMark").value, 10) || 100;
+        const used = state.columns.reduce((sum, column) => {
+            if (column.type !== "numeric" && column.type !== "rubric") {
+                return sum;
+            }
+            return sum + (Number.parseInt(column.max_mark, 10) || 0);
+        }, 0);
+        return Math.max(1, total - used);
+    }
+
+    function buildPayload() {
+        return {
+            name_mode: document.getElementById("nameMode").value,
+            degree_level: document.getElementById("degreeLevel").value,
+            rows: document.getElementById("rowCount").value,
+            max_mark: document.getElementById("maxMark").value,
+            columns: state.columns,
+        };
+    }
+
+    function displayColumnTitle(column) {
+        const title = column.title || columnLabels[column.type];
+        if (column.type === "numeric" || column.type === "rubric") {
+            return `${title} (${column.max_mark || 0})`;
+        }
+        return title;
+    }
+
+    function escapeHtml(value) {
+        return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+    }
+
+    document.querySelectorAll("[data-add-column]").forEach((button) => {
+        button.addEventListener("click", () => {
+            const type = button.dataset.addColumn;
+            const column = { type, title: defaultTitles[type] };
+            if (type === "numeric" || type === "rubric") {
+                column.max_mark = remainingAssessedMark();
+            }
+            if (type === "rubric") {
+                column.subdivision = "none";
+            }
+            state.columns.push(column);
+            renderPreview();
+        });
+    });
+
+    ["nameMode", "rowCount", "maxMark", "degreeLevel"].forEach((id) => {
+        document.getElementById(id).addEventListener("input", renderPreview);
+        document.getElementById(id).addEventListener("change", renderPreview);
+    });
+
+    document.getElementById("builderForm").addEventListener("submit", (event) => {
+        const payload = buildPayload();
+        const total = Number.parseInt(payload.max_mark, 10) || 0;
+        const numericTotal = payload.columns.reduce((sum, column) => {
+            if (column.type !== "numeric" && column.type !== "rubric") {
+                return sum;
+            }
+            return sum + (Number.parseInt(column.max_mark, 10) || 0);
+        }, 0);
+        if (numericTotal !== total) {
+            event.preventDefault();
+            markTotal.classList.add("invalid");
+            markTotal.scrollIntoView({ behavior: "smooth", block: "center" });
+            return;
+        }
+        document.getElementById("builderPayload").value = JSON.stringify(buildPayload());
+    });
+
+    renderPreview();
+</script>
+{% endblock %}
