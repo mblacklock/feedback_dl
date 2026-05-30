@@ -5,6 +5,7 @@ import matplotlib
 # Use non-interactive Agg backend to avoid GUI threads/issues
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 
 
 def generate_radar_chart(categories, student_percentages, average_percentages, pass_mark=40):
@@ -195,9 +196,8 @@ def generate_cohort_histogram(scores, student_score=None, degree_level=None):
     ax.set_xlabel('Mark (%)', color='#475569', size=16, fontfamily='DejaVu Sans')
     ax.set_ylabel('Number of Students', color='#475569', size=16, fontfamily='DejaVu Sans')
 
-    # Y-axis integer ticks
-    max_count = int(max(n)) if len(n) > 0 else 1
-    ax.set_yticks(range(0, max_count + 2))
+    # Y-axis: integer ticks only, at most ~8 sensible intervals
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True, nbins=8, min_n_ticks=3))
 
     # Spines — all four visible to form a box
     for spine in ax.spines.values():
