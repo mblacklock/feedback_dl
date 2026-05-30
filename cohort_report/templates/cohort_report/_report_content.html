@@ -4,8 +4,11 @@
         <div class="header-code">{{ module_code }}</div>
         <h1 class="header-title">{{ module_title }}</h1>
         <div class="header-meta">
-            Cohort Size: <strong>{{ cohort_size }} students</strong> &nbsp;&middot;&nbsp; 
-            These results are aggregated and anonymised
+            Cohort Size: <strong>{{ cohort_size }} students</strong>
+            {% if year %}&nbsp;&middot;&nbsp; Year: <strong>{{ year }}</strong>{% endif %}
+            {% if period %}&nbsp;&middot;&nbsp; Period: <strong>{{ period }}</strong>{% endif %}
+            {% if occurrence %}&nbsp;&middot;&nbsp; Occurrence: <strong>{{ occurrence }}</strong>{% endif %}
+            &nbsp;&middot;&nbsp; These results are aggregated and anonymised
         </div>
     </div>
     {% if show_download_button %}
@@ -44,8 +47,8 @@
                         <div class="stat-value">{{ overall_stats.max|floatformat:0 }}%</div>
                     </div>
                     <div class="stat-box">
-                        <div class="stat-label">Cohort Size</div>
-                        <div class="stat-value">{{ cohort_size }}</div>
+                        <div class="stat-label">Median</div>
+                        <div class="stat-value">{{ overall_stats.median|floatformat:1 }}%</div>
                     </div>
                 </div>
                 
@@ -108,8 +111,8 @@
                         <div class="stat-value">{{ comp.stats.max|floatformat:0 }}%</div>
                     </div>
                     <div class="stat-box">
-                        <div class="stat-label">Cohort Size</div>
-                        <div class="stat-value">{{ cohort_size }}</div>
+                        <div class="stat-label">Median</div>
+                        <div class="stat-value">{{ comp.stats.median|floatformat:1 }}%</div>
                     </div>
                 </div>
                 

@@ -35,6 +35,9 @@ def upload_cohort_data(request):
                 "module_code": module_info.get("module_code", ""),
                 "module_title": module_info.get("module_title", ""),
                 "comp_names_map": module_info.get("comp_names_map", {}),
+                "year": module_info.get("year", ""),
+                "period": module_info.get("period", ""),
+                "occurrence": module_info.get("occurrence", ""),
             }
             
             # Infer Name & Student ID
@@ -130,6 +133,9 @@ def confirm_cohort_mappings(request):
         mappings["module_code"] = request.POST.get("module_code", "").strip()
         mappings["module_title"] = request.POST.get("module_title", "").strip()
         mappings["degree_level"] = request.POST.get("degree_level", "BEng")
+        mappings["year"] = request.POST.get("year", "").strip()
+        mappings["period"] = request.POST.get("period", "").strip()
+        mappings["occurrence"] = request.POST.get("occurrence", "").strip()
         
         # Read weights
         updated_comps = []
@@ -191,6 +197,10 @@ def compute_stats(scores, degree_level="BEng"):
     variance = sum((x - mean_val) ** 2 for x in scores) / n
     std_dev = math.sqrt(variance)
     
+    sorted_scores = sorted(scores)
+    mid = n // 2
+    median_val = sorted_scores[mid] if n % 2 != 0 else (sorted_scores[mid - 1] + sorted_scores[mid]) / 2
+
     pct_1st = (sum(1 for x in scores if x >= 70) / n) * 100
     pct_21_above = (sum(1 for x in scores if x >= 60) / n) * 100
     
@@ -200,6 +210,7 @@ def compute_stats(scores, degree_level="BEng"):
     
     return {
         "mean": mean_val,
+        "median": median_val,
         "std_dev": std_dev,
         "max": max(scores),
         "min": min(scores),
@@ -325,6 +336,9 @@ def get_report_context(request):
         "module_code": mappings.get("module_code", "COMP101"),
         "module_title": mappings.get("module_title", "Module Summary"),
         "degree_level": degree_level,
+        "year": mappings.get("year", ""),
+        "period": mappings.get("period", ""),
+        "occurrence": mappings.get("occurrence", ""),
         "overall_stats": overall_stats,
         "overall_chart_svg": overall_chart_svg_clean,
         "components_stats": components_stats,

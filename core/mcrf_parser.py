@@ -154,8 +154,54 @@ def parse_mcrf_workbook(file_file):
                     title_clean = clean_component_title(str(row[1]).strip())
                     comp_names_map[code_norm] = title_clean
 
+    # --- Year, Period, Occurrence ---
+    # Standard MCRF layout: Year=row8/colC, Period=row9/colC, Occurrence=row10/colC (0-indexed: rows 7,8,9)
+    year = ""
+    period = ""
+    occurrence = ""
+
+    def _cell(row_idx, col_idx):
+        if len(rows) > row_idx and len(rows[row_idx]) > col_idx:
+            v = rows[row_idx][col_idx]
+            return str(v).strip() if v is not None else ""
+        return ""
+
+    # Try canonical positions first
+    year_raw = _cell(7, 2)
+    period_raw = _cell(8, 2)
+    occurrence_raw = _cell(9, 2)
+
+    # Validate by checking the labels in col A
+    if str(rows[7][0]).strip().lower() == "year" if len(rows) > 7 and rows[7] else False:
+        year = year_raw
+    if str(rows[8][0]).strip().lower() == "period" if len(rows) > 8 and rows[8] else False:
+        period = period_raw
+    if str(rows[9][0]).strip().lower() == "occurrence" if len(rows) > 9 and rows[9] else False:
+        occurrence_raw_val = occurrence_raw
+        # Extract just BNN/FNN code from e.g. "BNN: September start - Newcastle upon Tyne"
+        occ_match = re.match(r'^([A-Z]{1,4}NN)\b', occurrence_raw_val, re.IGNORECASE)
+        occurrence = occ_match.group(1).upper() if occ_match else occurrence_raw_val
+
+    # Fallback: scan pre-header rows for labelled cells if not found
+    if not year or not period or not occurrence:
+        for row in rows[:header_row_idx]:
+            if not row:
+                continue
+            label = str(row[0]).strip().lower() if row[0] else ""
+            val = str(row[2]).strip() if len(row) > 2 and row[2] else ""
+            if label == "year" and not year:
+                year = val
+            elif label == "period" and not period:
+                period = val
+            elif label == "occurrence" and not occurrence:
+                occ_match = re.match(r'^([A-Z]{1,4}NN)\b', val, re.IGNORECASE)
+                occurrence = occ_match.group(1).upper() if occ_match else val
+
     return headers, data_rows, is_mcrf, {
         "module_code": module_code,
         "module_title": module_title,
-        "comp_names_map": comp_names_map
+        "comp_names_map": comp_names_map,
+        "year": year,
+        "period": period,
+        "occurrence": occurrence,
     }
