@@ -161,12 +161,23 @@ def generate_cohort_histogram(scores, student_score=None, degree_level=None):
         90: '#74c476',  # 1st
     }
 
+    # Separate absent (score == 0) from scored submissions
+    ab_scores = [s for s in scores if s == 0]
+    scored = [s for s in scores if s > 0]
+    ab_count = len(ab_scores)
+    has_ab = ab_count > 0
+
+    # AB bar sits in a virtual slot from -12 to -2 (centre at -7), leaving a 2-unit gap before 0
+    AB_CENTER = -7
+    AB_WIDTH = 8
+    X_START = -13 if has_ab else 0
+
     fixed_bins = list(range(0, 101, 10))
 
     fig, ax = plt.subplots(figsize=(8.0, 5.0))
 
     n, bins, patches = ax.hist(
-        scores,
+        scored,
         bins=fixed_bins,
         range=(0, 100),
         edgecolor='white',
@@ -177,6 +188,17 @@ def generate_cohort_histogram(scores, student_score=None, degree_level=None):
     # Colour each bar by its grade band
     for patch, left_edge in zip(patches, fixed_bins[:-1]):
         patch.set_facecolor(band_colours.get(left_edge, '#74c476'))
+
+    # AB bar — dark grey, visually separated
+    if has_ab:
+        ax.bar(
+            AB_CENTER, ab_count,
+            width=AB_WIDTH,
+            color='#6b7280',
+            edgecolor='white',
+            linewidth=1.0,
+            zorder=3,
+        )
 
     # Student mark — dashed vertical line with label above (if provided)
     if student_score is not None:
@@ -191,8 +213,12 @@ def generate_cohort_histogram(scores, student_score=None, degree_level=None):
         )
 
     # Axes
-    ax.set_xlim(0, 100)
-    ax.set_xticks(range(0, 101, 10))
+    ax.set_xlim(X_START, 100)
+    if has_ab:
+        ax.set_xticks([AB_CENTER] + list(range(0, 101, 10)))
+        ax.set_xticklabels(['AB'] + [str(i) for i in range(0, 101, 10)])
+    else:
+        ax.set_xticks(range(0, 101, 10))
     ax.set_xlabel('Mark (%)', color='#475569', size=16, fontfamily='DejaVu Sans')
     ax.set_ylabel('Number of Students', color='#475569', size=16, fontfamily='DejaVu Sans')
 
