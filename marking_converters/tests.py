@@ -42,7 +42,7 @@ class MarkingConvertersTests(TestCase):
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "Marking Sheet Converters")
-        self.assertContains(resp, "Gradebook Merger")
+        self.assertContains(resp, "Gradebook Populator")
         self.assertContains(resp, "MCRF Populator")
 
     def test_merge_upload_flow(self):
