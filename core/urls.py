@@ -24,7 +24,7 @@ urlpatterns = [
     path("rubric-generator/", include("rubric_generator.urls")),
     path("comments-generator/", include("comments_generator.urls")),
     path("assessment-feedback/", include("assessment_feedback.urls")),
-    path("mcrf-converter/", include("mcrf_converter.urls")),
+    path("marking-converters/", include("marking_converters.urls")),
     path("module-summary/", include("module_summary.urls")),
     path("cohort-report/", include("cohort_report.urls")),
 ]

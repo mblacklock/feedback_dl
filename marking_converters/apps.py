@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class McrfConverterConfig(AppConfig):
+class MarkingConvertersConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'mcrf_converter'
+    name = 'marking_converters'

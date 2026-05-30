@@ -1,0 +1,281 @@
+{% extends "rubric_generator/base.html" %}
+
+{% block title %}MCRF Populator - Match Columns{% endblock %}
+
+{% block extra_css %}
+<style>
+    {% include "css/brand_design.css" %}
+    
+    .mapping-card {
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 30px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+        border: 1px solid var(--brand-border-light);
+    }
+    
+    .mapping-grid {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr auto;
+        gap: 1.5rem;
+        align-items: end;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px dashed var(--brand-border-light);
+    }
+    
+    .mapping-arrow {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 48px;
+        padding: 0 0.5rem;
+        color: var(--brand-muted);
+    }
+    
+    .mapping-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .mapping-group label {
+        font-size: 0.85rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    .label-marks {
+        color: #3b82f6;
+    }
+    
+    .label-mcrf {
+        color: #10b981;
+    }
+    
+    select {
+        padding: 0.75rem;
+        border-radius: 8px;
+        border: 1px solid var(--brand-border);
+        background-color: #f8fafc;
+        font-family: inherit;
+        font-size: 0.875rem;
+        color: var(--brand-slate-dark);
+        cursor: pointer;
+        outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        background-size: 1rem;
+        padding-right: 2.5rem;
+    }
+    
+    select:focus {
+        border-color: var(--brand-navy);
+        box-shadow: 0 0 0 3px rgba(26, 26, 46, 0.1);
+    }
+    
+    .btn-icon {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 1.125rem;
+        padding: 0.75rem;
+        color: #ef4444;
+        transition: opacity 0.2s, background-color 0.2s;
+        opacity: 0.7;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 48px;
+    }
+    
+    .btn-icon:hover {
+        opacity: 1;
+        background-color: #fef2f2;
+    }
+    
+    .btn-emerald {
+        background: linear-gradient(135deg, #047857 0%, #10b981 100%);
+        border-color: #10b981;
+    }
+    
+    .btn-emerald:hover {
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.25);
+        color: #f0fdf4;
+    }
+    
+    .gradient-header h1, 
+    .gradient-header p {
+        color: white !important;
+    }
+</style>
+{% endblock %}
+ 
+{% block content %}
+<div class="row py-5">
+    <div class="col-lg-10 mx-auto">
+        <a href="{% url 'converter_populate_upload' %}" class="btn btn-secondary mb-4 btn-sm rounded-pill px-3 shadow-sm">
+            ← Back to Upload
+        </a>
+        
+        <div class="card main-card" style="border: 1px solid var(--brand-border-light); box-shadow: 0 4px 15px rgba(0,0,0,0.02); border-radius: 16px; overflow: hidden;">
+            <div class="gradient-header text-center text-white" style="background: linear-gradient(135deg, #047857 0%, #064e3b 100%); border-bottom: 4px solid #10b981;">
+                <h1 class="fw-bold mb-2">Match Column Mappings</h1>
+                <p class="mb-0 opacity-75 small">Step 2: Map Student ID columns and select the grade columns to populate inside the MCRF spreadsheet.</p>
+            </div>
+
+            <div class="card-body p-5">
+                {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-danger rounded-3 mb-4" role="alert">
+                        <span class="fw-bold">Error:</span> {{ message }}
+                    </div>
+                    {% endfor %}
+                {% endif %}
+
+                <form method="POST" id="mappingForm">
+                    {% csrf_token %}
+                    
+                    <div class="mapping-card mb-4">
+                        <h4 class="fw-bold mb-4 text-dark">1. Student Matching Columns</h4>
+                        
+                        <div class="row align-items-end g-4">
+                            <div class="col-md-5">
+                                <div class="mapping-group">
+                                    <label for="local_id_col" class="label-marks">Local Marks Student ID Column</label>
+                                    <select id="local_id_col" name="local_id_col" required>
+                                        <option value="">Select a column...</option>
+                                        {% for h in local_headers %}
+                                        <option value="{{ h }}" {% if h == local_id_default %}selected{% endif %}>{{ h }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-2 text-center pb-2">
+                                <div class="mapping-arrow d-none d-md-flex">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="opacity-50">
+                                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                                        <polyline points="12 5 19 12 12 19"></polyline>
+                                    </svg>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-5">
+                                <div class="mapping-group">
+                                    <label for="mcrf_id_col" class="label-mcrf">MCRF Template Student ID Column</label>
+                                    <select id="mcrf_id_col" name="mcrf_id_col" required>
+                                        <option value="">Select a column...</option>
+                                        {% for h in mcrf_headers %}
+                                        <option value="{{ h }}" {% if h == mcrf_id_default %}selected{% endif %}>{{ h }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mapping-card mb-4">
+                        <h4 class="fw-bold mb-3 text-dark">2. Grade Column Mappings</h4>
+                        <p class="text-muted small mb-4">Select which grade columns from your local sheet should be copied into the MCRF Template columns.</p>
+                        
+                        <div id="grades-mapping-container">
+                            <div class="mapping-grid mapping-row" data-index="0">
+                                <div class="mapping-group">
+                                    <label class="label-marks">Local Marks Column to Copy</label>
+                                    <select class="marks-grade-select" name="map_local_0" required>
+                                        <option value="">Select a column...</option>
+                                        {% for h in local_headers %}
+                                        <option value="{{ h }}">{{ h }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+                                <div class="mapping-arrow">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="opacity-50">
+                                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                                        <polyline points="12 5 19 12 12 19"></polyline>
+                                    </svg>
+                                </div>
+                                
+                                <div class="mapping-group">
+                                    <label class="label-mcrf">MCRF Column to Populate</label>
+                                    <select class="mcrf-grade-select" name="map_mcrf_0" required>
+                                        <option value="">Select a column...</option>
+                                        {% for h in mcrf_mark_headers %}
+                                        <option value="{{ h }}">{{ h }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+                                <div class="mapping-action">
+                                    <button type="button" class="btn-icon remove-row-btn" title="Remove" style="display: none;">❌</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <button type="button" id="add-mapping-btn" class="btn btn-secondary rounded-3 px-4 shadow-sm">+ Add Another Column Mapping</button>
+                        </div>
+                    </div>
+
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-premium btn-emerald btn-lg w-100 py-3 rounded-3 shadow-sm">
+                            Populate & Download Excel MCRF
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const container = document.getElementById('grades-mapping-container');
+        const addBtn = document.getElementById('add-mapping-btn');
+        let rowIndex = 1;
+        
+        addBtn.addEventListener('click', () => {
+            const firstRow = container.querySelector('.mapping-row');
+            const newRow = firstRow.cloneNode(true);
+            
+            newRow.setAttribute('data-index', rowIndex);
+            
+            // Update names of selects to be unique
+            const selectLocal = newRow.querySelector('.marks-grade-select');
+            selectLocal.name = `map_local_${rowIndex}`;
+            selectLocal.value = '';
+            
+            const selectMCRF = newRow.querySelector('.mcrf-grade-select');
+            selectMCRF.name = `map_mcrf_${rowIndex}`;
+            selectMCRF.value = '';
+            
+            container.appendChild(newRow);
+            rowIndex++;
+            updateRemoveButtons();
+        });
+        
+        container.addEventListener('click', (e) => {
+            if (e.target.closest('.remove-row-btn')) {
+                const row = e.target.closest('.mapping-row');
+                row.remove();
+                updateRemoveButtons();
+            }
+        });
+        
+        function updateRemoveButtons() {
+            const rows = container.querySelectorAll('.mapping-row');
+            const showRemove = rows.length > 1;
+            rows.forEach(row => {
+                row.querySelector('.remove-row-btn').style.display = showRemove ? 'block' : 'none';
+            });
+        }
+    });
+</script>
+{% endblock %}

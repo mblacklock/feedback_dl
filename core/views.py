@@ -34,10 +34,10 @@ def portal_home(request):
             "cta": "Build comments",
         },
         {
-            "title": "MCRF Converter",
-            "description": "Merge and convert gradebook and marking sheets into the MCRF sheet.",
-            "url_name": "mcrf_converter",
-            "cta": "Convert gradebook files",
+            "title": "Marking Sheet Converters",
+            "description": "Merge gradebooks and populate MCRF templates dynamically.",
+            "url_name": "marking_converters",
+            "cta": "Convert and populate",
         },
     ]
     return render(request, "core/home.html", {"tools": tools})

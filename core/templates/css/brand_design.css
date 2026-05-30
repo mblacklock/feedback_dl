@@ -97,3 +97,36 @@ h1, h2, h3, h4, h5, h6, .brand-font {
     border-radius: 4px;
     font-weight: 600;
 }
+
+/* ── Common Card & Header Structures ── */
+.main-card {
+    border: none;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+    background: var(--brand-card-bg-glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    margin-bottom: 40px;
+    overflow: hidden;
+}
+
+.gradient-header {
+    background: linear-gradient(135deg, var(--brand-navy-dark) 0%, #1e293b 100%);
+    border-radius: 20px 20px 0 0;
+    padding: 30px;
+    color: white;
+    border-bottom: 4px solid var(--brand-gold);
+}
+
+.gradient-header h1,
+.gradient-header h2,
+.gradient-header h3,
+.gradient-header h4,
+.gradient-header h5,
+.gradient-header h6,
+.gradient-header p,
+.gradient-header span {
+    color: white !important;
+}
+

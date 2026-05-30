@@ -4,27 +4,8 @@
    Inherits core styling tokens from brand_design.css.
    ============================================================ */
 
-/* ── Common Premium Grid & Cards ── */
-.main-card {
-    border: none;
-    border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    margin-bottom: 40px;
-}
-
-.gradient-header {
-    background: linear-gradient(135deg, var(--brand-navy-dark) 0%, #1e293b 100%);
-    border-radius: 20px 20px 0 0;
-    padding: 30px;
-    color: white;
-    border-bottom: 4px solid var(--brand-gold);
-}
-
 /* ── Upload Steps & Dropzone ── */
+
 .dropzone-container {
     border: 2.5px dashed var(--brand-slate-light);
     border-radius: 16px;

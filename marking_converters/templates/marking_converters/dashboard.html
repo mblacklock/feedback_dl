@@ -1,0 +1,79 @@
+{% extends "rubric_generator/base.html" %}
+
+{% block title %}Marking Sheet Converters{% endblock %}
+
+{% block extra_css %}
+<style>
+    {% include "css/brand_design.css" %}
+    
+    .card-hover:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08) !important;
+        border-color: var(--brand-gold) !important;
+    }
+    
+    .tool-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        margin-bottom: 20px;
+    }
+    
+    .icon-blue {
+        background-color: #eff6ff;
+        color: #3b82f6;
+    }
+    
+    .icon-emerald {
+        background-color: #ecfdf5;
+        color: #10b981;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row py-5">
+    <div class="col-12 text-center mb-5">
+        <h1 class="fw-bold mb-2 display-6">Marking Sheet Converters</h1>
+        <p class="text-muted lead max-width-md mx-auto">GDPR-safe, zero-storage utilities to convert and merge student marks worksheets entirely in memory.</p>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card main-card h-100 card-hover transition" style="border: 1px solid var(--brand-border-light); box-shadow: 0 4px 15px rgba(0,0,0,0.02); border-radius: 16px;">
+            <div class="card-body p-5 d-flex flex-column align-items-center text-center">
+                <div class="tool-icon icon-blue">
+                    📚
+                </div>
+                <h3 class="fw-bold text-dark mb-3">Gradebook Merger</h3>
+                <p class="text-muted mb-4 small" style="min-height: 48px;">
+                    Merge student grades from a local marking sheet or MCRF into a Blackboard Gradebook file for direct, seamless upload back to Blackboard.
+                </p>
+                <div class="mt-auto w-100">
+                    <a href="{% url 'converter_merge_upload' %}" class="btn btn-premium w-100 py-3">Open Gradebook Merger</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card main-card h-100 card-hover transition" style="border: 1px solid var(--brand-border-light); box-shadow: 0 4px 15px rgba(0,0,0,0.02); border-radius: 16px;">
+            <div class="card-body p-5 d-flex flex-column align-items-center text-center">
+                <div class="tool-icon icon-emerald">
+                    📝
+                </div>
+                <h3 class="fw-bold text-dark mb-3">MCRF Populator</h3>
+                <p class="text-muted mb-4 small" style="min-height: 48px;">
+                    Load your student marks from any list and automatically populate them into the official university Module Marks Record Form (MCRF) template.
+                </p>
+                <div class="mt-auto w-100">
+                    <a href="{% url 'converter_populate_upload' %}" class="btn btn-premium w-100 py-3" style="background: linear-gradient(135deg, #10b981 0%, #047857 100%); border-color: #10b981;">Open MCRF Populator</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

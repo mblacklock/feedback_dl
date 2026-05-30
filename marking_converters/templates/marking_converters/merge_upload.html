@@ -1,0 +1,167 @@
+{% extends "rubric_generator/base.html" %}
+
+{% block title %}Gradebook Merger - Upload Files{% endblock %}
+
+{% block extra_css %}
+<style>
+    {% include "css/brand_design.css" %}
+    
+    .dropzone-container {
+        border: 2.5px dashed var(--brand-slate-light);
+        border-radius: 16px;
+        padding: 30px 20px;
+        text-align: center;
+        background-color: var(--brand-bg);
+        transition: all 0.25s ease-in-out;
+        cursor: pointer;
+        position: relative;
+        margin-bottom: 20px;
+    }
+    
+    .dropzone-container:hover,
+    .dropzone-container.dragover {
+        border-color: var(--brand-gold);
+        background-color: #faf8f5;
+    }
+    
+    .upload-icon {
+        font-size: 2.5rem;
+        color: var(--brand-slate-light);
+        margin-bottom: 10px;
+        transition: color 0.2s;
+    }
+    
+    .dropzone-container:hover .upload-icon {
+        color: var(--brand-gold);
+    }
+    
+    .file-input {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+    }
+    
+    .btn-blue {
+        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+        border-color: #3b82f6;
+    }
+    
+    .btn-blue:hover {
+        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.25);
+        color: #eff6ff;
+    }
+    
+    .gradient-header h1, 
+    .gradient-header p {
+        color: white !important;
+    }
+</style>
+{% endblock %}
+ 
+{% block content %}
+<div class="row py-5">
+    <div class="col-lg-8 mx-auto">
+        <a href="{% url 'mcrf_converter' %}" class="btn btn-secondary mb-4 btn-sm rounded-pill px-3 shadow-sm">
+            ← Back to Converters
+        </a>
+        
+        <div class="card main-card" style="border: 1px solid var(--brand-border-light); box-shadow: 0 4px 15px rgba(0,0,0,0.02); border-radius: 16px; overflow: hidden;">
+            <div class="gradient-header text-center text-white" style="background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%); border-bottom: 4px solid var(--brand-gold, #c8a951);">
+                <h1 class="fw-bold mb-2">Blackboard Gradebook Merger</h1>
+                <p class="mb-0 opacity-75 small">Step 1: Upload your local marks sheet and the Blackboard Gradebook template file.</p>
+            </div>
+
+            <div class="card-body p-5">
+                {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-danger rounded-3 mb-4" role="alert">
+                        <span class="fw-bold">Error:</span> {{ message }}
+                    </div>
+                    {% endfor %}
+                {% endif %}
+
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5 class="fw-bold mb-3 text-secondary small">1. LOCAL MARKS SPREADSHEET</h5>
+                            <div class="dropzone-container" id="dropzone-marks">
+                                <div class="upload-icon">📝</div>
+                                <h6 class="fw-bold mb-1 file-heading">Drag and drop marks spreadsheet</h6>
+                                <p class="text-muted small mb-2 file-sub">or click to browse (.csv, .xlsx, .xls)</p>
+                                <input type="file" name="marks_file" class="file-input" required accept=".xlsx,.xls,.csv" id="fileInputMarks">
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h5 class="fw-bold mb-3 text-secondary small">2. BLACKBOARD GRADEBOOK TEMPLATE</h5>
+                            <div class="dropzone-container" id="dropzone-bb">
+                                <div class="upload-icon">📚</div>
+                                <h6 class="fw-bold mb-1 file-heading">Drag and drop Blackboard file</h6>
+                                <p class="text-muted small mb-2 file-sub">or click to browse (.csv, .xls, .xlsx)</p>
+                                <input type="file" name="bb_file" class="file-input" required accept=".xlsx,.xls,.csv" id="fileInputBB">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-premium btn-blue btn-lg w-100 py-3 rounded-3 shadow-sm">
+                            Next: Configure Column Mappings →
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        function setupDropzone(inputElId, dropzoneElId) {
+            const fileInput = document.getElementById(inputElId);
+            const dropzone = document.getElementById(dropzoneElId);
+            const heading = dropzone.querySelector('.file-heading');
+            const sub = dropzone.querySelector('.file-sub');
+            
+            fileInput.addEventListener('change', () => {
+                if (fileInput.files.length > 0) {
+                    heading.innerText = fileInput.files[0].name;
+                    sub.innerText = "File loaded and ready";
+                    dropzone.style.borderColor = "var(--brand-gold)";
+                    dropzone.style.backgroundColor = "#faf8f5";
+                }
+            });
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropzone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    dropzone.classList.add('dragover');
+                    dropzone.style.borderColor = "var(--brand-gold)";
+                }, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropzone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    dropzone.classList.remove('dragover');
+                }, false);
+            });
+            
+            dropzone.addEventListener('drop', (e) => {
+                if (e.dataTransfer.files.length > 0) {
+                    fileInput.files = e.dataTransfer.files;
+                    fileInput.dispatchEvent(new Event('change'));
+                }
+            }, false);
+        }
+        
+        setupDropzone('fileInputMarks', 'dropzone-marks');
+        setupDropzone('fileInputBB', 'dropzone-bb');
+    });
+</script>
+{% endblock %}

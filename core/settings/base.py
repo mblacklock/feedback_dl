@@ -33,7 +33,7 @@ INSTALLED_APPS += [
     'rubric_generator',
     'comments_generator',
     'assessment_feedback',
-    'mcrf_converter',
+    'marking_converters',
     'module_summary',
     'cohort_report'
 ]
