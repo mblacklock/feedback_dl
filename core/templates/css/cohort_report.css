@@ -226,6 +226,9 @@ h4,
     color: #64748b;
     margin-bottom: 6px;
     letter-spacing: 0.05em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .stat-value {

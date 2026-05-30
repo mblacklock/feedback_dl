@@ -4,7 +4,6 @@
         <div class="header-code">{{ module_code }}</div>
         <h1 class="header-title">{{ module_title }}</h1>
         <div class="header-meta">
-            Degree Level: <strong>{{ degree_level }}</strong> &nbsp;&middot;&nbsp; 
             Cohort Size: <strong>{{ cohort_size }} students</strong> &nbsp;&middot;&nbsp; 
             These results are aggregated and anonymised
         </div>
@@ -52,7 +51,10 @@
                 
                 <h5 class="fw-bold mb-3 text-secondary">Grade Classification Distribution</h5>
                 <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
-                    <div class="stat-box" style="border-top: 3px solid #74c476;">
+                    <div class="stat-box" style="border-top: 3px solid #74c476; position: relative;">
+                        {% if overall_stats.pct_1st > 20 %}
+                        <span style="position: absolute; top: 6px; right: 6px; background: #fdf2f2; border: 1px solid #d9534f; border-radius: 4px; padding: 1px 6px; font-size: 10px; font-weight: 700; color: #d9534f; line-height: 1.5;" title="Over 20% of the cohort achieved a 1st">&#9873;</span>
+                        {% endif %}
                         <div class="stat-label">% 1st</div>
                         <div class="stat-value">{{ overall_stats.pct_1st|floatformat:1 }}%</div>
                     </div>
@@ -60,7 +62,10 @@
                         <div class="stat-label">% 2:1 &amp; above</div>
                         <div class="stat-value">{{ overall_stats.pct_21_above|floatformat:1 }}%</div>
                     </div>
-                    <div class="stat-box" style="border-top: 3px solid #d9534f;">
+                    <div class="stat-box" style="border-top: 3px solid #d9534f; position: relative;">
+                        {% if overall_stats.pct_fail > 20 %}
+                        <span style="position: absolute; top: 6px; right: 6px; background: #fdf2f2; border: 1px solid #d9534f; border-radius: 4px; padding: 1px 6px; font-size: 10px; font-weight: 700; color: #d9534f; line-height: 1.5;" title="Over 20% of the cohort failed">&#9873;</span>
+                        {% endif %}
                         <div class="stat-label">% Fail</div>
                         <div class="stat-value">{{ overall_stats.pct_fail|floatformat:1 }}%</div>
                     </div>
