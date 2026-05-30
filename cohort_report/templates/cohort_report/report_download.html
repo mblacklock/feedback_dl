@@ -33,8 +33,11 @@
             padding: 32px;
         }
 
+        /* Shared global design tokens & core styling */
+        {% include "css/brand_design.css" %}
+
         /* Shared block style sheet variables */
-        {% include "css/feedback_blocks.css" %}
+        {% include "css/sheet_layout.css" %}
 
         /* Dashboard specific overrides */
         {% include "css/cohort_report_download.css" %}

@@ -319,7 +319,7 @@ class AssessmentFeedbackViewsTest(TestCase):
             self.assertTrue(html_data.startswith(b"<!DOCTYPE html>"),
                             msg=f"HTML content does not start with <!DOCTYPE html>: {html_data[:50]}")
             
-            # Verify that CSS styles from feedback_blocks.css are correctly embedded inline
+            # Verify that CSS styles from sheet_layout.css are correctly embedded inline
             self.assertIn(b".half-pair", html_data)
             self.assertIn(b".grade-pill", html_data)
 
