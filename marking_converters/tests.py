@@ -47,7 +47,7 @@ class MarkingConvertersTests(TestCase):
 
     def test_merge_upload_flow(self):
         """POST /mcrf-converter/merge/upload/ parses uploads and redirects to match."""
-        url = reverse("converter_merge_upload")
+        url = reverse("gradebook_upload")
         
         marks_file = SimpleUploadedFile("marks.csv", self.marks_csv_bytes, content_type="text/csv")
         bb_file = SimpleUploadedFile("bb.csv", self.bb_csv_bytes, content_type="text/csv")
@@ -57,7 +57,7 @@ class MarkingConvertersTests(TestCase):
             "bb_file": bb_file
         })
         self.assertEqual(resp.status_code, 302)
-        self.assertEqual(resp.url, reverse("converter_merge_match"))
+        self.assertEqual(resp.url, reverse("gradebook_match"))
         
         # Verify sessions
         session = self.client.session
@@ -80,7 +80,7 @@ class MarkingConvertersTests(TestCase):
         ]
         session.save()
 
-        url = reverse("converter_merge_match")
+        url = reverse("gradebook_match")
         resp = self.client.post(url, {
             "local_id_col": "Student ID",
             "bb_id_col": "Username",
@@ -101,7 +101,7 @@ class MarkingConvertersTests(TestCase):
 
     def test_populate_upload_flow(self):
         """POST /mcrf-converter/populate/upload/ parses uploads and redirects."""
-        url = reverse("converter_populate_upload")
+        url = reverse("mcrf_upload")
         
         marks_file = SimpleUploadedFile("marks.csv", self.marks_csv_bytes, content_type="text/csv")
         mcrf_file = SimpleUploadedFile("mcrf.xlsx", self.mcrf_bytes.read(), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
@@ -111,7 +111,7 @@ class MarkingConvertersTests(TestCase):
             "mcrf_file": mcrf_file
         })
         self.assertEqual(resp.status_code, 302)
-        self.assertEqual(resp.url, reverse("converter_populate_match"))
+        self.assertEqual(resp.url, reverse("mcrf_match"))
         
     def test_populate_match_only_displays_mark_columns(self):
         """Verify that only columns with 'mark' in their name are passed as target mapping options in mcrf_mark_headers."""
@@ -124,7 +124,7 @@ class MarkingConvertersTests(TestCase):
         session["converter_mcrf_name"] = "blank_MCRF.xlsx"
         session.save()
         
-        url = reverse("converter_populate_match")
+        url = reverse("mcrf_match")
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
         self.assertIn("CW1 - Mark", resp.context["mcrf_mark_headers"])
@@ -149,7 +149,7 @@ class MarkingConvertersTests(TestCase):
         session["converter_mcrf_name"] = "blank_MCRF.xlsx"
         session.save()
 
-        url = reverse("converter_populate_match")
+        url = reverse("mcrf_match")
         resp = self.client.post(url, {
             "local_id_col": "Student ID",
             "mcrf_id_col": "Student ID",
@@ -229,7 +229,7 @@ class MarkingConvertersTests(TestCase):
         session["converter_mcrf_name"] = "blank_MCRF.xls"
         session.save()
 
-        url = reverse("converter_populate_match")
+        url = reverse("mcrf_match")
         resp = self.client.post(url, {
             "local_id_col": "Student ID",
             "mcrf_id_col": "Student ID",
@@ -282,7 +282,7 @@ class MarkingConvertersTests(TestCase):
         session.save()
         
         # GET request to converter_merge_match
-        url = reverse("converter_merge_match")
+        url = reverse("gradebook_match")
         resp = self.client.get(url)
         
         self.assertEqual(resp.status_code, 200)

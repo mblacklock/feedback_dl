@@ -168,7 +168,7 @@ def merge_upload(request):
             request.session["converter_bb_headers"] = bb_headers
             request.session["converter_bb_rows"] = bb_rows
             
-            return redirect("converter_merge_match")
+            return redirect("gradebook_match")
         except Exception as e:
             messages.error(request, f"Error parsing files: {str(e)}")
             
@@ -184,7 +184,7 @@ def merge_match(request):
     
     if local_headers is None or local_rows is None or bb_headers is None or bb_rows is None:
         messages.error(request, "Session expired or upload data missing. Please upload files again.")
-        return redirect("converter_merge_upload")
+        return redirect("gradebook_upload")
         
     # Determine defaults: prioritize username over student id
     def get_id_default(headers):
@@ -301,7 +301,7 @@ def populate_upload(request):
             request.session["converter_mcrf_headers"] = mcrf_headers
             request.session["converter_mcrf_rows"] = mcrf_rows
             
-            return redirect("converter_populate_match")
+            return redirect("mcrf_match")
         except Exception as e:
             messages.error(request, f"Error parsing files: {str(e)}")
             
@@ -319,7 +319,7 @@ def populate_match(request):
     
     if local_headers is None or local_rows is None or mcrf_headers is None or mcrf_rows is None or mcrf_template is None:
         messages.error(request, "Session expired or upload data missing. Please upload files again.")
-        return redirect("converter_populate_upload")
+        return redirect("mcrf_upload")
         
     # Determine defaults: prioritize username over student id
     def get_id_default(headers):
