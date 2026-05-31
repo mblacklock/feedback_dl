@@ -1,0 +1,301 @@
+/* ============================================================
+   sheet_builder.css
+   Styles for the Marking Sheet Builder interface and preview.
+   Inherits core styling tokens from brand_design.css.
+   ============================================================ */
+
+.builder-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    margin-bottom: 3rem;
+}
+
+.builder-panel {
+    background: var(--brand-card-bg-solid);
+}
+
+.builder-toolbar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    background: #f8fafc;
+    padding: 1.5rem;
+    border-radius: 12px;
+    border: 1px solid var(--brand-border-light);
+}
+
+.builder-toolbar label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--brand-slate);
+    margin-bottom: 0.5rem;
+}
+
+.builder-toolbar select,
+.builder-toolbar input {
+    border-radius: 8px;
+    border: 1px solid var(--brand-border);
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+    color: var(--brand-slate-dark);
+    background-color: #ffffff;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.builder-toolbar select:focus,
+.builder-toolbar input:focus {
+    border-color: var(--brand-navy);
+    box-shadow: 0 0 0 3px rgba(26, 26, 46, 0.1);
+    outline: none;
+}
+
+.builder-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+    padding-top: 1.5rem;
+    border-top: 1px dashed var(--brand-border-light);
+}
+
+.builder-actions .btn-outline-primary {
+    color: var(--brand-navy);
+    border-color: var(--brand-navy);
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 0.6rem 1.2rem;
+    transition: all 0.2s ease;
+}
+
+.builder-actions .btn-outline-primary:hover {
+    background-color: var(--brand-navy);
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+.builder-actions .btn-outline-secondary {
+    color: var(--brand-slate);
+    border-color: var(--brand-slate);
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 0.6rem 1.2rem;
+    transition: all 0.2s ease;
+}
+
+.builder-actions .btn-outline-secondary:hover {
+    background-color: var(--brand-slate);
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+.mark-total {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    padding: 0.6rem 1.2rem;
+    min-width: 180px;
+    color: #166534;
+    font-weight: 600;
+    transition: all 0.25s ease;
+}
+
+.mark-total.invalid {
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: #991b1b;
+}
+
+.mark-total span {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.8;
+    margin-right: 0.75rem;
+}
+
+.mark-total strong {
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.preview-panel {
+    background: var(--brand-card-bg-solid);
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+    border: 1px solid var(--brand-border-light);
+    overflow: hidden;
+}
+
+.preview-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    background: linear-gradient(135deg, var(--brand-navy-dark) 0%, #1e293b 100%);
+    border-bottom: 4px solid var(--brand-gold);
+    color: #ffffff;
+}
+
+.preview-toolbar strong {
+    font-family: var(--font-brand);
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.preview-toolbar .text-muted {
+    color: rgba(255, 255, 255, 0.7) !important;
+    font-size: 0.85rem;
+}
+
+.preview-table-wrap {
+    overflow-x: auto;
+}
+
+.preview-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    table-layout: fixed;
+}
+
+.preview-table th {
+    background: linear-gradient(135deg, var(--brand-navy) 0%, var(--brand-navy-light) 100%);
+    color: #ffffff;
+    font-size: 0.85rem;
+    font-weight: 600;
+    height: 60px;
+    padding: 0.75rem;
+    vertical-align: top;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.preview-table th.sheet-fixed-header,
+.preview-table th.sheet-output-header {
+    background: var(--brand-navy-dark);
+    font-family: var(--font-brand);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.8rem;
+    font-weight: 700;
+    vertical-align: middle;
+    text-align: center;
+    color: var(--brand-gold);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.preview-table td {
+    border-bottom: 1px solid var(--brand-border-light);
+    border-right: 1px solid var(--brand-border-light);
+    color: var(--brand-slate-dark);
+    height: 52px;
+    padding: 0.6rem 0.75rem;
+    vertical-align: middle;
+    text-align: center;
+}
+
+.preview-table tr:hover td {
+    background-color: #f8fafc;
+}
+
+.cell-pill {
+    background: #f1f5f9;
+    border: 1px solid var(--brand-border-light);
+    border-radius: 6px;
+    color: var(--brand-slate);
+    display: inline-flex;
+    max-width: 100%;
+    min-height: 28px;
+    min-width: 80px;
+    padding: 0.2rem 0.5rem;
+}
+
+.cell-pill.dropdown::after {
+    content: "▾";
+    margin-left: auto;
+    padding-left: 0.5rem;
+    color: var(--brand-slate-light);
+}
+
+/* ── Sheet Header Editor ── */
+.sheet-header-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 0.6rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    min-width: 160px;
+    text-align: left;
+}
+
+.sheet-header-editor .form-control,
+.sheet-header-editor .form-select {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    background-color: rgba(255, 255, 255, 0.95);
+    color: var(--brand-slate-dark);
+    border: 1px solid var(--brand-border);
+    border-radius: 4px;
+    min-width: 140px;
+}
+
+.sheet-header-editor .form-control:focus,
+.sheet-header-editor .form-select:focus {
+    background-color: #ffffff;
+    border-color: var(--brand-gold);
+    box-shadow: 0 0 0 2px rgba(200, 169, 81, 0.2);
+    outline: none;
+}
+
+.sheet-header-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 0.2rem;
+}
+
+.sheet-header-actions .remove-column-button {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.sheet-header-actions .remove-column-button:hover {
+    background-color: #ef4444;
+    color: #ffffff;
+    border-color: #ef4444;
+}
+
+.mark-settings,
+.rubric-settings {
+    display: none;
+}
+
+.sheet-header-editor[data-column-type="numeric"] .mark-settings,
+.sheet-header-editor[data-column-type="rubric"] .mark-settings,
+.sheet-header-editor[data-column-type="rubric"] .rubric-settings {
+    display: block;
+}
+
+@media (max-width: 900px) {
+    .builder-actions .btn-premium-action {
+        margin-left: 0;
+        width: 100%;
+        justify-content: center;
+    }
+}

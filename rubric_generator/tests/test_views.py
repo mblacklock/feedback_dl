@@ -23,8 +23,10 @@ class PortalHomeViewTest(TestCase):
         self.assertContains(resp, 'href="/rubric-generator/"')
         self.assertContains(resp, "Comments Generator")
         self.assertContains(resp, 'href="/comments-generator/"')
-        self.assertContains(resp, "MCRF Converter")
-        self.assertContains(resp, 'href="/mcrf-converter/"')
+        self.assertContains(resp, "Marking Sheet Converters")
+        self.assertContains(resp, 'href="/marking-converters/"')
+        self.assertContains(resp, "Marking Sheet Builder")
+        self.assertContains(resp, 'href="/marking-sheet-builder/"')
 
 
 class HomeViewTest(TestCase):

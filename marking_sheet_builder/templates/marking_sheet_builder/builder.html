@@ -5,179 +5,7 @@
 {% block extra_css %}
 <style>
     {% include "css/brand_design.css" %}
-
-    body {
-        background: #f7f9fc;
-    }
-
-    .builder-shell {
-        margin-bottom: 2rem;
-    }
-
-    .builder-panel,
-    .preview-panel {
-        background: #fff;
-        border: 1px solid #dde4ef;
-        border-radius: 8px;
-        box-shadow: 0 8px 22px rgba(23, 32, 51, 0.06);
-    }
-
-    .builder-panel {
-        padding: 1rem;
-    }
-
-    .builder-panel h1 {
-        font-size: 1.45rem;
-        font-weight: 700;
-        margin-bottom: 0.25rem;
-    }
-
-    .builder-toolbar {
-        align-items: end;
-        display: grid;
-        gap: 0.75rem;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        margin-top: 1rem;
-    }
-
-    .builder-actions {
-        align-items: center;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-        margin-top: 0.75rem;
-    }
-
-    .builder-actions .btn-premium-action {
-        margin-left: auto;
-    }
-
-    .sheet-header-editor {
-        align-items: center;
-        display: grid;
-        gap: 0.5rem;
-        grid-template-columns: 1fr;
-    }
-
-    .mark-settings,
-    .rubric-settings {
-        display: none;
-    }
-
-    .sheet-header-editor[data-column-type="numeric"] .mark-settings,
-    .sheet-header-editor[data-column-type="rubric"] .mark-settings,
-    .sheet-header-editor[data-column-type="rubric"] .rubric-settings {
-        display: block;
-    }
-
-    .sheet-header-editor .form-control,
-    .sheet-header-editor .form-select {
-        font-size: 0.75rem;
-        min-width: 128px;
-    }
-
-    .sheet-header-actions {
-        display: flex;
-        gap: 0.35rem;
-    }
-
-    .sheet-fixed-header {
-        min-width: 120px;
-    }
-
-    .sheet-output-header {
-        min-width: 100px;
-    }
-
-    .mark-total {
-        align-items: center;
-        background: #f8fafc;
-        border: 1px solid #dbe3ee;
-        border-radius: 8px;
-        display: flex;
-        justify-content: space-between;
-        min-width: 150px;
-        padding: 0.65rem 0.75rem;
-    }
-
-    .mark-total.invalid {
-        background: #fff7ed;
-        border-color: #fdba74;
-        color: #9a3412;
-    }
-
-    .preview-panel {
-        overflow: hidden;
-    }
-
-    .preview-toolbar {
-        align-items: center;
-        background: #eef3f8;
-        border-bottom: 1px solid #dde4ef;
-        display: flex;
-        justify-content: space-between;
-        padding: 0.8rem 1rem;
-    }
-
-    .preview-table-wrap {
-        overflow-x: auto;
-    }
-
-    .preview-table {
-        border-collapse: separate;
-        border-spacing: 0;
-        min-width: 760px;
-        table-layout: fixed;
-        width: 100%;
-    }
-
-    .preview-table th {
-        background: #1f4e79;
-        color: #fff;
-        font-size: 0.85rem;
-        height: 44px;
-        padding: 0.55rem;
-        vertical-align: middle;
-    }
-
-    .preview-table td {
-        border-bottom: 1px solid #e3e8f0;
-        border-right: 1px solid #e3e8f0;
-        color: #6b7280;
-        height: 44px;
-        padding: 0.45rem 0.55rem;
-        vertical-align: middle;
-    }
-
-    .preview-table td:first-child,
-    .preview-table th:first-child {
-        border-left: 1px solid #e3e8f0;
-    }
-
-    .cell-pill {
-        background: #f8fafc;
-        border: 1px solid #dbe3ee;
-        border-radius: 6px;
-        color: #4b5563;
-        display: inline-flex;
-        max-width: 100%;
-        min-height: 26px;
-        min-width: 68px;
-        padding: 0.15rem 0.45rem;
-    }
-
-    .cell-pill.dropdown::after {
-        content: "v";
-        margin-left: auto;
-        padding-left: 0.6rem;
-    }
-
-    @media (max-width: 900px) {
-        .builder-actions .btn-premium-action {
-            margin-left: 0;
-            width: 100%;
-        }
-    }
+    {% include "css/sheet_builder.css" %}
 </style>
 {% endblock %}
 
@@ -186,54 +14,62 @@
     {% csrf_token %}
     <input type="hidden" name="builder_payload" id="builderPayload">
 
-    <div class="builder-shell">
-        <section class="builder-panel">
-            <h1>Marking Sheet Builder</h1>
-            <p class="text-muted mb-0">Edit the sheet directly, then download a blank Excel workbook.</p>
+    <div class="builder-shell py-4">
+        <a href="{% url 'portal_home' %}" class="btn btn-secondary mb-4 btn-sm rounded-pill px-3 shadow-sm" style="align-self: flex-start;">
+            ← Back to Portal Home
+        </a>
 
-            {% if builder_errors %}
-                <div class="alert alert-warning mt-3" role="alert">
-                    {% for error in builder_errors %}
-                        <div>{{ error }}</div>
-                    {% endfor %}
-                </div>
-            {% endif %}
-
-            <div class="builder-toolbar">
-                <div>
-                    <label class="form-label" for="nameMode">Name columns</label>
-                    <select class="form-select" id="nameMode">
-                        <option value="full">Student name</option>
-                        <option value="split">Last name, first name</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="form-label" for="rowCount">Rows</label>
-                    <input class="form-control" id="rowCount" type="number" min="1" max="500" value="100">
-                </div>
-                <div>
-                    <label class="form-label" for="maxMark">Total mark</label>
-                    <input class="form-control" id="maxMark" type="number" min="1" max="10000" value="100">
-                </div>
-                <div>
-                    <label class="form-label" for="degreeLevel">Degree level</label>
-                    <select class="form-select" id="degreeLevel">
-                        <option value="BEng">BEng / undergraduate</option>
-                        <option value="MEng/MSc">MEng / MSc</option>
-                    </select>
-                </div>
+        <section class="card main-card builder-panel">
+            <div class="gradient-header text-center text-white" style="background: linear-gradient(135deg, var(--brand-navy) 0%, var(--brand-navy-dark) 100%); border-bottom: 4px solid var(--brand-gold);">
+                <h1 class="fw-bold mb-2">Marking Sheet Builder</h1>
+                <p class="mb-0 opacity-75 small">Design bespoke marking sheets, configure numeric weights or rubric grids, and download a validated, fully styled Excel template.</p>
             </div>
 
-            <div class="builder-actions">
-                <button class="btn btn-outline-primary" type="button" data-add-column="numeric">Add numeric mark</button>
-                <button class="btn btn-outline-primary" type="button" data-add-column="rubric">Add rubric mark</button>
-                <button class="btn btn-outline-secondary" type="button" data-add-column="information">Add information</button>
-                <button class="btn btn-outline-secondary" type="button" data-add-column="feedback">Add feedback comment</button>
-                <div class="mark-total" id="markTotal">
-                    <span>Mark total</span>
-                    <strong id="markTotalValue">0 / 100</strong>
+            <div class="card-body p-5">
+                {% if builder_errors %}
+                    <div class="alert alert-warning rounded-3 mb-4" role="alert">
+                        {% for error in builder_errors %}
+                            <div class="small fw-semibold">⚠️ {{ error }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <div class="builder-toolbar">
+                    <div>
+                        <label class="form-label" for="nameMode">Name columns</label>
+                        <select class="form-select" id="nameMode">
+                            <option value="full">Student name</option>
+                            <option value="split">Last name, first name</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label" for="rowCount">Rows</label>
+                        <input class="form-control" id="rowCount" type="number" min="1" max="500" value="100">
+                    </div>
+                    <div>
+                        <label class="form-label" for="maxMark">Total mark</label>
+                        <input class="form-control" id="maxMark" type="number" min="1" max="10000" value="100">
+                    </div>
+                    <div>
+                        <label class="form-label" for="degreeLevel">Degree level</label>
+                        <select class="form-select" id="degreeLevel">
+                            <option value="BEng">BEng / undergraduate</option>
+                            <option value="MEng/MSc">MEng / MSc</option>
+                        </select>
+                    </div>
                 </div>
-                <button class="btn btn-premium-action justify-content-center" type="submit">Download Excel Template</button>
+
+                <div class="builder-actions">
+                    <button class="btn btn-outline-primary" type="button" data-add-column="numeric">➕ Add numeric mark</button>
+                    <button class="btn btn-outline-primary" type="button" data-add-column="rubric">➕ Add rubric mark</button>
+                    <button class="btn btn-outline-secondary" type="button" data-add-column="information">➕ Add information</button>
+                    <button class="btn btn-outline-secondary" type="button" data-add-column="feedback">➕ Add feedback comment</button>
+                    <div class="mark-total ms-md-auto" id="markTotal">
+                        <span>Mark total</span>
+                        <strong id="markTotalValue">0 / 100</strong>
+                    </div>
+                    <button class="btn btn-premium-action justify-content-center" type="submit">Download Excel Template</button>
+                </div>
             </div>
         </section>
 
