@@ -69,9 +69,9 @@ class MarkingSheetBuilderTests(TestCase):
                 "Coursework Mark (50)",
                 "Rubric Grade (50)",
                 "Submission Notes",
-                "Feedback",
                 "Mark (100)",
                 "%",
+                "Feedback",
             ],
         )
         self.assertEqual(workbook["Rubric Boundaries"]["A1"].value, "Rubric Grade")
@@ -81,11 +81,11 @@ class MarkingSheetBuilderTests(TestCase):
         self.assertIn("High 2:1", [cell.value for cell in workbook["Rubric Boundaries"]["A"]])
         self.assertEqual(workbook["Rubric Boundaries"].sheet_state, "hidden")
         self.assertIsNone(sheet.auto_filter.ref)
-        self.assertTrue(sheet["H2"].value.startswith("=IF(OR("))
-        self.assertIn("VLOOKUP", sheet["H2"].value)
-        self.assertIn("N(D2)", sheet["H2"].value)
-        self.assertEqual(sheet["I2"].value, '=IF(H2<>"",H2/100,"")')
-        self.assertEqual(sheet["I2"].number_format, "0%")
+        self.assertTrue(sheet["G2"].value.startswith("=IF(OR("))
+        self.assertIn("VLOOKUP", sheet["G2"].value)
+        self.assertIn("N(D2)", sheet["G2"].value)
+        self.assertEqual(sheet["H2"].value, '=IF(G2<>"",G2/100,"")')
+        self.assertEqual(sheet["H2"].number_format, "0%")
 
         validations = list(sheet.data_validations.dataValidation)
         self.assertTrue(any(validation.type == "list" for validation in validations))
@@ -109,7 +109,7 @@ class MarkingSheetBuilderTests(TestCase):
 
         self.assertEqual(headers[:2], ["Student ID", "Student Name"])
         self.assertIn("Tutor Comment", headers)
-        self.assertEqual(headers[-2:], ["Mark (100)", "%"])
+        self.assertEqual(headers[-3:], ["Mark (100)", "%", "Tutor Comment"])
 
     def test_numeric_column_maxima_must_sum_to_total_mark(self):
         config = parse_builder_payload(
@@ -181,3 +181,26 @@ class MarkingSheetBuilderTests(TestCase):
         self.assertNotIn("3rd", " ".join(str(label) for label in rubric_labels))
         self.assertIn("VLOOKUP", workbook["Marking Sheet"]["E2"].value)
         self.assertEqual(workbook["Marking Sheet"]["F2"].value, '=IF(E2<>"",E2/100,"")')
+
+    def test_feedback_columns_placed_at_the_end(self):
+        config = parse_builder_payload(
+            json.dumps(
+                {
+                    "max_mark": 100,
+                    "columns": [
+                        {"type": "feedback", "title": "First Feedback"},
+                        {"type": "numeric", "title": "Quiz", "max_mark": 50},
+                        {"type": "feedback", "title": "Second Feedback"},
+                        {"type": "numeric", "title": "Exam", "max_mark": 50},
+                    ],
+                }
+            )
+        )
+
+        columns = config["columns"]
+        self.assertEqual(columns[0]["type"], "numeric")
+        self.assertEqual(columns[1]["type"], "numeric")
+        self.assertEqual(columns[2]["type"], "feedback")
+        self.assertEqual(columns[2]["title"], "First Feedback")
+        self.assertEqual(columns[3]["type"], "feedback")
+        self.assertEqual(columns[3]["title"], "Second Feedback")

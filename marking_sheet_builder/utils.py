@@ -10,6 +10,44 @@ from openpyxl.worksheet.datavalidation import DataValidation
 from core.utils.grade_bands import calculate_grade_bands
 
 
+def get_custom_grade_bands(max_mark, subdivision, degree_level, custom_percentages=None):
+    from math import floor
+    
+    default_bands = calculate_grade_bands(max_mark, subdivision, degree_level)
+    if not custom_percentages:
+        return default_bands
+        
+    sub_custom = custom_percentages.get(subdivision)
+    if not sub_custom or not isinstance(sub_custom, dict):
+        return default_bands
+        
+    new_bands = []
+    for band in default_bands:
+        grade_name = band["grade"]
+        
+        # Strip M-level suffixes to look up the correct base grade
+        ug_grade_name = grade_name
+        if degree_level and degree_level.strip().lower().startswith('m'):
+            ug_grade_name = (
+                ug_grade_name.replace('1st/Dist', '1st')
+                             .replace('2:1/Merit', '2:1')
+                             .replace('2:2/Pass', '2:2')
+            )
+            
+        custom_pct = sub_custom.get(ug_grade_name)
+        if custom_pct is not None:
+            try:
+                pct = float(custom_pct) / 100.0
+                custom_mark = int(floor((max_mark * pct) + 0.5))
+                new_bands.append({"grade": grade_name, "marks": custom_mark})
+            except (ValueError, TypeError):
+                new_bands.append(band)
+        else:
+            new_bands.append(band)
+            
+    return new_bands
+
+
 ALLOWED_COLUMN_TYPES = {
     "numeric": "Numeric mark",
     "rubric": "Rubric mark",
@@ -61,6 +99,15 @@ def parse_builder_payload(raw_payload):
 
     if not columns:
         columns = [{"type": "numeric", "title": "Mark", "max_mark": max_mark}]
+    else:
+        # Stable sort: Feedback comment columns should come at the end
+        non_feedback = [c for c in columns if c["type"] != "feedback"]
+        feedback = [c for c in columns if c["type"] == "feedback"]
+        columns = non_feedback + feedback
+
+    rubric_custom_percentages = payload.get("rubric_custom_percentages")
+    if not isinstance(rubric_custom_percentages, dict):
+        rubric_custom_percentages = {}
 
     return {
         "name_mode": name_mode,
@@ -69,6 +116,7 @@ def parse_builder_payload(raw_payload):
         "max_mark": max_mark,
         "rubric_boundaries": boundaries,
         "columns": columns,
+        "rubric_custom_percentages": rubric_custom_percentages,
     }
 
 
@@ -100,9 +148,12 @@ def build_marking_workbook(config):
         headers.extend(["Last Name", "First Name"])
     else:
         headers.append("Student Name")
-    headers.extend(_display_column_title(column) for column in config["columns"])
-    headers.append(f"Mark ({config['max_mark']})")
-    headers.append("%")
+    non_feedback_cols = [c for c in config["columns"] if c["type"] != "feedback"]
+    feedback_cols = [c for c in config["columns"] if c["type"] == "feedback"]
+
+    headers.extend(_display_column_title(column) for column in non_feedback_cols)
+    headers.extend([f"Mark ({config['max_mark']})", "%"])
+    headers.extend(_display_column_title(column) for column in feedback_cols)
 
     sheet.append(headers)
     data_rows = config["rows"]
@@ -122,8 +173,9 @@ def build_marking_workbook(config):
 
 def _apply_validations(sheet, config, data_rows):
     first_marking_col = 3 if config["name_mode"] == "full" else 4
-    for offset, column in enumerate(config["columns"]):
-        excel_col = get_column_letter(first_marking_col + offset)
+    non_feedback_cols = [c for c in config["columns"] if c["type"] != "feedback"]
+    for idx, column in enumerate(non_feedback_cols):
+        excel_col = get_column_letter(first_marking_col + idx)
         cell_range = f"{excel_col}2:{excel_col}{data_rows + 1}"
         if column["type"] == "numeric":
             validation = DataValidation(
@@ -138,12 +190,14 @@ def _apply_validations(sheet, config, data_rows):
             sheet.add_data_validation(validation)
             validation.add(cell_range)
         elif column["type"] == "rubric":
-            rubric_boundaries = calculate_grade_bands(
+            rubric_boundaries = get_custom_grade_bands(
                 column["max_mark"],
                 column.get("subdivision", "none"),
                 degree_level=config.get("degree_level", "BEng"),
+                custom_percentages=config.get("rubric_custom_percentages"),
             )
-            rubric_label_col, _ = _rubric_sheet_columns_for(config["columns"], offset)
+            original_offset = config["columns"].index(column)
+            rubric_label_col, _ = _rubric_sheet_columns_for(config["columns"], original_offset)
             rubric_range = (
                 f"{quote_sheetname('Rubric Boundaries')}!"
                 f"${rubric_label_col}$2:${rubric_label_col}${len(rubric_boundaries) + 1}"
@@ -193,30 +247,35 @@ def _style_marking_sheet(sheet, headers, data_rows):
 
 def _write_calculated_result_formulas(sheet, config, data_rows, total_columns):
     first_marking_col = 3 if config["name_mode"] == "full" else 4
-    mark_col = get_column_letter(total_columns - 1)
-    percent_col = get_column_letter(total_columns)
-    assessed_offsets = [
-        (offset, column)
-        for offset, column in enumerate(config["columns"])
+    non_feedback_cols = [c for c in config["columns"] if c["type"] != "feedback"]
+    
+    mark_col = get_column_letter(first_marking_col + len(non_feedback_cols))
+    percent_col = get_column_letter(first_marking_col + len(non_feedback_cols) + 1)
+    
+    assessed_cols = [
+        (non_feedback_cols.index(column), column)
+        for column in config["columns"]
         if column["type"] in {"numeric", "rubric"}
     ]
 
     for row_index in range(2, data_rows + 2):
         terms = []
         presence_checks = []
-        for offset, column in assessed_offsets:
-            source_col = get_column_letter(first_marking_col + offset)
+        for idx, column in assessed_cols:
+            source_col = get_column_letter(first_marking_col + idx)
             source_cell = f"{source_col}{row_index}"
             presence_checks.append(f'{source_cell}<>""')
             if column["type"] == "numeric":
                 terms.append(f"N({source_cell})")
             elif column["type"] == "rubric":
-                label_col, marks_col = _rubric_sheet_columns_for(config["columns"], offset)
+                original_offset = config["columns"].index(column)
+                label_col, marks_col = _rubric_sheet_columns_for(config["columns"], original_offset)
                 band_count = len(
-                    calculate_grade_bands(
+                    get_custom_grade_bands(
                         column["max_mark"],
                         column.get("subdivision", "none"),
                         degree_level=config.get("degree_level", "BEng"),
+                        custom_percentages=config.get("rubric_custom_percentages"),
                     )
                 )
                 lookup_range = (
@@ -269,10 +328,11 @@ def _write_rubric_boundaries(sheet, config):
             header_cell.font = Font(bold=True, color="FFFFFF")
             header_cell.fill = PatternFill("solid", fgColor="1F4E79")
 
-        bands = calculate_grade_bands(
+        bands = get_custom_grade_bands(
             column["max_mark"],
             column.get("subdivision", "none"),
             degree_level=config.get("degree_level", "BEng"),
+            custom_percentages=config.get("rubric_custom_percentages"),
         )
         for row_index, band in enumerate(bands, start=2):
             sheet.cell(row=row_index, column=label_col_index, value=band["grade"])
