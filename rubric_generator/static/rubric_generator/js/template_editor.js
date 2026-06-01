@@ -297,7 +297,7 @@ function debouncedSave() {
 
 function updateStoredCategoryData(row) {
     // Update the stored original category data with current values
-    // This ensures descriptions are preserved when switching between types
+    // This ensures descriptions and marks are preserved when switching between types
     try {
         const originalData = JSON.parse(row.dataset.originalCategoryData || '{}');
         
@@ -314,6 +314,19 @@ function updateStoredCategoryData(row) {
         // Update stored data
         if (Object.keys(descriptions).length > 0) {
             originalData.grade_band_descriptions = descriptions;
+        }
+
+        // Collect current custom marks from DOM
+        const marks = {};
+        row.querySelectorAll('.band-mark-input').forEach(input => {
+            const grade = input.getAttribute('data-grade');
+            const val = parseInt(input.value, 10);
+            if (!isNaN(val)) {
+                marks[grade] = val;
+            }
+        });
+        if (Object.keys(marks).length > 0) {
+            originalData.marks = marks;
         }
         
         const subdivision = row.querySelector('.subdivision-value')?.value;
@@ -412,6 +425,32 @@ function saveNow() {
         
         if (Object.keys(descriptions).length > 0) {
             category.grade_band_descriptions = descriptions;
+        }
+
+        // Collect grade band boundary marks from inputs (if grade type)
+        const marks = {};
+        row.querySelectorAll('.band-mark-input').forEach(input => {
+            const grade = input.getAttribute('data-grade');
+            const val = parseInt(input.value, 10);
+            if (!isNaN(val)) {
+                marks[grade] = val;
+            }
+        });
+        
+        // If numeric type and no visible marks, preserve original marks from data
+        if (type === 'numeric' && Object.keys(marks).length === 0) {
+            try {
+                const originalData = JSON.parse(row.dataset.originalCategoryData || '{}');
+                if (originalData.marks) {
+                    Object.assign(marks, originalData.marks);
+                }
+            } catch (e) {
+                // Ignore JSON parse errors
+            }
+        }
+        
+        if (Object.keys(marks).length > 0) {
+            category.marks = marks;
         }
         
         data.categories.push(category);
@@ -532,6 +571,10 @@ function updateGradeBandsPreview(row) {
         return;
     }
     
+    // Read previous max marks and subdivision from dataset to check for structural changes
+    const lastMaxMarks = parseInt(row.dataset.lastMaxMarks);
+    const lastSubdivision = row.dataset.lastSubdivision;
+    
     // Save current descriptions from DOM before re-rendering
     const currentDescriptions = {};
     previewEl.querySelectorAll('.grade-description').forEach(textarea => {
@@ -541,6 +584,22 @@ function updateGradeBandsPreview(row) {
             currentDescriptions[grade] = value;
         }
     });
+
+    // Save current marks only if the structure did not change
+    const currentMarks = {};
+    if (lastMaxMarks === maxMarks && lastSubdivision === subdivision) {
+        previewEl.querySelectorAll('.band-mark-input').forEach(input => {
+            const grade = input.getAttribute('data-grade');
+            const value = parseInt(input.value, 10);
+            if (!isNaN(value)) {
+                currentMarks[grade] = value;
+            }
+        });
+    }
+
+    // Update the last used values
+    row.dataset.lastMaxMarks = maxMarks;
+    row.dataset.lastSubdivision = subdivision;
     
         // Read current degree level if present
         const degreeEl = document.getElementById('degree_level');
@@ -553,14 +612,21 @@ function updateGradeBandsPreview(row) {
             if (data.html) {
                 previewEl.innerHTML = data.html;
                 
-                // Get existing descriptions from saved category data
+                // Get existing descriptions and marks from saved category data
                 const categoryData = getCategoryDataForRow(row);
                 const savedDescriptions = categoryData && categoryData.grade_band_descriptions ? categoryData.grade_band_descriptions : {};
                 
+                // Only load saved custom marks if they are for the same structure
+                let savedMarks = {};
+                if (categoryData && categoryData.max === maxMarks && categoryData.subdivision === subdivision) {
+                    savedMarks = categoryData.marks || {};
+                }
+                
                 // Merge: current DOM values take priority over saved values
                 const descriptions = { ...savedDescriptions, ...currentDescriptions };
+                const marks = { ...savedMarks, ...currentMarks };
                 
-                // Fill in existing descriptions and attach event listeners
+                // Fill in existing descriptions, marks and attach event listeners
                 // Use setTimeout to ensure DOM is ready
                 setTimeout(() => {
                     previewEl.querySelectorAll('.grade-description').forEach(textarea => {
@@ -572,6 +638,23 @@ function updateGradeBandsPreview(row) {
                         // Attach event listeners
                         textarea.addEventListener('input', debouncedSave);
                         textarea.addEventListener('blur', saveNow);
+                    });
+
+                    previewEl.querySelectorAll('.band-mark-input').forEach(input => {
+                        const grade = input.getAttribute('data-grade');
+                        if (marks[grade] !== undefined) {
+                            input.value = marks[grade];
+                        }
+                        
+                        // Attach event listeners
+                        input.addEventListener('input', (event) => {
+                            const span = event.target.nextElementSibling;
+                            if (span && span.tagName === 'SPAN') {
+                                span.textContent = event.target.value;
+                            }
+                            debouncedSave();
+                        });
+                        input.addEventListener('blur', saveNow);
                     });
                 }, 0);
             } else {

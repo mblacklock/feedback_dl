@@ -10,10 +10,25 @@ from openpyxl.worksheet.datavalidation import DataValidation
 from core.utils.grade_bands import calculate_grade_bands
 
 
-def get_custom_grade_bands(max_mark, subdivision, degree_level, custom_percentages=None):
+def get_custom_grade_bands(max_mark, subdivision, degree_level, custom_percentages=None, column_marks=None):
     from math import floor
     
     default_bands = calculate_grade_bands(max_mark, subdivision, degree_level)
+    
+    if column_marks and isinstance(column_marks, dict):
+        new_bands = []
+        for band in default_bands:
+            grade_name = band["grade"]
+            custom_val = column_marks.get(grade_name)
+            if custom_val is not None:
+                try:
+                    new_bands.append({"grade": grade_name, "marks": int(custom_val)})
+                except (ValueError, TypeError):
+                    new_bands.append(band)
+            else:
+                new_bands.append(band)
+        return new_bands
+        
     if not custom_percentages:
         return default_bands
         
@@ -95,6 +110,17 @@ def parse_builder_payload(raw_payload):
             if subdivision not in ALLOWED_SUBDIVISIONS:
                 subdivision = "none"
             column["subdivision"] = subdivision
+            
+            # Parse custom integer marks
+            marks = item.get("marks")
+            if isinstance(marks, dict):
+                clean_marks = {}
+                for g, val in marks.items():
+                    try:
+                        clean_marks[str(g)] = int(val)
+                    except (ValueError, TypeError):
+                        pass
+                column["marks"] = clean_marks
         columns.append(column)
 
     if not columns:
@@ -195,6 +221,7 @@ def _apply_validations(sheet, config, data_rows):
                 column.get("subdivision", "none"),
                 degree_level=config.get("degree_level", "BEng"),
                 custom_percentages=config.get("rubric_custom_percentages"),
+                column_marks=column.get("marks"),
             )
             original_offset = config["columns"].index(column)
             rubric_label_col, _ = _rubric_sheet_columns_for(config["columns"], original_offset)
@@ -276,6 +303,7 @@ def _write_calculated_result_formulas(sheet, config, data_rows, total_columns):
                         column.get("subdivision", "none"),
                         degree_level=config.get("degree_level", "BEng"),
                         custom_percentages=config.get("rubric_custom_percentages"),
+                        column_marks=column.get("marks"),
                     )
                 )
                 lookup_range = (
@@ -333,6 +361,7 @@ def _write_rubric_boundaries(sheet, config):
             column.get("subdivision", "none"),
             degree_level=config.get("degree_level", "BEng"),
             custom_percentages=config.get("rubric_custom_percentages"),
+            column_marks=column.get("marks"),
         )
         for row_index, band in enumerate(bands, start=2):
             sheet.cell(row=row_index, column=label_col_index, value=band["grade"])

@@ -493,6 +493,42 @@ class TemplateSeparateViewsTest(TestCase):
         # Should NOT show student fields
         self.assertNotContains(resp, "Student Name")
         self.assertNotContains(resp, "Mark Awarded")
+
+    def test_template_rubric_view_shows_custom_marks(self):
+        """Rubric view shows categories with customized grade band marks"""
+        template = AssessmentTemplate.objects.create(
+            component=1,
+            title="Software Engineering Custom",
+            module_code="CS301",
+            module_title="Advanced Software",
+            assessment_title="CW1",
+            weighting=40,
+            max_marks=50,
+            categories=[
+                {
+                    "label": "Design",
+                    "max": 30,
+                    "type": "grade",
+                    "subdivision": "high_low",
+                    "marks": {
+                        "Max 1st": 30,
+                        "High 1st": 28,
+                        "Low 1st": 22
+                    },
+                    "grade_band_descriptions": {
+                        "1st": "Excellent design"
+                    }
+                }
+            ]
+        )
+        
+        resp = self.client.get(f"/rubric-generator/template/{template.pk}/rubric/")
+        self.assertEqual(resp.status_code, 200)
+        
+        # Verify that overridden concrete marks are shown on the template rubric rendering page
+        self.assertContains(resp, "Design")
+        self.assertContains(resp, "28")
+        self.assertContains(resp, "22")
     
     def test_template_feedback_sheet_view_shows_student_fields(self):
         """Feedback sheet view shows student fields and mark entry areas"""

@@ -95,7 +95,8 @@ def grade_bands_preview(request):
         html = render_to_string('rubric_generator/partials/grade_bands_grid.html', {
             'grouped_bands': grouped_bands,
             'descriptions': {},  # Empty for preview, will be filled by JS from existing data
-            'show_textarea': True
+            'show_textarea': True,
+            'max_marks': max_marks,
         })
         
         return JsonResponse({"html": html})
@@ -114,7 +115,7 @@ def template_rubric(request, pk):
         total_category_marks += cat.get("max", 0)
         
         if cat.get("type") == "grade" and cat.get("subdivision"):
-            bands = calculate_grade_bands(cat["max"], cat["subdivision"], degree_level=tpl.degree_level)
+            bands = _get_category_bands(cat, tpl.degree_level)
             cat_data["bands"] = bands
             
             # Group bands by main grade for display
@@ -154,7 +155,7 @@ def template_feedback_sheet(request, pk):
         total_category_marks += cat.get("max", 0)
         
         if cat.get("type") == "grade" and cat.get("subdivision"):
-            bands = calculate_grade_bands(cat["max"], cat["subdivision"], degree_level=tpl.degree_level)
+            bands = _get_category_bands(cat, tpl.degree_level)
             cat_data["bands"] = bands
             grouped_bands = _group_bands_by_main_grade(bands)
             cat_data["grouped_bands"] = grouped_bands
@@ -302,3 +303,26 @@ def _group_bands_by_main_grade(bands):
             grouped.setdefault(main_grade, []).append(band)
     
     return grouped
+
+
+def _get_category_bands(cat, degree_level):
+    """Get bands for a template category, applying saved integer overrides if present."""
+    from rubric_generator.utils import calculate_grade_bands
+    
+    default_bands = calculate_grade_bands(cat.get("max", 0), cat.get("subdivision", "none"), degree_level=degree_level)
+    custom_marks = cat.get("marks")
+    if not custom_marks or not isinstance(custom_marks, dict):
+        return default_bands
+        
+    new_bands = []
+    for band in default_bands:
+        grade_name = band["grade"]
+        custom_val = custom_marks.get(grade_name)
+        if custom_val is not None:
+            try:
+                new_bands.append({"grade": grade_name, "marks": int(custom_val)})
+            except (ValueError, TypeError):
+                new_bands.append(band)
+        else:
+            new_bands.append(band)
+    return new_bands

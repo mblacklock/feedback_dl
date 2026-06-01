@@ -204,3 +204,14 @@ class MarkingSheetBuilderTests(TestCase):
         self.assertEqual(columns[2]["title"], "First Feedback")
         self.assertEqual(columns[3]["type"], "feedback")
         self.assertEqual(columns[3]["title"], "Second Feedback")
+
+    def test_grade_bands_api(self):
+        response = self.client.get(
+            reverse("grade_bands_json"),
+            {"max_marks": 50, "subdivision": "none", "degree_level": "BEng"}
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("bands", data)
+        self.assertEqual(data["bands"][0]["grade"], "Max 1st")
+        self.assertEqual(data["bands"][0]["marks"], 50)

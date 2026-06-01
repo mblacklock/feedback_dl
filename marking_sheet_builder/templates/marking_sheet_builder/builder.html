@@ -117,35 +117,18 @@
             </div>
         </section>
 
-        <section class="card shadow-sm border-0 rounded-4 overflow-hidden mt-5" style="background: #ffffff; border: 1px solid var(--brand-border-light) !important;">
+        <section class="card shadow-sm border-0 rounded-4 overflow-hidden mt-5" id="rubricBoundariesCustomizerCard" style="background: #ffffff; border: 1px solid var(--brand-border-light) !important; display: none;">
             <div class="card-header border-0 py-3 px-4" style="background: var(--brand-bg-dark); border-bottom: 1px solid var(--brand-border-light) !important;">
                 <h5 class="fw-bold mb-0 text-dark brand-font d-flex align-items-center gap-2">
-                    ⚙️ Rubric Boundaries Percentage Editor
+                    ⚙️ Rubric Boundaries Customizer
                 </h5>
             </div>
             <div class="card-body p-4">
                 <p class="small text-muted mb-4">
-                    Customise the default percentage weights used to compute rubric boundaries inside your downloaded spreadsheet. These changes scale proportionally to the maximum marks of any rubric column. Marks are automatically rounded to the nearest integer that falls within the expected grade band. Note that the smaller the maximum mark of a category, the fewer subdivisions should be used to avoid duplicate values.
+                    Fine-tune the individual integer mark boundaries for each rubric category. Standard grade band percentages are used as defaults to pre-populate these marks. Changing subdivisions or maximum marks will reset these boundaries to their pre-populated defaults.
                 </p>
-                <div class="row g-4">
-                    <div class="col-lg-4">
-                        <div class="p-3 rounded-3" style="background: #f8fafc; border: 1px solid var(--brand-border-light);">
-                            <h6 class="fw-bold text-dark mb-3 border-bottom pb-2">Standard</h6>
-                            <div class="d-flex flex-column gap-2" id="customPct-none"></div>
-                        </div>
-                    </div>
-                    <div class="col-lg-4">
-                        <div class="p-3 rounded-3" style="background: #f8fafc; border: 1px solid var(--brand-border-light);">
-                            <h6 class="fw-bold text-dark mb-3 border-bottom pb-2">High / Low</h6>
-                            <div class="d-flex flex-column gap-2" id="customPct-high_low"></div>
-                        </div>
-                    </div>
-                    <div class="col-lg-4">
-                        <div class="p-3 rounded-3" style="background: #f8fafc; border: 1px solid var(--brand-border-light);">
-                            <h6 class="fw-bold text-dark mb-3 border-bottom pb-2">High / Mid / Low</h6>
-                            <div class="d-flex flex-column gap-2" id="customPct-high_mid_low"></div>
-                        </div>
-                    </div>
+                <div id="rubricCustomizersContainer" class="d-flex flex-column gap-3">
+                    <!-- Generated dynamically in JavaScript -->
                 </div>
             </div>
         </section>
@@ -169,68 +152,13 @@
         feedback: "Feedback",
     };
 
-    const defaultPercentages = {
-        none: {
-            "Max 1st": 100,
-            "High 1st": 90,
-            "Mid 1st": 80,
-            "Low 1st": 70,
-            "2:1": 60,
-            "2:2": 50,
-            "3rd": 40,
-            "Close Fail": 30,
-            "Fail": 20,
-            "Poor Fail": 10,
-            "Zero Fail": 0
-        },
-        high_low: {
-            "Max 1st": 100,
-            "High 1st": 85,
-            "Low 1st": 72,
-            "High 2:1": 65,
-            "Low 2:1": 62,
-            "High 2:2": 55,
-            "Low 2:2": 52,
-            "High 3rd": 45,
-            "Low 3rd": 42,
-            "Close Fail": 30,
-            "Fail": 20,
-            "Poor Fail": 10,
-            "Zero Fail": 0
-        },
-        high_mid_low: {
-            "Max 1st": 100,
-            "High 1st": 90,
-            "Mid 1st": 80,
-            "Low 1st": 70,
-            "High 2:1": 67,
-            "Mid 2:1": 63,
-            "Low 2:1": 60,
-            "High 2:2": 57,
-            "Mid 2:2": 53,
-            "Low 2:2": 50,
-            "High 3rd": 47,
-            "Mid 3rd": 43,
-            "Low 3rd": 40,
-            "Close Fail": 30,
-            "Fail": 20,
-            "Poor Fail": 10,
-            "Zero Fail": 0
-        }
-    };
-
     const initialConfig = JSON.parse(document.getElementById("initialConfig").textContent);
     const state = {
         columns: initialConfig.columns || [
             { type: "numeric", title: "Numeric mark", max_mark: 50 },
-            { type: "rubric", title: "Rubric grade", max_mark: 50, subdivision: "none" },
+            { type: "rubric", title: "Rubric grade", max_mark: 50, subdivision: "none", marks: {} },
             { type: "feedback", title: "Feedback" },
-        ],
-        rubric_custom_percentages: initialConfig.rubric_custom_percentages || {
-            none: { ...defaultPercentages.none },
-            high_low: { ...defaultPercentages.high_low },
-            high_mid_low: { ...defaultPercentages.high_mid_low }
-        }
+        ]
     };
 
     const previewHeader = document.getElementById("previewHeader");
@@ -251,6 +179,19 @@
         ];
     }    function renderPreview() {
         state.columns = sortColumns(state.columns);
+        
+        let needsFetch = false;
+        state.columns.forEach((col, index) => {
+            if (col.type === "rubric" && (!col.marks || Object.keys(col.marks).length === 0)) {
+                needsFetch = true;
+                fetchColumnDefaultMarks(col, index).then(() => {
+                    renderPreview();
+                });
+            }
+        });
+        
+        if (needsFetch) return;
+
         const baseHeaders = document.getElementById("nameMode").value === "split"
             ? ["Student ID", "Last Name", "First Name"]
             : ["Student ID", "Student Name"];
@@ -293,6 +234,7 @@
         }
         columnCount.textContent = `${headers.length} columns`;
         updateMarkTotal();
+        renderRubricSettings();
     }
     function renderEditableHeader(column, index) {
         return `
@@ -392,14 +334,26 @@
             editor.querySelector(".column-title-input").addEventListener("input", (event) => {
                 state.columns[index].title = event.target.value;
                 updateMarkTotal();
+                renderRubricSettings();
             });
             editor.querySelector(".column-max-input").addEventListener("input", (event) => {
                 state.columns[index].max_mark = event.target.value;
                 updateMarkTotal();
             });
+            editor.querySelector(".column-max-input").addEventListener("change", (event) => {
+                if (state.columns[index].type === "rubric") {
+                    fetchColumnDefaultMarks(state.columns[index], index).then(() => {
+                        renderPreview();
+                    });
+                } else {
+                    renderPreview();
+                }
+            });
             editor.querySelector(".column-subdivision-select").addEventListener("change", (event) => {
                 state.columns[index].subdivision = event.target.value;
-                renderPreview();
+                fetchColumnDefaultMarks(state.columns[index], index).then(() => {
+                    renderPreview();
+                });
             });
             editor.querySelector(".column-type-select").addEventListener("change", (event) => {
                 state.columns[index].type = event.target.value;
@@ -412,7 +366,13 @@
                 if (!state.columns[index].title.trim()) {
                     state.columns[index].title = defaultTitles[event.target.value];
                 }
-                renderPreview();
+                if (event.target.value === "rubric") {
+                    fetchColumnDefaultMarks(state.columns[index], index).then(() => {
+                        renderPreview();
+                    });
+                } else {
+                    renderPreview();
+                }
             });
             editor.querySelector(".remove-column-button").addEventListener("click", () => {
                 state.columns.splice(index, 1);
@@ -451,7 +411,6 @@
             rows: document.getElementById("rowCount").value,
             max_mark: document.getElementById("maxMark").value,
             columns: state.columns,
-            rubric_custom_percentages: state.rubric_custom_percentages,
         };
     }
 
@@ -480,15 +439,24 @@
             }
             if (type === "rubric") {
                 column.subdivision = "none";
+                column.marks = {};
+                state.columns.push(column);
+                fetchColumnDefaultMarks(column, state.columns.length - 1).then(() => {
+                    renderPreview();
+                });
+            } else {
+                state.columns.push(column);
+                renderPreview();
             }
-            state.columns.push(column);
-            renderPreview();
         });
     });
 
-    ["nameMode", "rowCount", "maxMark", "degreeLevel"].forEach((id) => {
+    ["nameMode", "rowCount", "maxMark"].forEach((id) => {
         document.getElementById(id).addEventListener("input", renderPreview);
         document.getElementById(id).addEventListener("change", renderPreview);
+    });
+    document.getElementById("degreeLevel").addEventListener("change", () => {
+        refreshAllRubricColumns();
     });
 
     document.getElementById("builderForm").addEventListener("submit", (event) => {
@@ -509,43 +477,97 @@
         document.getElementById("builderPayload").value = JSON.stringify(buildPayload());
     });
 
+    function fetchColumnDefaultMarks(column, index) {
+        const degreeLevel = document.getElementById("degreeLevel").value;
+        const maxMarks = column.max_mark || 100;
+        const subdivision = column.subdivision || "none";
+        
+        return fetch(`/marking-sheet-builder/api/grade-bands/?max_marks=${maxMarks}&subdivision=${subdivision}&degree_level=${encodeURIComponent(degreeLevel)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.bands) {
+                    const marks = {};
+                    data.bands.forEach(band => {
+                        marks[band.grade] = band.marks;
+                    });
+                    column.marks = marks;
+                    renderRubricSettings();
+                }
+            })
+            .catch(err => console.error("Error fetching default marks:", err));
+    }
+
+    function refreshAllRubricColumns() {
+        const promises = [];
+        state.columns.forEach((column, index) => {
+            if (column.type === "rubric") {
+                promises.push(fetchColumnDefaultMarks(column, index));
+            }
+        });
+        return Promise.all(promises).then(() => {
+            renderPreview();
+        });
+    }
+
     function renderRubricSettings() {
-        ["none", "high_low", "high_mid_low"].forEach((subdivision) => {
-            const container = document.getElementById(`customPct-${subdivision}`);
-            if (!container) return;
+        const rubricCols = state.columns.filter(c => c.type === "rubric");
+        const card = document.getElementById("rubricBoundariesCustomizerCard");
+        const container = document.getElementById("rubricCustomizersContainer");
+        
+        if (!card || !container) return;
+        
+        if (rubricCols.length === 0) {
+            card.style.display = "none";
+            return;
+        }
+        
+        card.style.display = "block";
+        
+        container.innerHTML = rubricCols.map((col) => {
+            const originalIndex = state.columns.indexOf(col);
+            const marks = col.marks || {};
             
-            const pcts = state.rubric_custom_percentages[subdivision];
-            container.innerHTML = Object.entries(pcts).map(([grade, pct]) => {
+            const inputsHtml = Object.entries(marks).map(([grade, val]) => {
                 return `
-                    <div class="d-flex align-items-center justify-content-between gap-2 mb-2" style="font-size: 0.85rem;">
-                        <span class="fw-semibold text-secondary" style="min-width: 140px; text-align: left;">${escapeHtml(grade)}</span>
-                        <div class="input-group input-group-sm" style="max-width: 90px;">
-                            <input type="number" class="form-control text-center custom-pct-input" 
-                                   data-subdivision="${subdivision}" 
-                                   data-grade="${grade}" 
-                                   value="${pct}" min="0" max="100" aria-label="${escapeHtml(grade)} percentage">
-                            <span class="input-group-text">%</span>
-                        </div>
+                    <div class="d-flex flex-column align-items-center gap-1 p-2 rounded bg-white text-center" style="border: 1px solid var(--brand-border-light); flex: 1 1 0px; min-width: 75px; max-width: 120px;">
+                        <span class="fw-bold text-secondary text-truncate text-center w-100" style="font-size: 0.7rem; line-height: 1.2;" title="${escapeHtml(grade)}">${escapeHtml(grade)}</span>
+                        <input type="number" class="form-control form-control-sm text-center custom-mark-input p-1" 
+                               style="font-size: 0.85rem; font-weight: 600; max-width: 55px; border-radius: 4px;"
+                               data-column-index="${originalIndex}" 
+                               data-grade="${escapeHtml(grade)}" 
+                               value="${val}" min="0" max="${col.max_mark || 100}" aria-label="${escapeHtml(grade)} marks">
                     </div>
                 `;
             }).join("");
-        });
-
-        // Attach event listeners to the custom percent inputs
-        document.querySelectorAll(".custom-pct-input").forEach((input) => {
+            
+            return `
+                <div class="p-3 rounded-3" style="background: #f8fafc; border: 1px solid var(--brand-border-light);">
+                    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                        <h6 class="fw-bold text-dark mb-0 brand-font">
+                            📍 ${escapeHtml(col.title || "Rubric grade")} <span class="badge bg-secondary-subtle text-black ms-2">${col.max_mark || 0} marks</span>
+                        </h6>
+                        <span class="text-muted small">${col.subdivision === "none" ? "Standard" : col.subdivision === "high_low" ? "High / Low" : "High / Mid / Low"}</span>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        ${inputsHtml}
+                    </div>
+                </div>
+            `;
+        }).join("");
+        
+        container.querySelectorAll(".custom-mark-input").forEach((input) => {
             input.addEventListener("input", (event) => {
-                const sub = event.target.dataset.subdivision;
+                const colIndex = Number.parseInt(event.target.dataset.columnIndex, 10);
                 const grade = event.target.dataset.grade;
                 const val = Number.parseInt(event.target.value, 10);
-                if (!isNaN(val)) {
-                    state.rubric_custom_percentages[sub][grade] = Math.max(0, Math.min(100, val));
-                    renderPreview();
+                if (!isNaN(val) && colIndex >= 0 && colIndex < state.columns.length) {
+                    const col = state.columns[colIndex];
+                    col.marks[grade] = Math.max(0, Math.min(col.max_mark || 100, val));
                 }
             });
         });
     }
 
-    renderRubricSettings();
     renderPreview();
 </script>
 {% endblock %}

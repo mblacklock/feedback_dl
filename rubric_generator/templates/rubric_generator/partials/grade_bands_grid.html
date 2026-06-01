@@ -19,9 +19,20 @@
                     <div class="mt-auto pt-2 border-top">
                         <div class="row g-1 text-center small">
                             {% for band in band_list %}
-                            <div class="col d-flex flex-column">
-                                <div class="fw-semibold text-muted" style="min-height: 2.5rem;">{{ band.grade }}</div>
+                            <div class="col d-flex flex-column align-items-center">
+                                <div class="fw-semibold text-muted mb-1" style="min-height: 2.5rem; font-size: 0.75rem;">{{ band.grade }}</div>
+                                {% if show_textarea %}
+                                <input type="number" 
+                                       class="form-control form-control-sm text-center band-mark-input" 
+                                       style="max-width: 55px; font-size: 0.75rem; padding: 0.15rem 0.25rem;" 
+                                       data-grade="{{ band.grade }}" 
+                                       value="{{ band.marks }}" 
+                                       min="0" max="{{ max_marks|default:1000 }}"
+                                       aria-label="{{ band.grade }} mark">
+                                <span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;">{{ band.marks }}</span>
+                                {% else %}
                                 <div class="badge {{ badge_class|default:'bg-secondary-subtle text-black' }} w-100">{{ band.marks }}</div>
+                                {% endif %}
                             </div>
                             {% endfor %}
                         </div>

@@ -1,8 +1,26 @@
 from django.contrib import messages
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 
+from core.utils.grade_bands import calculate_grade_bands
 from .utils import build_marking_workbook, parse_builder_payload, validate_builder_config
+
+
+def grade_bands_json(request):
+    """AJAX endpoint returning default grade band calculated integers."""
+    try:
+        max_marks = int(request.GET.get("max_marks", 0))
+        subdivision = request.GET.get("subdivision", "none")
+        degree_level = request.GET.get("degree_level", "BEng")
+        
+        if max_marks < 1:
+            return JsonResponse({"error": "Invalid max marks"}, status=400)
+            
+        bands = calculate_grade_bands(max_marks, subdivision, degree_level=degree_level)
+        return JsonResponse({"bands": bands})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=400)
+
 
 
 def builder(request):
