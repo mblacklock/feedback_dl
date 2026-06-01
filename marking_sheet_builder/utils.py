@@ -12,23 +12,13 @@ from core.utils.grade_bands import calculate_grade_bands
 
 def get_custom_grade_bands(max_mark, subdivision, degree_level, custom_percentages=None, column_marks=None):
     from math import floor
-    
-    default_bands = calculate_grade_bands(max_mark, subdivision, degree_level)
+    from core.utils.grade_bands import get_custom_grade_bands as core_get_custom_grade_bands
     
     if column_marks and isinstance(column_marks, dict):
-        new_bands = []
-        for band in default_bands:
-            grade_name = band["grade"]
-            custom_val = column_marks.get(grade_name)
-            if custom_val is not None:
-                try:
-                    new_bands.append({"grade": grade_name, "marks": int(custom_val)})
-                except (ValueError, TypeError):
-                    new_bands.append(band)
-            else:
-                new_bands.append(band)
-        return new_bands
+        return core_get_custom_grade_bands(max_mark, subdivision, degree_level, custom_marks=column_marks)
         
+    # Legacy percentage boundaries fallback
+    default_bands = calculate_grade_bands(max_mark, subdivision, degree_level)
     if not custom_percentages:
         return default_bands
         

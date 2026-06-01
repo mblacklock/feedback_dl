@@ -685,24 +685,10 @@ function updateGradeBandsPreview(row) {
         });
 }
 
-function getGradeForPercentage(pct, isMLevel) {
-    if (pct >= 70) return "1st";
-    if (pct >= 60) return "2:1";
-    if (pct >= 50) return "2:2";
-    if (pct >= 40 && !isMLevel) return "3rd";
-    return "Fail";
-}
-
-function getExpectedBaseGrade(gradeName) {
-    if (gradeName.includes("1st") || gradeName.includes("Dist")) return "1st";
-    if (gradeName.includes("2:1") || gradeName.includes("Merit")) return "2:1";
-    if (gradeName.includes("2:2") || gradeName.includes("Pass")) return "2:2";
-    if (gradeName.includes("3rd")) return "3rd";
-    return "Fail";
-}
-
 function validateBandsPreviewInputs(previewEl, maxMark, isMLevel) {
     let firstErrorMsg = "";
+    let previousVal = null;
+    let previousGrade = null;
     
     previewEl.querySelectorAll('.band-mark-input').forEach(input => {
         const grade = input.getAttribute('data-grade');
@@ -737,7 +723,34 @@ function validateBandsPreviewInputs(previewEl, maxMark, isMLevel) {
                     
                     firstErrorMsg = `⚠️ Error: '${grade}' mark must be between ${minMark} and ${maxMarkLimit} to fall within the expected ${expectedGrade} band (${gradeRangeStr}).`;
                 }
+            } else {
+                // Sequential validation check
+                if (previousVal !== null) {
+                    const currentBase = getExpectedBaseGrade(grade);
+                    const previousBase = getExpectedBaseGrade(previousGrade);
+                    
+                    if (currentBase !== previousBase) {
+                        // Cross-band: must be strictly less
+                        if (val >= previousVal) {
+                            input.classList.add('border-danger', 'text-danger');
+                            if (!firstErrorMsg) {
+                                firstErrorMsg = `⚠️ Error: '${grade}' mark (${val}) must be strictly less than the higher '${previousGrade}' band mark (${previousVal}).`;
+                            }
+                        }
+                    } else {
+                        // Same band: must be less than or equal
+                        if (val > previousVal) {
+                            input.classList.add('border-danger', 'text-danger');
+                            if (!firstErrorMsg) {
+                                firstErrorMsg = `⚠️ Error: '${grade}' mark (${val}) cannot be higher than the '${previousGrade}' mark (${previousVal}).`;
+                            }
+                        }
+                    }
+                }
             }
+            
+            previousVal = val;
+            previousGrade = grade;
         }
     });
     

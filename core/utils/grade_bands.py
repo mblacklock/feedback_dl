@@ -246,3 +246,23 @@ def calculate_grade_bands(max_marks, subdivision, degree_level=None):
     final = list(ug_bands)
     final.extend(_build_fail_sequence(max_marks, ug_bands, False))
     return final
+
+
+def get_custom_grade_bands(max_mark, subdivision, degree_level, custom_marks=None):
+    """Get grade bands with custom integer overrides applied if custom_marks is provided."""
+    default_bands = calculate_grade_bands(max_mark, subdivision, degree_level)
+    if not custom_marks or not isinstance(custom_marks, dict):
+        return default_bands
+        
+    new_bands = []
+    for band in default_bands:
+        grade_name = band["grade"]
+        custom_val = custom_marks.get(grade_name)
+        if custom_val is not None:
+            try:
+                new_bands.append({"grade": grade_name, "marks": int(custom_val)})
+            except (ValueError, TypeError):
+                new_bands.append(band)
+        else:
+            new_bands.append(band)
+    return new_bands
