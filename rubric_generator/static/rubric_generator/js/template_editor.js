@@ -354,6 +354,17 @@ function saveNow() {
         saveTimeout = null;
     }
     
+    // Check for validation errors in grade bands
+    const hasErrors = document.querySelectorAll(".band-validation-error[style*='display: block']").length > 0;
+    if (hasErrors) {
+        updateSaveStatus('error');
+        const statusEl = document.getElementById('save-status');
+        if (statusEl) {
+            statusEl.innerHTML = '<span class="text-danger"><i class="bi bi-exclamation-circle"></i> Save blocked: fix grade boundary errors</span>';
+        }
+        return;
+    }
+    
     // Update stored data for all rows before saving
     document.querySelectorAll('.category-row').forEach(row => {
         updateStoredCategoryData(row);
@@ -610,7 +621,7 @@ function updateGradeBandsPreview(row) {
         .then(response => response.json())
         .then(data => {
             if (data.html) {
-                previewEl.innerHTML = data.html;
+                previewEl.innerHTML = data.html + `<div class="band-validation-error text-danger mt-2 small" style="display: none; font-weight: 500;"></div>`;
                 
                 // Get existing descriptions and marks from saved category data
                 const categoryData = getCategoryDataForRow(row);
@@ -639,7 +650,7 @@ function updateGradeBandsPreview(row) {
                         textarea.addEventListener('input', debouncedSave);
                         textarea.addEventListener('blur', saveNow);
                     });
-
+ 
                     previewEl.querySelectorAll('.band-mark-input').forEach(input => {
                         const grade = input.getAttribute('data-grade');
                         if (marks[grade] !== undefined) {
@@ -652,10 +663,17 @@ function updateGradeBandsPreview(row) {
                             if (span && span.tagName === 'SPAN') {
                                 span.textContent = event.target.value;
                             }
+                            validateBandsPreviewInputs(previewEl, maxMarks, isMLevel);
                             debouncedSave();
                         });
                         input.addEventListener('blur', saveNow);
                     });
+                    
+                    // Initial validation run
+                    const degreeEl = document.getElementById('degree_level');
+                    const degreeLevel = degreeEl ? degreeEl.value : (window.templateData && window.templateData.degree_level ? window.templateData.degree_level : 'BEng');
+                    const isMLevel = degreeLevel && degreeLevel.trim().toLowerCase().startsWith('m');
+                    validateBandsPreviewInputs(previewEl, maxMarks, isMLevel);
                 }, 0);
             } else {
                 previewEl.innerHTML = '';
@@ -665,6 +683,74 @@ function updateGradeBandsPreview(row) {
             console.error('Error fetching grade bands:', error);
             previewEl.innerHTML = '';
         });
+}
+
+function getGradeForPercentage(pct, isMLevel) {
+    if (pct >= 70) return "1st";
+    if (pct >= 60) return "2:1";
+    if (pct >= 50) return "2:2";
+    if (pct >= 40 && !isMLevel) return "3rd";
+    return "Fail";
+}
+
+function getExpectedBaseGrade(gradeName) {
+    if (gradeName.includes("1st") || gradeName.includes("Dist")) return "1st";
+    if (gradeName.includes("2:1") || gradeName.includes("Merit")) return "2:1";
+    if (gradeName.includes("2:2") || gradeName.includes("Pass")) return "2:2";
+    if (gradeName.includes("3rd")) return "3rd";
+    return "Fail";
+}
+
+function validateBandsPreviewInputs(previewEl, maxMark, isMLevel) {
+    let firstErrorMsg = "";
+    
+    previewEl.querySelectorAll('.band-mark-input').forEach(input => {
+        const grade = input.getAttribute('data-grade');
+        const val = parseInt(input.value, 10);
+        
+        input.classList.remove('border-danger', 'text-danger');
+        
+        if (!isNaN(val)) {
+            const expectedGrade = getExpectedBaseGrade(grade);
+            const pct = (val / maxMark) * 100;
+            const actualGrade = getGradeForPercentage(pct, isMLevel);
+            
+            if (actualGrade !== expectedGrade) {
+                let minMark = null;
+                let maxMarkLimit = null;
+                for (let m = 0; m <= maxMark; m++) {
+                    const p = (m / maxMark) * 100;
+                    if (getGradeForPercentage(p, isMLevel) === expectedGrade) {
+                        if (minMark === null) minMark = m;
+                        maxMarkLimit = m;
+                    }
+                }
+                
+                input.classList.add('border-danger', 'text-danger');
+                if (!firstErrorMsg) {
+                    let gradeRangeStr = "";
+                    if (expectedGrade === "1st") gradeRangeStr = "70-100%";
+                    else if (expectedGrade === "2:1") gradeRangeStr = "60-69%";
+                    else if (expectedGrade === "2:2") gradeRangeStr = "50-59%";
+                    else if (expectedGrade === "3rd") gradeRangeStr = "40-49%";
+                    else gradeRangeStr = isMLevel ? "0-49%" : "0-39%";
+                    
+                    firstErrorMsg = `⚠️ Error: '${grade}' mark must be between ${minMark} and ${maxMarkLimit} to fall within the expected ${expectedGrade} band (${gradeRangeStr}).`;
+                }
+            }
+        }
+    });
+    
+    const errorEl = previewEl.querySelector('.band-validation-error');
+    if (errorEl) {
+        if (firstErrorMsg) {
+            errorEl.textContent = firstErrorMsg;
+            errorEl.style.display = 'block';
+        } else {
+            errorEl.style.display = 'none';
+            errorEl.textContent = '';
+        }
+    }
 }
 
 function getCategoryDataForRow(row) {
