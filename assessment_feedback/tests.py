@@ -2072,3 +2072,82 @@ class AssessmentFeedbackViewsTest(TestCase):
             self.assertEqual(student_pct, [80.0, 70.0])
             self.assertAlmostEqual(avg_pct[0], 66.6666666, places=4)
             self.assertAlmostEqual(avg_pct[1], 66.6666666, places=4)
+
+    def test_student_row_filtering_excludes_missing_id_or_final_mark(self):
+        """ZIP generation and Email Utility workbook must exclude rows that lack a student ID or final mark (if mapped)."""
+        uploaded_data = [
+            # Row 1: Valid student (ID and mark present)
+            {"Student Name": "Alice Smith", "Student ID": "10001", "Design /30": 24, "Total Mark": 80},
+            # Row 2: Missing student ID
+            {"Student Name": "Bob Jones", "Student ID": "", "Design /30": 18, "Total Mark": 70},
+            # Row 3: Missing student ID (None)
+            {"Student Name": "Carol White", "Student ID": None, "Design /30": 20, "Total Mark": 75},
+            # Row 4: Missing final mark
+            {"Student Name": "Dave Miller", "Student ID": "10004", "Design /30": 15, "Total Mark": ""},
+            # Row 5: Missing final mark (None)
+            {"Student Name": "Eve Davis", "Student ID": "10005", "Design /30": 22, "Total Mark": None},
+        ]
+        mappings = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "col_overall_mark": "Total Mark",
+            "col_group": "",
+            "name_mode": "full",
+            "col_first_name": "",
+            "col_last_name": "",
+            "degree_level": "BEng",
+            "subdivision": "none",
+            "categories": [
+                {"column": "Design /30", "max_marks": 30, "weight": None, "comments_column": "", "type": "numeric", "subdivision": "none", "rubric_marks": [], "unit": ""},
+            ]
+        }
+        
+        session = self.client.session
+        session["headers"] = ["Student Name", "Student ID", "Design /30", "Total Mark"]
+        session["uploaded_data"] = uploaded_data
+        session["mappings"] = mappings
+        session.save()
+
+        # Check cohort stats calculation includes students with ID but missing final mark (treated as 0)
+        from assessment_feedback.views import build_assessment_cohort_stats
+        cohort_marks, category_averages = build_assessment_cohort_stats(
+            [r for r in uploaded_data if r.get("Student ID")],
+            mappings["categories"],
+            mappings["degree_level"],
+            mappings.get("col_overall_mark")
+        )
+        # Valid student IDs: Alice, Dave, Eve.
+        # Marks: Alice (80), Dave (0 - missing), Eve (0 - missing)
+        self.assertEqual(len(cohort_marks), 3)
+        self.assertIn(80, cohort_marks)
+        self.assertEqual(cohort_marks.count(0), 2)
+
+        # Step 1: Request ZIP and inspect content
+        resp = self.client.get(reverse("process_feedback"))
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp["Content-Type"], "application/zip")
+        
+        zip_bytes = io.BytesIO(resp.content)
+        with zipfile.ZipFile(zip_bytes, "r") as zf:
+            namelist = zf.namelist()
+            # Only Alice should be in the list (10001)
+            self.assertEqual(len(namelist), 1)
+            self.assertIn("10001_alice-smith.html", namelist)
+            self.assertNotIn("bob-jones.html", "".join(namelist))
+            self.assertNotIn("carol-white.html", "".join(namelist))
+            self.assertNotIn("dave-miller.html", "".join(namelist))
+            self.assertNotIn("eve-davis.html", "".join(namelist))
+
+        # Step 2: Request Email sending utility workbook and inspect content
+        email_resp = self.client.get(reverse("download_email_xlsm"))
+        self.assertEqual(email_resp.status_code, 200)
+        
+        import openpyxl
+        wb = openpyxl.load_workbook(io.BytesIO(email_resp.content), keep_vba=True)
+        ws = wb['Students'] if 'Students' in wb.sheetnames else wb.active
+        
+        # Row 2 should be Alice, Row 3 should be empty
+        self.assertEqual(ws.cell(row=2, column=1).value, "10001")
+        self.assertEqual(ws.cell(row=2, column=2).value, "Alice Smith")
+        self.assertIsNone(ws.cell(row=3, column=1).value)
+        self.assertIsNone(ws.cell(row=3, column=2).value)

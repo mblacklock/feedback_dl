@@ -966,6 +966,15 @@ def confirm_mappings(request):
         else:
             mappings["subdivision"] = "none"
 
+        # Filter uploaded_data to remove rows missing student ID (e.g. blank rows/headers)
+        col_id = mappings["col_student_id"]
+        filtered_data = []
+        for row in uploaded_data:
+            s_id = row.get(col_id)
+            if s_id is not None and str(s_id).strip() != "":
+                filtered_data.append(row)
+        request.session["uploaded_data"] = filtered_data
+
         request.session["mappings"] = mappings
         request.session.modified = True
         
@@ -1075,6 +1084,15 @@ def configure_layout(request):
     col_name = mappings["col_student_name"]
     col_id = mappings["col_student_id"]
     categories = mappings["categories"]
+    col_overall_mark = mappings.get("col_overall_mark")
+
+    # Filter rows missing student ID
+    valid_data = []
+    for r in uploaded_data:
+        s_id = r.get(col_id)
+        if s_id is not None and str(s_id).strip() != "":
+            valid_data.append(r)
+    uploaded_data = valid_data
 
     cohort_final_marks, category_averages = build_assessment_cohort_stats(
         uploaded_data,
@@ -1084,26 +1102,31 @@ def configure_layout(request):
         mappings.get("col_group"),
     )
 
-    # Prepare student selection list
+    # Prepare student selection list - only includes students with a final mark
     students_list = []
     for idx, r in enumerate(uploaded_data):
+        if col_overall_mark:
+            overall_mark = r.get(col_overall_mark)
+            if overall_mark is None or str(overall_mark).strip() == "":
+                continue
         s_name = get_student_name(r, idx, mappings)
         raw_s_id = r.get(col_id)
         s_id = format_student_id(raw_s_id) if raw_s_id is not None else f"ID-{idx+1}"
-        if s_name or s_id:
-            students_list.append({
-                "index": idx,
-                "name": s_name,
-                "id": s_id,
-            })
+        students_list.append({
+            "index": idx,
+            "name": s_name,
+            "id": s_id,
+        })
 
     # Read selected student index from query param
     try:
-        preview_student_index = int(request.GET.get("student_index", 0))
-        if preview_student_index < 0 or preview_student_index >= len(uploaded_data):
-            preview_student_index = 0
+        preview_student_index = int(request.GET.get("student_index", -1))
     except (ValueError, TypeError):
-        preview_student_index = 0
+        preview_student_index = -1
+
+    valid_indices = [s["index"] for s in students_list]
+    if preview_student_index not in valid_indices:
+        preview_student_index = valid_indices[0] if valid_indices else 0
 
     preview_student = None
     if uploaded_data:
@@ -1143,6 +1166,17 @@ def process_feedback(request):
     if not uploaded_data or not mappings:
         return redirect("upload_file")
         
+    col_id = mappings["col_student_id"]
+    col_overall_mark = mappings.get("col_overall_mark")
+
+    # Filter rows missing student ID
+    valid_data = []
+    for r in uploaded_data:
+        s_id = r.get(col_id)
+        if s_id is not None and str(s_id).strip() != "":
+            valid_data.append(r)
+    uploaded_data = valid_data
+        
     layout = request.session.get("layout")
     layout = ensure_layout_defaults(layout, session=request.session)
         
@@ -1162,6 +1196,12 @@ def process_feedback(request):
     
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
         for idx, student_row in enumerate(uploaded_data):
+            # Skip if missing final mark
+            if col_overall_mark:
+                overall_mark = student_row.get(col_overall_mark)
+                if overall_mark is None or str(overall_mark).strip() == "":
+                    continue
+
             student_name = get_student_name(student_row, idx, mappings)
             raw_student_id = student_row.get(col_id)
             student_id = format_student_id(raw_student_id) if raw_student_id is not None else f"ID-{idx+1}"
@@ -1212,6 +1252,21 @@ def generation_success(request):
     if not uploaded_data or not mappings:
         return redirect("upload_file")
         
+    col_id = mappings["col_student_id"]
+    col_overall_mark = mappings.get("col_overall_mark")
+
+    # Filter rows missing student ID or (if mapped) overall mark
+    valid_data = []
+    for r in uploaded_data:
+        s_id = r.get(col_id)
+        if s_id is None or str(s_id).strip() == "":
+            continue
+        if col_overall_mark:
+            overall_mark = r.get(col_overall_mark)
+            if overall_mark is None or str(overall_mark).strip() == "":
+                continue
+        valid_data.append(r)
+    uploaded_data = valid_data
     student_count = len(uploaded_data)
     return render(request, "assessment_feedback/success.html", {
         "student_count": student_count,
@@ -1234,6 +1289,17 @@ def download_email_xlsm(request):
     if not uploaded_data or not mappings:
         return redirect("upload_file")
 
+    col_id = mappings["col_student_id"]
+    col_overall_mark = mappings.get("col_overall_mark")
+
+    # Filter rows missing student ID
+    valid_data = []
+    for r in uploaded_data:
+        s_id = r.get(col_id)
+        if s_id is not None and str(s_id).strip() != "":
+            valid_data.append(r)
+    uploaded_data = valid_data
+
     col_name = mappings["col_student_name"]
     col_id = mappings["col_student_id"]
 
@@ -1255,6 +1321,12 @@ def download_email_xlsm(request):
     # Populate rows
     row_idx = 2
     for idx, student_row in enumerate(uploaded_data):
+        # Skip if missing final mark
+        if col_overall_mark:
+            overall_mark = student_row.get(col_overall_mark)
+            if overall_mark is None or str(overall_mark).strip() == "":
+                continue
+
         student_name = get_student_name(student_row, idx, mappings)
         raw_student_id = student_row.get(col_id)
         student_id = format_student_id(raw_student_id) if raw_student_id is not None else f"ID-{idx+1}"
