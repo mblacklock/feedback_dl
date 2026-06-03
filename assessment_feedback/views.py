@@ -328,7 +328,7 @@ def build_feedback_sheet_layout_rows(layout):
 
 def numeric_mark(value):
     try:
-        return float(value) if value is not None else 0
+        return round(float(value), 10) if value is not None else 0
     except (ValueError, TypeError):
         return 0
 
