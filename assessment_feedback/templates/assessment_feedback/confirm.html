@@ -1,5 +1,6 @@
 {% extends "rubric_generator/base.html" %}
 {% load rubric_generator_filters %}
+{% load static %}
 
 {% block title %}Confirm Mappings{% endblock %}
 
@@ -8,86 +9,9 @@
     href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap"
     rel="stylesheet">
 <style>
-    body {
-        font-family: 'Inter', sans-serif;
-        background-color: #f8fafc;
-        color: #1e293b;
-    }
-
-    h1,
-    h2,
-    h3,
-    h4 {
-        font-family: 'Outfit', sans-serif;
-    }
-
-    .main-card {
-        border: none;
-        border-radius: 20px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
-        background: rgba(255, 255, 255, 0.85);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.4);
-        margin-bottom: 40px;
-    }
-
-    .gradient-header {
-        background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
-        border-radius: 20px 20px 0 0;
-        padding: 30px;
-        color: white;
-    }
-
-    .mapping-table th {
-        background-color: #f1f5f9;
-        font-weight: 600;
-        color: #475569;
-        text-transform: uppercase;
-        font-size: 0.75rem;
-        letter-spacing: 0.05em;
-        border: none;
-    }
-
-    .mapping-table td {
-        vertical-align: middle;
-        border-bottom: 1px solid #f1f5f9;
-        padding: 16px 12px;
-    }
-
-    .btn-generate {
-        background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
-        color: white;
-        border: none;
-        border-radius: 12px;
-        padding: 14px 40px;
-        font-weight: 700;
-        transition: all 0.25s ease;
-        box-shadow: 0 4px 15px rgba(67, 97, 238, 0.25);
-    }
-
-    .btn-generate:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(67, 97, 238, 0.4);
-        color: white;
-    }
-
-    .badge-inferred {
-        background-color: #ecfdf5;
-        color: #059669;
-        font-size: 0.75rem;
-        font-weight: 600;
-        border: 1px solid #a7f3d0;
-    }
-
-    .overall-mark-badge {
-        background-color: #e0e7ff;
-        color: #4361ee;
-        font-size: 0.75rem;
-        font-weight: 600;
-        border: 1px solid #c7d2fe;
-    }
+    {% include "css/brand_design.css" %}
 </style>
+<link href="{% static 'assessment_feedback/css/confirm_mappings.css' %}" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -262,14 +186,20 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {# Render all sub-categories (excluding the overall mark column) #}
+                                {# Render all categories in their natural order #}
                                 {% for cat in mappings.categories %}
-                                {% if cat.column != mappings.col_overall_mark %}
-                                <tr id="cat-row-{{ forloop.counter0 }}" data-column-name="{{ cat.column }}"{% if cat.column == mappings.col_group %} class="d-none"{% endif %}>
+                                <tr id="cat-row-{{ forloop.counter0 }}" data-column-name="{{ cat.column }}"
+                                    class="{% if cat.column == mappings.col_group %}d-none{% endif %}"
+                                    {% if cat.column == mappings.col_overall_mark %}style="background-color: rgba(67, 97, 238, 0.08); border-left: 4px solid #4361ee;"{% endif %}>
                                     <input type="hidden" name="col_name_{{ forloop.counter0 }}" value="{{ cat.column }}">
                                     <input type="hidden" name="removed_{{ forloop.counter0 }}" value="0" id="removed-input-{{ forloop.counter0 }}">
                                     <td class="fw-bold">
-                                        {{ header_label_map|get_item:cat.column }}
+                                        <div class="d-flex align-items-center gap-2">
+                                            {{ header_label_map|get_item:cat.column }}
+                                            {% if cat.column == mappings.col_overall_mark %}
+                                            <span class="badge overall-mark-badge">Overall Mark</span>
+                                            {% endif %}
+                                        </div>
                                     </td>
                                     <td>
                                         <select name="type_{{ forloop.counter0 }}"
@@ -298,6 +228,17 @@
                                         </div>
                                     </td>
                                     <td>
+                                        {% if cat.column == mappings.col_overall_mark %}
+                                        <select name="comments_{{ forloop.counter0 }}"
+                                            class="form-select form-select-sm rounded-3" disabled>
+                                            <option value="">-- Mapped as Overall Mark --</option>
+                                            {% for h_raw, h_label in headers_with_labels %}
+                                            <option value="{{ h_raw }}" {% if h_raw and h_raw == cat.comments_column %}selected{% endif %}>
+                                                {{ h_label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <input type="hidden" name="comments_{{ forloop.counter0 }}" value="">
+                                        {% else %}
                                         <select name="comments_{{ forloop.counter0 }}"
                                             class="form-select form-select-sm rounded-3">
                                             <option value="">-- No Comment Column --</option>
@@ -306,9 +247,10 @@
                                                 {{ h_label }}</option>
                                             {% endfor %}
                                         </select>
+                                        {% endif %}
                                     </td>
                                     <td>
-                                        <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn" data-idx="{{ forloop.counter0 }}" title="Remove category row">&times;</button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn {% if cat.column == mappings.col_overall_mark %}d-none{% endif %}" data-idx="{{ forloop.counter0 }}" title="Remove category row">&times;</button>
                                     </td>
                                 </tr>
 
@@ -343,98 +285,7 @@
                                         </div>
                                     </td>
                                 </tr>
-                                {% endif %}
                                 {% endfor %}
-
-                                {# Render the overall mark column at the bottom as a highlighted row if mapped #}
-                                {% if mappings.col_overall_mark %}
-                                {% for cat in mappings.categories %}
-                                {% if cat.column == mappings.col_overall_mark %}
-                                <tr id="cat-row-{{ forloop.counter0 }}" data-column-name="{{ cat.column }}" style="background-color: rgba(67, 97, 238, 0.08); border-left: 4px solid #4361ee;">
-                                    <input type="hidden" name="col_name_{{ forloop.counter0 }}" value="{{ cat.column }}">
-                                    <input type="hidden" name="removed_{{ forloop.counter0 }}" value="0" id="removed-input-{{ forloop.counter0 }}">
-                                    <td class="fw-bold d-flex align-items-center">
-                                        <div class="d-flex align-items-center gap-2">
-                                            {{ header_label_map|get_item:cat.column }}
-                                            <span class="badge overall-mark-badge">Overall Mark</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <select name="type_{{ forloop.counter0 }}"
-                                            class="form-select form-select-sm rounded-3 type-select"
-                                            data-idx="{{ forloop.counter0 }}">
-                                            <option value="numeric" {% if cat.type == 'numeric' %}selected{% endif %}>Mark</option>
-                                            <option value="grade" {% if cat.type == 'grade' %}selected{% endif %}>Rubric grade</option>
-                                            <option value="information" {% if cat.type == 'information' %}selected{% endif %}>Information</option>
-                                            <option value="feedback_only" {% if cat.type == 'feedback_only' %}selected{% endif %}>Feedback text</option>
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <div class="max-marks-container-{{ forloop.counter0 }} {% if cat.type == 'information' or cat.type == 'feedback_only' %}d-none{% endif %}">
-                                             <input type="number" name="max_{{ forloop.counter0 }}"
-                                                 class="form-control form-control-sm rounded-3 max-marks-input"
-                                                 value="{{ cat.max_marks|default:'' }}" style="width: 80px;"
-                                                 {% if cat.type == 'information' or cat.type == 'feedback_only' %}disabled{% endif %}>
-                                        </div>
-                                        <div
-                                            class="unit-container-{{ forloop.counter0 }} {% if cat.type != 'information' %}d-none{% endif %}">
-                                            <input type="text" name="unit_{{ forloop.counter0 }}"
-                                                class="form-control form-control-sm rounded-3 unit-input"
-                                                value="{{ cat.unit|default:'' }}" placeholder="e.g. N, kg, ms"
-                                                style="width: 100px;"
-                                                {% if cat.type != 'information' %}disabled{% endif %}>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <select name="comments_{{ forloop.counter0 }}"
-                                            class="form-select form-select-sm rounded-3" disabled>
-                                            <option value="">-- Mapped as Overall Mark --</option>
-                                            {% for h_raw, h_label in headers_with_labels %}
-                                            <option value="{{ h_raw }}" {% if h_raw and h_raw == cat.comments_column %}selected{% endif %}>
-                                                {{ h_label }}</option>
-                                            {% endfor %}
-                                        </select>
-                                        <input type="hidden" name="comments_{{ forloop.counter0 }}" value="">
-                                    </td>
-                                    <td>
-                                        <!-- No actions for overall mark row -->
-                                    </td>
-                                </tr>
-
-                                <tr id="rubric-panel-{{ forloop.counter0 }}"
-                                    class="rubric-panel {% if cat.type != 'grade' %}d-none{% endif %}"
-                                    data-idx="{{ forloop.counter0 }}" data-col="{{ cat.column }}"
-                                    data-subdivision="{{ cat.subdivision|default:'none' }}">
-                                    <td colspan="5" class="p-0">
-                                        <div
-                                            style="background:#f8fafc; border-left:3px solid #4361ee; padding:16px 20px;">
-                                            <p class="text-muted small fw-semibold mb-2"
-                                                style="text-transform:uppercase;letter-spacing:.05em;">
-                                                Grade Band → Numeric Mark Mapping
-                                                <span class="text-secondary fw-normal ms-2">— edit to override
-                                                    auto-calculated values</span>
-                                            </p>
-                                            <div class="rubric-bands-container"
-                                                style="display:flex;flex-wrap:wrap;gap:6px;padding-bottom:2px;">
-                                                {% for band in cat.rubric_marks %}
-                                                <div
-                                                    style="background:white;border:1px solid #e2e8f0;border-radius:6px;padding:4px 7px;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:62px;text-align:center;">
-                                                    <div
-                                                        style="font-size:.7rem;font-weight:600;color:#64748b;white-space:nowrap;">
-                                                        {{ band.grade }}</div>
-                                                    <input type="number"
-                                                        name="rubric_mark_{{ forloop.parentloop.counter0 }}_{{ forloop.counter0 }}"
-                                                        value="{{ band.marks }}" class="form-control form-control-sm"
-                                                        style="width:45px;font-weight:700;color:#1e3a8a;text-align:center;padding:1px;height:24px;margin:0;font-size:0.8rem;">
-                                                </div>
-                                                {% endfor %}
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endif %}
-                                {% endfor %}
-                                {% endif %}
                             </tbody>
                         </table>
                     </div>
@@ -443,7 +294,11 @@
                     <table class="d-none">
                         <tbody>
                             <tr id="row-template">
-                                <td class="fw-bold col-name-label"></td>
+                                <td class="fw-bold">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="col-name-label"></span>
+                                    </div>
+                                </td>
                                 <td>
                                     <select class="form-select form-select-sm rounded-3 type-select">
                                         <option value="numeric">Mark</option>
@@ -503,7 +358,7 @@
                     </div>
 
                     <div class="text-center">
-                        <button type="submit" class="btn btn-generate btn-lg w-100 btn-generate">Build Feedback Sheet
+                        <button type="submit" class="btn btn-premium btn-lg w-100">Build Feedback Sheet
                             Layout</button>
                     </div>
                 </form>
@@ -513,504 +368,13 @@
 </div>
 
 <script>
-    // Pre-computed rubric bands (original max_marks, all subdivisions).
-    // Used ONLY to populate an empty panel when the user first switches a
-    // numeric column to grade type — avoids a round-trip in that case.
-    const ALL_RUBRIC_MARKS = {{ all_rubric_marks_json| safe }};
-    const RUBRIC_BANDS_URL = "{% url 'rubric_bands_api' %}";
-    const debounceTimers = {};
-
-    function currentSubdivision(idx) {
-        const panel = document.getElementById(`rubric-panel-${idx}`);
-        return panel ? (panel.getAttribute('data-subdivision') || 'none') : 'none';
-    }
-
-    function currentMaxMarks(idx) {
-        const input = document.querySelector(`input[name="max_${idx}"]`);
-        return input ? (parseInt(input.value, 10) || 100) : 100;
-    }
-
-    function currentDegreeLevel() {
-        const input = document.querySelector('select[name="degree_level"]');
-        return input ? input.value : 'BEng';
-    }
-
-    /** Render a rubric panel from a pre-fetched bands array. */
-    function renderBands(container, idx, bands) {
-        container.innerHTML = bands.map((band, bandIdx) => `
-            <div style="background:white;border:1px solid #e2e8f0;border-radius:6px;padding:4px 7px;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:62px;text-align:center;">
-                <div style="font-size:.7rem;font-weight:600;color:#64748b;white-space:nowrap;">${band.grade}</div>
-                <input type="number"
-                    name="rubric_mark_${idx}_${bandIdx}"
-                    value="${band.marks}"
-                    class="form-control form-control-sm"
-                    style="width:45px;font-weight:700;color:#1e3a8a;text-align:center;padding:1px;height:24px;margin:0;font-size:0.8rem;">
-            </div>`).join('');
-    }
-
-    /**
-     * Fetch fresh bands from the server and render them into the panel.
-     * Always uses the current max_marks input value so the result is
-     * guaranteed to be consistent with whatever the user has typed.
-     * Debounced per-row to avoid hammering the server while typing.
-     */
-    function fetchAndRenderBands(idx, panel, subdivision, debounceMs = 0) {
-        clearTimeout(debounceTimers[idx]);
-        debounceTimers[idx] = setTimeout(() => {
-            const maxMarks = currentMaxMarks(idx);
-            const container = panel.querySelector('.rubric-bands-container');
-            if (!container) return;
-            fetch(`${RUBRIC_BANDS_URL}?max_marks=${maxMarks}&subdivision=${subdivision}&degree_level=${encodeURIComponent(currentDegreeLevel())}`)
-                .then(r => r.json())
-                .then(bands => renderBands(container, idx, bands))
-                .catch(() => {/* silent — leave existing values in place */ });
-        }, debounceMs);
-    }
-
-
-    // ── Generalized Event Binders ────────────────────────────────────────────
-    function bindTypeSelectEvent(select) {
-        select.addEventListener('change', function () {
-            const idx = this.getAttribute('data-idx');
-            const type = this.value;
-            const maxContainer = document.querySelector(`.max-marks-container-${idx}`);
-            const maxInput = document.querySelector(`input[name="max_${idx}"]`);
-            const unitContainer = document.querySelector(`.unit-container-${idx}`);
-            const unitInput = document.querySelector(`input[name="unit_${idx}"]`);
-            const panel = document.getElementById(`rubric-panel-${idx}`);
-
-            if (type === 'information' || type === 'feedback_only') {
-                if (maxContainer) {
-                    maxContainer.classList.add('d-none');
-                }
-                if (maxInput) {
-                    maxInput.disabled = true;
-                    maxInput.required = false;
-                }
-                if (unitContainer && unitInput) {
-                    if (type === 'information') {
-                        unitContainer.classList.remove('d-none');
-                        unitInput.disabled = false;
-                    } else {
-                        unitContainer.classList.add('d-none');
-                        unitInput.disabled = true;
-                    }
-                }
-                if (panel) {
-                    panel.classList.add('d-none');
-                }
-            } else {
-                if (maxContainer) {
-                    maxContainer.classList.remove('d-none');
-                }
-                if (maxInput) {
-                    maxInput.disabled = false;
-                    maxInput.required = true;
-                    if (!maxInput.value) {
-                        maxInput.value = 100;
-                    }
-                }
-                if (unitContainer && unitInput) {
-                    unitContainer.classList.add('d-none');
-                    unitInput.disabled = true;
-                }
-                if (type === 'grade') {
-                    if (panel) {
-                        panel.classList.remove('d-none');
-                        fetchAndRenderBands(idx, panel, currentSubdivision(idx), 0);
-                    }
-                } else {
-                    if (panel) {
-                        panel.classList.add('d-none');
-                    }
-                }
-            }
-        });
-    }
-
-    function bindMaxInputEvent(input) {
-        input.addEventListener('input', function () {
-            const idx = this.getAttribute('name').split('_')[1];
-            const panel = document.getElementById(`rubric-panel-${idx}`);
-            if (!panel || panel.classList.contains('d-none')) return;
-
-            const typeSelect = document.querySelector(`select[name="type_${idx}"]`);
-            if (!typeSelect || typeSelect.value !== 'grade') return;
-
-            const maxMarks = parseInt(this.value, 10);
-            if (isNaN(maxMarks) || maxMarks <= 0) return;
-
-            fetchAndRenderBands(idx, panel, currentSubdivision(idx), 400);
-        });
-    }
-
-    // Bind existing rows
-    document.querySelectorAll('.type-select').forEach(bindTypeSelectEvent);
-    document.querySelectorAll('input[name^="max_"]').forEach(bindMaxInputEvent);
-
-    // ── Dynamic Column Management ────────────────────────────────────────────
-    let availableHeaders = {{ available_headers_json|safe }};
-    let nextRowIdx = {{ mappings.categories|length }};
-
-    function updateAvailableHeadersDropdown() {
-        const select = document.getElementById('add-column-select');
-        if (!select) return;
-        
-        select.innerHTML = '<option value="">— Select Column —</option>';
-        
-        // Sort availableHeaders alphabetically by label
-        availableHeaders.sort((a, b) => a.label.localeCompare(b.label));
-        
-        availableHeaders.forEach(h => {
-            const opt = document.createElement('option');
-            opt.value = h.raw;
-            opt.textContent = h.label;
-            select.appendChild(opt);
-        });
-    }
-
-    function removeCategoryRow(idx) {
-        const row = document.getElementById(`cat-row-${idx}`);
-        const panel = document.getElementById(`rubric-panel-${idx}`);
-        const removedInput = document.getElementById(`removed-input-${idx}`);
-        
-        if (row) row.classList.add('d-none');
-        if (panel) panel.classList.add('d-none');
-        if (removedInput) removedInput.value = '1';
-        
-        const colName = row.getAttribute('data-column-name');
-        const colLabel = row.querySelector('td:first-child').textContent.trim();
-        
-        if (colName && !availableHeaders.some(h => h.raw === colName)) {
-            // Re-infer if it was numeric. Check current type
-            const typeSelect = row.querySelector('.type-select');
-            const wasNumeric = typeSelect ? (typeSelect.value === 'numeric' || typeSelect.value === 'grade') : true;
-            availableHeaders.push({raw: colName, label: colLabel, is_numeric: wasNumeric});
-            updateAvailableHeadersDropdown();
-        }
-    }
-
-    function addColumnRow(colName, colLabel, isNumeric) {
-        const tbody = document.querySelector('.mapping-table tbody');
-        
-        // Clone row template
-        const rowTemplate = document.getElementById('row-template');
-        const newRow = rowTemplate.cloneNode(true);
-        newRow.id = `cat-row-${nextRowIdx}`;
-        newRow.classList.remove('d-none');
-        newRow.setAttribute('data-column-name', colName);
-        
-        newRow.querySelector('.col-name-label').textContent = colLabel;
-        
-        // Add hidden inputs for backend identification
-        const hiddenColName = document.createElement('input');
-        hiddenColName.type = 'hidden';
-        hiddenColName.name = `col_name_${nextRowIdx}`;
-        hiddenColName.value = colName;
-        newRow.appendChild(hiddenColName);
-        
-        const hiddenRemoved = document.createElement('input');
-        hiddenRemoved.type = 'hidden';
-        hiddenRemoved.name = `removed_${nextRowIdx}`;
-        hiddenRemoved.id = `removed-input-${nextRowIdx}`;
-        hiddenRemoved.value = '0';
-        newRow.appendChild(hiddenRemoved);
-        
-        // Set type select names and classes
-        const typeSelect = newRow.querySelector('.type-select');
-        typeSelect.name = `type_${nextRowIdx}`;
-        typeSelect.setAttribute('data-idx', nextRowIdx);
-        typeSelect.classList.add('type-select'); // to match querySelectorAll
-        
-        const maxContainer = newRow.querySelector('.max-marks-container');
-        maxContainer.className = `max-marks-container-${nextRowIdx}`;
-        
-        const maxInput = newRow.querySelector('.max-marks-input');
-        maxInput.name = `max_${nextRowIdx}`;
-        
-        const unitContainer = newRow.querySelector('.unit-container');
-        unitContainer.className = `unit-container-${nextRowIdx}`;
-        
-        const unitInput = newRow.querySelector('.unit-input');
-        unitInput.name = `unit_${nextRowIdx}`;
-        
-        const commentsSelect = newRow.querySelector('.comments-select');
-        commentsSelect.name = `comments_${nextRowIdx}`;
-        
-        // Clone rubric panel template
-        const panelTemplate = document.getElementById('rubric-panel-template');
-        const newPanel = panelTemplate.cloneNode(true);
-        newPanel.id = `rubric-panel-${nextRowIdx}`;
-        newPanel.setAttribute('data-idx', nextRowIdx);
-        newPanel.setAttribute('data-col', colName);
-        
-        // Bind events
-        bindTypeSelectEvent(typeSelect);
-        bindMaxInputEvent(maxInput);
-        
-        const removeBtn = newRow.querySelector('.remove-row-btn');
-        removeBtn.addEventListener('click', function() {
-            removeCategoryRow(nextRowIdx);
-        });
-        
-        // Find overall mark row if exists, to keep it at the bottom
-        let overallRow = null;
-        document.querySelectorAll('.mapping-table tbody tr[id^="cat-row-"]').forEach(row => {
-            if (row.querySelector('.overall-mark-badge')) {
-                overallRow = row;
-            }
-        });
-        
-        if (overallRow) {
-            tbody.insertBefore(newRow, overallRow);
-            tbody.insertBefore(newPanel, overallRow);
-        } else {
-            tbody.appendChild(newRow);
-            tbody.appendChild(newPanel);
-        }
-        
-        // Default values based on numeric detection
-        if (!isNumeric) {
-            typeSelect.value = 'feedback_only';
-        } else {
-            typeSelect.value = 'numeric';
-        }
-        typeSelect.dispatchEvent(new Event('change'));
-        
-        // Increment global counter
-        nextRowIdx++;
-        
-        // Remove from available headers and update dropdown
-        availableHeaders = availableHeaders.filter(h => h.raw !== colName);
-        updateAvailableHeadersDropdown();
-    }
-
-    // Initialize dropdown on page load
-    updateAvailableHeadersDropdown();
-
-    // Bind Add Column button
-    const addColumnBtn = document.getElementById('add-column-btn');
-    if (addColumnBtn) {
-        addColumnBtn.addEventListener('click', function() {
-            const select = document.getElementById('add-column-select');
-            const selectedVal = select.value;
-            if (!selectedVal) return;
-            
-            const selectedHeader = availableHeaders.find(h => h.raw === selectedVal);
-            if (selectedHeader) {
-                addColumnRow(selectedHeader.raw, selectedHeader.label, selectedHeader.is_numeric);
-            }
-        });
-    }
-
-    // Bind existing remove buttons
-    document.querySelectorAll('.remove-row-btn').forEach(btn => {
-        const idx = btn.getAttribute('data-idx');
-        if (idx) {
-            btn.addEventListener('click', function() {
-                removeCategoryRow(idx);
-            });
-        }
-    });
-
-    const degreeLevelInput = document.querySelector('select[name="degree_level"]');
-    if (degreeLevelInput) {
-        degreeLevelInput.addEventListener('change', function () {
-            document.querySelectorAll('.rubric-panel').forEach(panel => {
-                if (panel.classList.contains('d-none')) return;
-                const idx = panel.getAttribute('data-idx');
-                fetchAndRenderBands(idx, panel, currentSubdivision(idx), 0);
-            });
-        });
-    }
-
-    // ── Overall mark column dynamic highlighting listener ──────────────────────
-    const overallMarkSelect = document.getElementById('col_overall_mark');
-    let prevOverallMarkCol = overallMarkSelect ? overallMarkSelect.value : '';
-
-    if (overallMarkSelect) {
-        overallMarkSelect.addEventListener('change', function () {
-            const selectedVal = this.value;
-            
-            // 1. Restore the old overall mark column row if it exists in the table
-            if (prevOverallMarkCol && prevOverallMarkCol !== selectedVal) {
-                const oldRow = document.querySelector(`tr[id^="cat-row-"][data-column-name="${CSS.escape(prevOverallMarkCol)}"]`);
-                if (oldRow) {
-                    oldRow.style.backgroundColor = "";
-                    oldRow.style.borderLeft = "";
-                    const badge = oldRow.querySelector('.overall-mark-badge');
-                    if (badge) badge.remove();
-                    const commentsSelect = oldRow.querySelector('select[name^="comments_"]');
-                    if (commentsSelect) {
-                        commentsSelect.disabled = false;
-                        const firstOpt = commentsSelect.options[0];
-                        if (firstOpt) firstOpt.textContent = "-- No Comment Column --";
-                        
-                        // Remove hidden comments input to avoid conflicting with re-enabled select on submit
-                        const idx = oldRow.id.slice('cat-row-'.length);
-                        const hiddenInput = oldRow.querySelector(`input[type="hidden"][name="comments_${idx}"]`);
-                        if (hiddenInput) hiddenInput.remove();
-                    }
-                    const removeBtn = oldRow.querySelector('.remove-row-btn');
-                    if (removeBtn) removeBtn.classList.remove('d-none');
-                } else {
-                    // It wasn't in the table, so make it available in the dropdown
-                    const option = Array.from(overallMarkSelect.options).find(opt => opt.value === prevOverallMarkCol);
-                    const label = option ? option.textContent.trim() : prevOverallMarkCol;
-                    if (!availableHeaders.some(h => h.raw === prevOverallMarkCol)) {
-                        availableHeaders.push({raw: prevOverallMarkCol, label: label, is_numeric: true});
-                        updateAvailableHeadersDropdown();
-                    }
-                }
-            }
-            
-            // 2. Handle the new overall mark column row
-            if (selectedVal !== "") {
-                let newRow = document.querySelector(`tr[id^="cat-row-"][data-column-name="${CSS.escape(selectedVal)}"]`);
-                if (!newRow) {
-                    // It's not in the table yet! Let's find its label and add it automatically.
-                    const option = Array.from(overallMarkSelect.options).find(opt => opt.value === selectedVal);
-                    const label = option ? option.textContent.trim() : selectedVal;
-                    
-                    // Add it as a numeric column
-                    addColumnRow(selectedVal, label, true);
-                    newRow = document.querySelector(`tr[id^="cat-row-"][data-column-name="${CSS.escape(selectedVal)}"]`);
-                }
-                
-                if (newRow) {
-                    newRow.style.backgroundColor = "rgba(67, 97, 238, 0.08)";
-                    newRow.style.borderLeft = "4px solid #4361ee";
-                    
-                    const titleCell = newRow.querySelector('td:first-child');
-                    if (titleCell && !titleCell.querySelector('.overall-mark-badge')) {
-                        const badgeSpan = document.createElement('span');
-                        badgeSpan.className = "badge overall-mark-badge ms-2";
-                        badgeSpan.textContent = "Overall Mark";
-                        
-                        const container = titleCell.querySelector('.d-flex');
-                        if (container) {
-                            container.appendChild(badgeSpan);
-                        } else {
-                            titleCell.appendChild(badgeSpan);
-                        }
-                    }
-                    
-                    const commentsSelect = newRow.querySelector('select[name^="comments_"]');
-                    if (commentsSelect) {
-                        commentsSelect.disabled = true;
-                        commentsSelect.value = "";
-                        const firstOpt = commentsSelect.options[0];
-                        if (firstOpt) firstOpt.textContent = "-- Mapped as Overall Mark --";
-                        
-                        // Add hidden input so that form submits empty value for comments when disabled
-                        const idx = newRow.id.slice('cat-row-'.length);
-                        let hiddenInput = newRow.querySelector(`input[type="hidden"][name="comments_${idx}"]`);
-                        if (!hiddenInput) {
-                            hiddenInput = document.createElement('input');
-                            hiddenInput.type = 'hidden';
-                            hiddenInput.name = `comments_${idx}`;
-                            hiddenInput.value = '';
-                            newRow.appendChild(hiddenInput);
-                        }
-                    }
-                    
-                    const removeBtn = newRow.querySelector('.remove-row-btn');
-                    if (removeBtn) removeBtn.classList.add('d-none');
-                }
-            }
-            
-            prevOverallMarkCol = selectedVal;
-        });
-    }
-    // ── Student name format toggler listener ───────────────────────────────
-    /** Scan each split-name select and pick the best matching option if nothing is chosen yet. */
-    function tryAutoSelectSplitNameCols() {
-        const firstSel = document.getElementById('col_first_name');
-        const lastSel  = document.getElementById('col_last_name');
-
-        if (firstSel && !firstSel.value) {
-            for (const opt of firstSel.options) {
-                const v = opt.value.toLowerCase();
-                if (v.includes('first') || v.includes('forename') || v.includes('given')) {
-                    firstSel.value = opt.value;
-                    break;
-                }
-            }
-        }
-        if (lastSel && !lastSel.value) {
-            for (const opt of lastSel.options) {
-                const v = opt.value.toLowerCase();
-                if (v.includes('last') || v.includes('surname') || v.includes('family')) {
-                    lastSel.value = opt.value;
-                    break;
-                }
-            }
-        }
-    }
-
-    const nameModeSelect = document.getElementById('name_mode');
-    if (nameModeSelect) {
-        nameModeSelect.addEventListener('change', function () {
-            const isSplit = this.value === 'split';
-            
-            document.querySelectorAll('.name-field-full').forEach(el => {
-                if (isSplit) el.classList.add('d-none');
-                else el.classList.remove('d-none');
-            });
-            
-            document.querySelectorAll('.name-field-split').forEach(el => {
-                if (isSplit) el.classList.remove('d-none');
-                else el.classList.add('d-none');
-            });
-
-            if (isSplit) {
-                tryAutoSelectSplitNameCols();
-            }
-        });
-
-        // Also run on page load in case split is the active mode but cols weren't inferred
-        if (nameModeSelect.value === 'split') {
-            tryAutoSelectSplitNameCols();
-        }
-    }
-
-    // ── Group column toggle ──────────────────────────────────────────────────
-    // When the user picks a group column its category row (and rubric panel) is
-    // hidden so it doesn't appear in the marks table.  Deselecting restores it.
-    const groupColSelect = document.getElementById('col_group');
-    let _prevGroupCol = groupColSelect ? groupColSelect.value : '';
-
-    function setGroupRowHidden(columnName, hidden) {
-        const catRow = document.querySelector(
-            `tr[id^="cat-row-"][data-column-name="${CSS.escape(columnName)}"]`
-        );
-        if (!catRow) return;
-
-        const idx = catRow.id.slice('cat-row-'.length);
-        const rubricPanel = document.getElementById(`rubric-panel-${idx}`);
-        const typeSelect  = document.querySelector(`select[name="type_${idx}"]`);
-
-        if (hidden) {
-            catRow.classList.add('d-none');
-            if (rubricPanel) rubricPanel.classList.add('d-none');
-        } else {
-            catRow.classList.remove('d-none');
-            // Restore rubric panel only if the row's type is currently 'grade'
-            if (rubricPanel && typeSelect && typeSelect.value === 'grade') {
-                rubricPanel.classList.remove('d-none');
-            }
-        }
-    }
-
-    if (groupColSelect) {
-        groupColSelect.addEventListener('change', function () {
-            const newVal = this.value;
-            if (_prevGroupCol) setGroupRowHidden(_prevGroupCol, false);
-            if (newVal)        setGroupRowHidden(newVal, true);
-            _prevGroupCol = newVal;
-        });
-    }
-
+    window.confirmMappingsConfig = {
+        allRubricMarks: {{ all_rubric_marks_json|safe }},
+        rubricBandsUrl: "{% url 'rubric_bands_api' %}",
+        availableHeaders: {{ available_headers_json|safe }},
+        nextRowIdx: {{ mappings.categories|length }}
+    };
 </script>
+<script src="{% static 'assessment_feedback/js/confirm_mappings.js' %}"></script>
 
 {% endblock %}
