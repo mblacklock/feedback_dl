@@ -69,6 +69,7 @@
             const unitContainer = document.querySelector(`.unit-container-${idx}`);
             const unitInput = document.querySelector(`input[name="unit_${idx}"]`);
             const panel = document.getElementById(`rubric-panel-${idx}`);
+            const radarCheckbox = document.querySelector(`input[name="include_radar_${idx}"]`);
 
             if (type === 'information' || type === 'feedback_only') {
                 if (maxContainer) {
@@ -89,6 +90,10 @@
                 }
                 if (panel) {
                     panel.classList.add('d-none');
+                }
+                if (radarCheckbox) {
+                    radarCheckbox.disabled = true;
+                    radarCheckbox.checked = false;
                 }
             } else {
                 if (maxContainer) {
@@ -114,6 +119,10 @@
                     if (panel) {
                         panel.classList.add('d-none');
                     }
+                }
+                if (radarCheckbox) {
+                    radarCheckbox.disabled = false;
+                    radarCheckbox.checked = true;
                 }
             }
         });
@@ -225,6 +234,12 @@
             
             const commentsSelect = newRow.querySelector('.comments-select');
             commentsSelect.name = `comments_${nextRowIdx}`;
+            
+            const radarCheckbox = newRow.querySelector('.radar-toggle-input');
+            if (radarCheckbox) {
+                radarCheckbox.name = `include_radar_${nextRowIdx}`;
+                radarCheckbox.id = `include_radar_${nextRowIdx}`;
+            }
             
             // Clone rubric panel template
             const panelTemplate = document.getElementById('rubric-panel-template');

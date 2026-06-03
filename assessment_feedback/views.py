@@ -443,9 +443,10 @@ def build_assessment_student_context(student_row, student_index, mappings, categ
             student_pct = (mark_val / max_marks) * 100 if max_marks and max_marks > 0 else 0
             avg_pct = (category_averages[col] / max_marks) * 100 if max_marks and max_marks > 0 else 0
 
-            radar_labels.append(clean_category_title(col))
-            student_radar_percentages.append(student_pct)
-            avg_radar_percentages.append(avg_pct)
+            if not cat.get("exclude_radar", False):
+                radar_labels.append(clean_category_title(col))
+                student_radar_percentages.append(student_pct)
+                avg_radar_percentages.append(avg_pct)
 
             calculated_grade_band = grade_for_percentage_and_degree(student_pct, degree_level)
         else:
@@ -716,6 +717,7 @@ def upload_file(request):
                     "subdivision": cat_subdivision,
                     "rubric_marks": rubric_marks,
                     "unit": unit,
+                    "exclude_radar": cat_type in ("information", "feedback_only"),
                 })
 
             # Set global subdivision to the most common one detected across rubric columns
@@ -830,6 +832,7 @@ def confirm_mappings(request):
                 cat_dict = existing_cats_by_col.get(col_name, {})
                 cat_type = request.POST.get(f"type_{idx}", "numeric")
                 comments_col = request.POST.get(f"comments_{idx}")
+                exclude_radar = (request.POST.get(f"include_radar_{idx}") != "on") if cat_type in ("numeric", "grade") else True
                 
                 if cat_type in ("numeric", "grade"):
                     has_mark_or_rubric = True
@@ -879,6 +882,7 @@ def confirm_mappings(request):
                     "subdivision": cat_subdivision,
                     "rubric_marks": rubric_marks,
                     "unit": unit_val,
+                    "exclude_radar": exclude_radar,
                 })
                 idx += 1
         else:
@@ -887,6 +891,7 @@ def confirm_mappings(request):
                 col_name = cat_dict["column"]
                 cat_type = request.POST.get(f"type_{idx}", "numeric")
                 comments_col = request.POST.get(f"comments_{idx}")
+                exclude_radar = (request.POST.get(f"include_radar_{idx}") != "on") if cat_type in ("numeric", "grade") else True
                 
                 if cat_type in ("numeric", "grade"):
                     has_mark_or_rubric = True
@@ -936,6 +941,7 @@ def confirm_mappings(request):
                     "subdivision": cat_subdivision,
                     "rubric_marks": rubric_marks,
                     "unit": unit_val,
+                    "exclude_radar": exclude_radar,
                 })
 
         if not has_mark_or_rubric:

@@ -1955,3 +1955,120 @@ class AssessmentFeedbackViewsTest(TestCase):
         self.assertIn("Total Mark", category_columns,
                       msg="The overall mark column should be in categories list on upload")
         self.assertIn("Design /30", category_columns)
+
+    def test_confirm_mappings_post_saves_exclude_radar(self):
+        """POSTing confirm_mappings updates exclude_radar field for categories."""
+        session = self.client.session
+        session["headers"] = self.sample_headers
+        session["uploaded_data"] = self.sample_uploaded_data
+        session["mappings"] = self.sample_mappings
+        session.save()
+
+        url = reverse("confirm_mappings")
+        form_data = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "col_overall_mark": "",
+            "col_group": "",
+            "name_mode": "full",
+            "col_first_name": "",
+            "col_last_name": "",
+            "degree_level": "BEng",
+            "module_code": "COMP101",
+            "module_title": "Module Performance",
+            "assessment_component": "",
+            "assessment_title": "Feedback Report",
+            "academic_year": "2025/2026",
+            "col_name_0": "Design /30", "type_0": "numeric", "max_0": "30", "comments_0": "Design Comments", "removed_0": "0", "include_radar_0": "on",
+            "col_name_1": "Implementation /40", "type_1": "numeric", "max_1": "40", "comments_1": "Implementation Comments", "removed_1": "0",
+            "col_name_2": "Testing /30", "type_2": "numeric", "max_2": "30", "comments_2": "Testing Comments", "removed_2": "0", "include_radar_2": "on"
+        }
+        resp = self.client.post(url, form_data)
+        self.assertEqual(resp.status_code, 302)
+
+        saved = self.client.session["mappings"]
+        self.assertFalse(saved["categories"][0]["exclude_radar"])
+        self.assertTrue(saved["categories"][1]["exclude_radar"])
+        self.assertFalse(saved["categories"][2]["exclude_radar"])
+
+    def test_confirm_mappings_post_forces_exclude_radar_for_non_mark_types(self):
+        """POSTing confirm_mappings forces exclude_radar to True for information and feedback_only types even if include_radar is posted on."""
+        session = self.client.session
+        session["headers"] = self.sample_headers
+        session["uploaded_data"] = self.sample_uploaded_data
+        session["mappings"] = self.sample_mappings
+        session.save()
+
+        url = reverse("confirm_mappings")
+        form_data = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "col_overall_mark": "",
+            "col_group": "",
+            "name_mode": "full",
+            "col_first_name": "",
+            "col_last_name": "",
+            "degree_level": "BEng",
+            "module_code": "COMP101",
+            "module_title": "Module Performance",
+            "assessment_component": "",
+            "assessment_title": "Feedback Report",
+            "academic_year": "2025/2026",
+            "col_name_0": "Design /30", "type_0": "information", "unit_0": "ms", "comments_0": "", "removed_0": "0", "include_radar_0": "on",
+            "col_name_1": "Implementation /40", "type_1": "feedback_only", "comments_1": "", "removed_1": "0", "include_radar_1": "on",
+            "col_name_2": "Testing /30", "type_2": "numeric", "max_2": "30", "comments_2": "Testing Comments", "removed_2": "0", "include_radar_2": "on"
+        }
+        resp = self.client.post(url, form_data)
+        self.assertEqual(resp.status_code, 302)
+
+        saved = self.client.session["mappings"]
+        # Information type must have exclude_radar: True
+        self.assertTrue(saved["categories"][0]["exclude_radar"])
+        # Feedback_only type must have exclude_radar: True
+        self.assertTrue(saved["categories"][1]["exclude_radar"])
+        # Numeric type should still be False (not excluded)
+        self.assertFalse(saved["categories"][2]["exclude_radar"])
+
+    def test_radar_chart_excludes_marked_categories(self):
+        """build_assessment_student_context excludes categories with exclude_radar=True from the radar chart."""
+        from unittest.mock import patch
+        from assessment_feedback.views import build_assessment_student_context
+
+        student_row = {
+            "Student Name": "Alice Smith", 
+            "Student ID": "10001", 
+            "Design /30": 24, 
+            "Implementation /40": 32,
+            "Testing /30": 21
+        }
+        mappings = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "col_group": "",
+            "col_overall_mark": "",
+            "name_mode": "full",
+            "col_first_name": "",
+            "col_last_name": "",
+            "degree_level": "BEng",
+            "subdivision": "none",
+            "categories": [
+                {"column": "Design /30", "max_marks": 30, "weight": None, "comments_column": "", "type": "numeric", "subdivision": "none", "rubric_marks": [], "unit": "", "exclude_radar": False},
+                {"column": "Implementation /40", "max_marks": 40, "weight": None, "comments_column": "", "type": "numeric", "subdivision": "none", "rubric_marks": [], "unit": "", "exclude_radar": True},
+                {"column": "Testing /30", "max_marks": 30, "weight": None, "comments_column": "", "type": "numeric", "subdivision": "none", "rubric_marks": [], "unit": "", "exclude_radar": False},
+            ]
+        }
+        category_averages = {"Design /30": 20.0, "Implementation /40": 30.0, "Testing /30": 20.0}
+        cohort_final_marks = [77]
+
+        with patch("assessment_feedback.views.generate_radar_chart") as mock_gen:
+            mock_gen.return_value = "<svg>mock</svg>"
+            ctx = build_assessment_student_context(student_row, 0, mappings, category_averages, cohort_final_marks)
+            
+            mock_gen.assert_called_once()
+            args, _ = mock_gen.call_args
+            labels, student_pct, avg_pct = args
+            
+            self.assertEqual(labels, ["Design", "Testing"])
+            self.assertEqual(student_pct, [80.0, 70.0])
+            self.assertAlmostEqual(avg_pct[0], 66.6666666, places=4)
+            self.assertAlmostEqual(avg_pct[1], 66.6666666, places=4)
