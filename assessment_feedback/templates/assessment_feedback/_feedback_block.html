@@ -24,11 +24,12 @@ Depends on: sheet_layout.css
 <table class="marks-table">
     <tbody>
         {% for cat in categories %}
+        {% if not cat.is_feedback_only %}
         <tr>
             <td class="label">{{ cat.label }}</td>
             <td class="band">
                 {% if cat.is_information %}
-                &mdash;
+                
                 {% elif cat.is_grade %}
                 {{ cat.grade_awarded }}
                 {% else %}
@@ -36,7 +37,6 @@ Depends on: sheet_layout.css
                     {{ cat.calculated_grade_band }}
                 </span>
                 <span class="numeric-dash" style="display: {% if show_numeric_grade_bands %}none{% else %}inline{% endif %};">
-                    &mdash;
                 </span>
                 {% endif %}
             </td>
@@ -48,7 +48,15 @@ Depends on: sheet_layout.css
                 {% endif %}
             </td>
         </tr>
+        {% endif %}
         {% endfor %}
+        
+        {# Final overall mark highlighted row at the bottom #}
+        <tr class="overall-row">
+            <td class="label">Overall Mark</td>
+            <td class="band">{{ overall_grade }}</td>
+            <td class="right">{{ total_score|floatformat:0 }} / {{ total_max_marks }}</td>
+        </tr>
     </tbody>
 </table>
 
@@ -90,12 +98,12 @@ Depends on: sheet_layout.css
 
 <div class="section-heading">Feedback Comments</div>
 {% for cat in categories %}
+{% if cat.feedback_comment %}
 <div class="feedback-item">
     <div class="feedback-item-header">{{ cat.label }}</div>
-    <div class="feedback-item-body">
-        {{ cat.feedback_comment|default:"No comments provided for this criterion." }}
-    </div>
+    <div class="feedback-item-body">{{ cat.feedback_comment }}</div>
 </div>
+{% endif %}
 {% endfor %}
 
 {% elif block.id == "general_feedback" %}

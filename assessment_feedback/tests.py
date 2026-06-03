@@ -1488,7 +1488,470 @@ class AssessmentFeedbackViewsTest(TestCase):
         self.assertEqual(ws.cell(row=2, column=2).value, "Alice Smith")
         self.assertEqual(ws.cell(row=2, column=3).value, "w12345678_alice-smith.html")
 
+    def test_overall_mark_column_mapping(self):
+        """When col_overall_mark is mapped, verify it takes the overall mark from that column directly instead of summing categories."""
+        uploaded_data = [
+            {"Student Name": "Alice Smith", "Student ID": "10001", "Design /30": 20, "Testing /30": 20, "Total Score": 50}
+        ]
+        mappings = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "col_overall_mark": "Total Score",
+            "degree_level": "BEng",
+            "subdivision": "none",
+            "module_code": "COMP101",
+            "module_title": "Programming",
+            "assessment_component": "001",
+            "assessment_title": "Coursework",
+            "academic_year": "2025/2026",
+            "categories": [
+                {"column": "Design /30", "max_marks": 30, "weight": None, "comments_column": "", "type": "numeric", "unit": ""},
+                {"column": "Testing /30", "max_marks": 30, "weight": None, "comments_column": "", "type": "numeric", "unit": ""},
+                {"column": "Total Score", "max_marks": 100, "weight": None, "comments_column": "", "type": "numeric", "unit": ""}
+            ]
+        }
+        session = self.client.session
+        session["headers"] = ["Student Name", "Student ID", "Design /30", "Testing /30", "Total Score"]
+        session["uploaded_data"] = uploaded_data
+        session["mappings"] = mappings
+        session.save()
+
+        # Generate HTML zip feedback
+        process_resp = self.client.get(reverse("process_feedback"))
+        self.assertEqual(process_resp.status_code, 200)
+        
+        zf = zipfile.ZipFile(io.BytesIO(process_resp.content))
+        html_content = zf.read("10001_alice-smith.html").decode("utf-8")
+        
+        # Total score should be 50 (from Total Score column), not 40 (sum of Design + Testing categories)
+        self.assertIn("50", html_content)
+        self.assertIn("60", html_content)
+
+    def test_split_student_name_mapping(self):
+        """When name_mode is 'split', verify student names are correctly concatenated from col_first_name and col_last_name."""
+        uploaded_data = [
+            {"First Name": "Alice", "Last Name": "Smith", "Student ID": "10001", "Design /30": 20}
+        ]
+        mappings = {
+            "col_student_name": "First Name",
+            "col_student_id": "Student ID",
+            "name_mode": "split",
+            "col_first_name": "First Name",
+            "col_last_name": "Last Name",
+            "col_overall_mark": "",
+            "degree_level": "BEng",
+            "subdivision": "none",
+            "module_code": "COMP101",
+            "module_title": "Programming",
+            "assessment_component": "001",
+            "assessment_title": "Coursework",
+            "academic_year": "2025/2026",
+            "categories": [
+                {"column": "Design /30", "max_marks": 30, "weight": None, "comments_column": "", "type": "numeric", "unit": ""}
+            ]
+        }
+        session = self.client.session
+        session["headers"] = ["First Name", "Last Name", "Student ID", "Design /30"]
+        session["uploaded_data"] = uploaded_data
+        session["mappings"] = mappings
+        session.save()
+
+        # 1. Selection preview name verification
+        preview_resp = self.client.get(reverse("configure_layout"))
+        self.assertEqual(preview_resp.status_code, 200)
+        self.assertContains(preview_resp, "Alice Smith")
+
+        # 2. ZIP filename and HTML contents name verification
+        process_resp = self.client.get(reverse("process_feedback"))
+        self.assertEqual(process_resp.status_code, 200)
+        zf = zipfile.ZipFile(io.BytesIO(process_resp.content))
+        namelist = zf.namelist()
+        self.assertIn("10001_alice-smith.html", namelist)
+
+        html_content = zf.read("10001_alice-smith.html").decode("utf-8")
+        self.assertIn("Alice Smith", html_content)
 
 
 
 
+
+
+    # -------------------------------------------------------------------------
+    # Group column tests
+    # -------------------------------------------------------------------------
+
+    def _upload_in_memory_excel(self, headers, rows):
+        """Helper: build and upload an in-memory Excel sheet, return session mappings."""
+        wb = __import__("openpyxl").Workbook()
+        ws = wb.active
+        ws.append(headers)
+        for row in rows:
+            ws.append(row)
+        buf = io.BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+        uploaded = SimpleUploadedFile(
+            "test.xlsx", buf.read(),
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        resp = self.client.post(reverse("upload_file"), {"file": uploaded})
+        self.assertEqual(resp.status_code, 302)
+        return self.client.session["mappings"]
+
+    def test_group_column_auto_detected_with_text_labels(self):
+        """A column titled ''Group'' with text values is auto-detected as col_group
+        and must NOT appear in the inferred categories list."""
+        headers = ["Student Name", "Student ID", "Group", "Design /30"]
+        rows = [
+            ["Alice Smith", "10001", "Group A", 24],
+            ["Bob Jones",   "10002", "Group B", 18],
+        ]
+        mappings = self._upload_in_memory_excel(headers, rows)
+
+        self.assertEqual(mappings.get("col_group"), "Group",
+                         msg="''Group'' column should be auto-detected as col_group")
+        category_columns = [c["column"] for c in mappings["categories"]]
+        self.assertNotIn("Group", category_columns,
+                         msg="Group column must not appear in categories")
+
+    def test_group_column_auto_detected_with_numeric_labels(self):
+        """A column titled 'Group' with numeric values (1, 2, 3) is detected as
+        col_group AND appears in categories so it can be toggled on the confirm page.
+        When the group column is selected, its category row is hidden (d-none) by JS;
+        deselecting restores it as a regular category row."""
+        headers = ["Student Name", "Student ID", "Group", "Design /30"]
+        rows = [
+            ["Alice Smith", "10001", 1, 24],
+            ["Bob Jones",   "10002", 2, 18],
+            ["Carol White", "10003", 1, 22],
+        ]
+        mappings = self._upload_in_memory_excel(headers, rows)
+
+        self.assertEqual(mappings.get("col_group"), "Group",
+                         msg="Numeric group values should not block col_group detection")
+        category_columns = [c["column"] for c in mappings["categories"]]
+        # Numeric group columns now appear in categories so they can be toggled
+        # on the confirm page (row is hidden via d-none while group is selected).
+        self.assertIn("Group", category_columns,
+                      msg="Numeric group column should appear in categories for toggling")
+
+    def test_confirm_post_group_column_stays_in_categories(self):
+        """When the user sets col_group on the confirm form, the group column is
+        kept in saved categories (so the confirm page can restore its row when
+        the group dropdown is deselected). Mark calculations exclude it at
+        runtime via col_group on build_assessment_student_context / cohort_stats."""
+        uploaded_data = [
+            {"Student Name": "Alice Smith", "Student ID": "10001",
+             "Group": "A", "Design /30": 24},
+        ]
+        mappings = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "col_group": "",
+            "col_overall_mark": "",
+            "name_mode": "full",
+            "col_first_name": "",
+            "col_last_name": "",
+            "degree_level": "BEng",
+            "subdivision": "none",
+            "module_code": "COMP101",
+            "module_title": "Module Performance",
+            "assessment_component": "",
+            "assessment_title": "Feedback Report",
+            "academic_year": "2025/2026",
+            "categories": [
+                {"column": "Group", "max_marks": 100, "weight": None,
+                 "comments_column": "", "type": "numeric", "subdivision": "none",
+                 "rubric_marks": [], "unit": ""},
+                {"column": "Design /30", "max_marks": 30, "weight": None,
+                 "comments_column": "", "type": "numeric", "subdivision": "none",
+                 "rubric_marks": [], "unit": ""},
+            ],
+        }
+        session = self.client.session
+        session["headers"] = ["Student Name", "Student ID", "Group", "Design /30"]
+        session["uploaded_data"] = uploaded_data
+        session["mappings"] = mappings
+        session.save()
+
+        form_data = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "col_overall_mark": "",
+            "col_group": "Group",
+            "name_mode": "full",
+            "col_first_name": "",
+            "col_last_name": "",
+            "degree_level": "BEng",
+            "module_code": "COMP101",
+            "module_title": "Module Performance",
+            "assessment_component": "",
+            "assessment_title": "Feedback Report",
+            "academic_year": "2025/2026",
+            "type_0": "numeric", "max_0": "100", "comments_0": "",
+            "type_1": "numeric", "max_1": "30",  "comments_1": "",
+        }
+        resp = self.client.post(reverse("confirm_mappings"), form_data)
+        self.assertEqual(resp.status_code, 302)
+
+        saved = self.client.session["mappings"]
+        self.assertEqual(saved["col_group"], "Group")
+        saved_columns = [c["column"] for c in saved["categories"]]
+        # Group column is kept in categories so the confirm page can toggle its row
+        self.assertIn("Group", saved_columns,
+                      msg="Group column must stay in categories for toggling on the confirm page")
+        self.assertIn("Design /30", saved_columns,
+                      msg="Other categories must still be present")
+
+    def test_group_shown_in_generated_feedback_html(self):
+        """student_group is rendered in the feedback sheet HTML when col_group is mapped."""
+        uploaded_data = [
+            {"Student Name": "Alice Smith", "Student ID": "10001",
+             "Group": "Team Alpha", "Design /30": 24},
+        ]
+        mappings = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "col_group": "Group",
+            "col_overall_mark": "",
+            "name_mode": "full",
+            "col_first_name": "",
+            "col_last_name": "",
+            "degree_level": "BEng",
+            "subdivision": "none",
+            "module_code": "COMP101",
+            "module_title": "Module Performance",
+            "assessment_component": "",
+            "assessment_title": "Feedback Report",
+            "academic_year": "2025/2026",
+            "categories": [
+                {"column": "Design /30", "max_marks": 30, "weight": None,
+                 "comments_column": "", "type": "numeric", "subdivision": "none",
+                 "rubric_marks": [], "unit": ""},
+            ],
+        }
+        session = self.client.session
+        session["headers"] = ["Student Name", "Student ID", "Group", "Design /30"]
+        session["uploaded_data"] = uploaded_data
+        session["mappings"] = mappings
+        session.save()
+
+        resp = self.client.get(reverse("process_feedback"))
+        self.assertEqual(resp.status_code, 200)
+        zf = zipfile.ZipFile(io.BytesIO(resp.content))
+        html = zf.read("10001_alice-smith.html").decode("utf-8")
+        self.assertIn("Team Alpha", html,
+                      msg="Group value should appear in the generated feedback HTML")
+
+    def test_remove_category_row_excluded_from_saved_categories(self):
+        """POSTing with removed_0=1 excludes that category row from mappings['categories']."""
+        uploaded_data = [
+            {"Student Name": "Alice Smith", "Student ID": "10001", "Design /30": 24, "Code /40": 32},
+        ]
+        mappings = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "col_group": "",
+            "col_overall_mark": "",
+            "name_mode": "full",
+            "col_first_name": "",
+            "col_last_name": "",
+            "degree_level": "BEng",
+            "subdivision": "none",
+            "module_code": "COMP101",
+            "module_title": "Module Performance",
+            "assessment_component": "",
+            "assessment_title": "Feedback Report",
+            "academic_year": "2025/2026",
+            "categories": [
+                {"column": "Design /30", "max_marks": 30, "weight": None, "comments_column": "", "type": "numeric", "subdivision": "none", "rubric_marks": [], "unit": ""},
+                {"column": "Code /40", "max_marks": 40, "weight": None, "comments_column": "", "type": "numeric", "subdivision": "none", "rubric_marks": [], "unit": ""},
+            ],
+        }
+        session = self.client.session
+        session["headers"] = ["Student Name", "Student ID", "Design /30", "Code /40"]
+        session["uploaded_data"] = uploaded_data
+        session["mappings"] = mappings
+        session.save()
+
+        form_data = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "col_overall_mark": "",
+            "col_group": "",
+            "name_mode": "full",
+            "col_first_name": "",
+            "col_last_name": "",
+            "degree_level": "BEng",
+            "module_code": "COMP101",
+            "module_title": "Module Performance",
+            "assessment_component": "",
+            "assessment_title": "Feedback Report",
+            "academic_year": "2025/2026",
+            # Naming scheme POST params
+            "col_name_0": "Design /30", "type_0": "numeric", "max_0": "30", "comments_0": "", "removed_0": "1",
+            "col_name_1": "Code /40", "type_1": "numeric", "max_1": "40", "comments_1": "", "removed_1": "0",
+        }
+        resp = self.client.post(reverse("confirm_mappings"), form_data)
+        self.assertEqual(resp.status_code, 302)
+
+        saved = self.client.session["mappings"]
+        saved_columns = [c["column"] for c in saved["categories"]]
+        self.assertNotIn("Design /30", saved_columns, "Design row should be skipped because removed_0=1")
+        self.assertIn("Code /40", saved_columns)
+
+    def test_add_new_column_appears_in_saved_categories(self):
+        """POSTing a new col_name_N field not initially in mappings['categories'] adds it."""
+        uploaded_data = [
+            {"Student Name": "Alice Smith", "Student ID": "10001", "Design /30": 24, "Code /40": 32},
+        ]
+        mappings = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "col_group": "",
+            "col_overall_mark": "",
+            "name_mode": "full",
+            "col_first_name": "",
+            "col_last_name": "",
+            "degree_level": "BEng",
+            "subdivision": "none",
+            "module_code": "COMP101",
+            "module_title": "Module Performance",
+            "assessment_component": "",
+            "assessment_title": "Feedback Report",
+            "academic_year": "2025/2026",
+            "categories": [
+                {"column": "Design /30", "max_marks": 30, "weight": None, "comments_column": "", "type": "numeric", "subdivision": "none", "rubric_marks": [], "unit": ""},
+            ],
+        }
+        session = self.client.session
+        session["headers"] = ["Student Name", "Student ID", "Design /30", "Code /40"]
+        session["uploaded_data"] = uploaded_data
+        session["mappings"] = mappings
+        session.save()
+
+        form_data = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "col_overall_mark": "",
+            "col_group": "",
+            "name_mode": "full",
+            "col_first_name": "",
+            "col_last_name": "",
+            "degree_level": "BEng",
+            "module_code": "COMP101",
+            "module_title": "Module Performance",
+            "assessment_component": "",
+            "assessment_title": "Feedback Report",
+            "academic_year": "2025/2026",
+            "col_name_0": "Design /30", "type_0": "numeric", "max_0": "30", "comments_0": "", "removed_0": "0",
+            "col_name_1": "Code /40", "type_1": "numeric", "max_1": "40", "comments_1": "", "removed_1": "0",
+        }
+        resp = self.client.post(reverse("confirm_mappings"), form_data)
+        self.assertEqual(resp.status_code, 302)
+
+        saved = self.client.session["mappings"]
+        saved_columns = [c["column"] for c in saved["categories"]]
+        self.assertIn("Design /30", saved_columns)
+        self.assertIn("Code /40", saved_columns)
+        new_cat = next(c for c in saved["categories"] if c["column"] == "Code /40")
+        self.assertEqual(new_cat["max_marks"], 40)
+
+    def test_group_deselect_restores_column_to_categories(self):
+        """If col_group is set to '', the group column is included in active student data calculations."""
+        from .views import build_assessment_student_context
+        # When col_group is "Group", Group column is excluded from marks. When col_group is deselected (""),
+        # since the group column was in the categories list, it is treated as a normal numeric/grade category.
+        student_row = {"Student Name": "Alice Smith", "Student ID": "10001", "Group": 10, "Design /30": 24}
+        mappings = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "col_group": "Group", # selected initially
+            "col_overall_mark": "",
+            "name_mode": "full",
+            "col_first_name": "",
+            "col_last_name": "",
+            "degree_level": "BEng",
+            "subdivision": "none",
+            "categories": [
+                {"column": "Group", "max_marks": 20, "weight": None, "comments_column": "", "type": "numeric", "subdivision": "none", "rubric_marks": [], "unit": ""},
+                {"column": "Design /30", "max_marks": 30, "weight": None, "comments_column": "", "type": "numeric", "subdivision": "none", "rubric_marks": [], "unit": ""},
+            ]
+        }
+        
+        # Scenario 1: col_group = "Group" (Active group) -> "Group" should be excluded from mark calculations
+        category_averages = {"Group": 15.0, "Design /30": 20.0}
+        cohort_final_marks = [24]
+        ctx_with_group = build_assessment_student_context(student_row, 0, mappings, category_averages, cohort_final_marks)
+        self.assertEqual(ctx_with_group["total_score"], 24)
+        self.assertEqual(ctx_with_group["total_max_marks"], 30)
+
+        # Scenario 2: col_group = "" (Deselected) -> "Group" should be restored/included in mark calculations
+        mappings_empty_group = dict(mappings, col_group="")
+        cohort_final_marks_restored = [34]
+        ctx_without_group = build_assessment_student_context(student_row, 0, mappings_empty_group, category_averages, cohort_final_marks_restored)
+        self.assertEqual(ctx_without_group["total_score"], 34) # 10 (Group) + 24 (Design)
+        self.assertEqual(ctx_without_group["total_max_marks"], 50) # 20 (Group) + 30 (Design)
+
+    def test_feedback_only_column_excluded_from_marks_included_in_feedback(self):
+        """A feedback_only category has no mark/max_marks/grade rendering, but provides feedback text."""
+        from .views import build_assessment_student_context
+        student_row = {
+            "Student Name": "Alice Smith", 
+            "Student ID": "10001", 
+            "Design /30": 24, 
+            "Notes Column": "Excellent work on this coursework!"
+        }
+        mappings = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "col_group": "",
+            "col_overall_mark": "",
+            "name_mode": "full",
+            "col_first_name": "",
+            "col_last_name": "",
+            "degree_level": "BEng",
+            "subdivision": "none",
+            "categories": [
+                {"column": "Design /30", "max_marks": 30, "weight": None, "comments_column": "", "type": "numeric", "subdivision": "none", "rubric_marks": [], "unit": ""},
+                {"column": "Notes Column", "max_marks": None, "weight": None, "comments_column": "", "type": "feedback_only", "subdivision": "none", "rubric_marks": [], "unit": ""},
+            ]
+        }
+        category_averages = {"Design /30": 20.0}
+        cohort_final_marks = [24]
+        
+        ctx = build_assessment_student_context(student_row, 0, mappings, category_averages, cohort_final_marks)
+        
+        # Verify stats and marks sums
+        self.assertEqual(ctx["total_score"], 24)
+        self.assertEqual(ctx["total_max_marks"], 30)
+        
+        # Verify student categories data details
+        cats = ctx["categories"]
+        self.assertEqual(len(cats), 2)
+        
+        design_cat = next(c for c in cats if c["label"] == "Design")
+        self.assertEqual(design_cat["mark"], 24)
+        self.assertEqual(design_cat["max_marks"], 30)
+        self.assertFalse(design_cat["is_feedback_only"])
+        
+        notes_cat = next(c for c in cats if c["label"] == "Notes Column")
+        self.assertIsNone(notes_cat["mark"])
+        self.assertIsNone(notes_cat["max_marks"])
+        self.assertTrue(notes_cat["is_feedback_only"])
+        self.assertEqual(notes_cat["feedback_comment"], "Excellent work on this coursework!")
+
+    def test_overall_mark_column_inferred_in_categories_on_upload(self):
+        """Verify that the inferred overall mark column is included in the categories list on upload."""
+        headers = ["Student Name", "Student ID", "Total Mark", "Design /30"]
+        rows = [
+            ["Alice Smith", "10001", 84, 24],
+            ["Bob Jones",   "10002", 78, 18],
+        ]
+        mappings = self._upload_in_memory_excel(headers, rows)
+
+        self.assertEqual(mappings.get("col_overall_mark"), "Total Mark")
+        category_columns = [c["column"] for c in mappings["categories"]]
+        self.assertIn("Total Mark", category_columns,
+                      msg="The overall mark column should be in categories list on upload")
+        self.assertIn("Design /30", category_columns)

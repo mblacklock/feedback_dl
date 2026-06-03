@@ -32,6 +32,8 @@ body {
     font-family: var(--font-body);
     background-color: var(--brand-bg);
     color: var(--brand-slate-dark);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
 }
 
 h1, h2, h3, h4, h5, h6, .brand-font {

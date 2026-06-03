@@ -49,12 +49,38 @@ def rubric_marks_match_degree(rubric_marks, degree_level):
     return not has_m_level_labels
 
 
+def get_student_name(student_row, student_index, mappings):
+    if mappings.get("name_mode") == "split":
+        first = str(student_row.get(mappings.get("col_first_name", ""), "")).strip()
+        last = str(student_row.get(mappings.get("col_last_name", ""), "")).strip()
+        return f"{first} {last}".strip() or f"Student {student_index+1}"
+    return str(student_row.get(mappings.get("col_student_name", ""), f"Student {student_index+1}")).strip()
+
+
 def parse_positive_int(value):
     try:
         parsed = int(value)
     except (TypeError, ValueError):
         return None
     return parsed if parsed > 0 else None
+
+
+def _try_float(value):
+    """Return float(value) if convertible, else None."""
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def column_letter(idx):
+    """Convert a 0-based column index to a spreadsheet-style letter label (A, B, …, Z, AA, …)."""
+    result = ""
+    n = idx + 1
+    while n > 0:
+        n, remainder = divmod(n - 1, 26)
+        result = chr(65 + remainder) + result
+    return result
 
 
 def assessment_confirm_context(headers, mappings, uploaded_data, error=None):
@@ -71,11 +97,51 @@ def assessment_confirm_context(headers, mappings, uploaded_data, error=None):
             for sub in ("none", "high_low", "high_mid_low")
         }
 
+    # Build (raw_value, display_label) pairs so templates can show <A> for blank headers
+    headers_with_labels = [
+        (h, h if h else f"<{column_letter(i)}>")
+        for i, h in enumerate(headers)
+    ]
+
+    # Headers not already claimed by a special role or existing category row.
+    # Used by the "+ Add Column" dropdown on the confirm page.
+    _assigned_special = {
+        mappings.get("col_student_name", ""),
+        mappings.get("col_student_id", ""),
+        mappings.get("col_overall_mark", ""),
+        mappings.get("col_first_name", ""),
+        mappings.get("col_last_name", ""),
+        mappings.get("col_group", ""),
+    }
+    _assigned_special.discard("")
+    _category_cols = {cat["column"] for cat in mappings.get("categories", [])}
+    _used_cols = _assigned_special | _category_cols
+    _label_map = {raw: label for raw, label in headers_with_labels}
+
+    def is_col_numeric(col):
+        for row in uploaded_data:
+            val = row.get(col)
+            if val is not None and val != "":
+                try:
+                    float(str(val).strip().replace("%", ""))
+                except ValueError:
+                    return False
+        return True
+
+    available_headers = [
+        {"raw": h, "label": _label_map.get(h, h), "is_numeric": is_col_numeric(h)}
+        for h in headers
+        if h not in _used_cols
+    ]
+
     return {
         "headers": headers,
+        "headers_with_labels": headers_with_labels,
+        "header_label_map": {raw: label for raw, label in headers_with_labels},
         "mappings": mappings,
         "sample_rows": uploaded_data[:3],
         "all_rubric_marks_json": _json.dumps(all_rubric_marks),
+        "available_headers_json": _json.dumps(available_headers),
         "error": error,
     }
 
@@ -131,7 +197,10 @@ def clean_category_title(title):
     # Remove trailing digits at word boundaries
     cleaned = re.sub(r'\b\d+\b\s*$', '', cleaned)
     # Strip whitespace and trailing punctuation/special characters
-    return cleaned.strip()
+    cleaned_str = cleaned.strip()
+    if cleaned_str.isupper():
+        return cleaned_str.capitalize()
+    return cleaned_str
 
 
 def is_information_column(header):
@@ -282,21 +351,32 @@ def category_mark_value(student_row, category, degree_level):
     return mark_val, grade_awarded
 
 
-def build_assessment_cohort_stats(uploaded_data, categories, degree_level):
+def build_assessment_cohort_stats(uploaded_data, categories, degree_level, col_overall_mark=None, col_group=None):
+    active_categories = [cat for cat in categories if cat["column"] != col_overall_mark] if col_overall_mark else list(categories)
+    if col_group:
+        active_categories = [cat for cat in active_categories if cat["column"] != col_group]
+    # Filter out feedback_only columns from statistics/marks calculations
+    active_categories = [cat for cat in active_categories if cat.get("type") != "feedback_only"]
     cohort_final_marks = []
-    category_cohort_marks = {cat["column"]: [] for cat in categories}
+    category_cohort_marks = {cat["column"]: [] for cat in active_categories}
 
     for row in uploaded_data:
-        student_total = 0
-        for cat in categories:
+        for cat in active_categories:
             mark_val, _ = category_mark_value(row, cat, degree_level)
             category_cohort_marks[cat["column"]].append(mark_val)
-            if cat.get("type") != "information":
-                student_total += mark_val
+            
+        if col_overall_mark:
+            student_total = numeric_mark(row.get(col_overall_mark, 0))
+        else:
+            student_total = 0
+            for cat in active_categories:
+                if cat.get("type") != "information":
+                    mark_val, _ = category_mark_value(row, cat, degree_level)
+                    student_total += mark_val
         cohort_final_marks.append(student_total)
 
     category_averages = {}
-    for cat in categories:
+    for cat in active_categories:
         vals = category_cohort_marks[cat["column"]]
         category_averages[cat["column"]] = sum(vals) / len(vals) if vals else 0
 
@@ -309,24 +389,57 @@ def build_assessment_student_context(student_row, student_index, mappings, categ
     degree_level = mappings["degree_level"]
     subdivision = mappings["subdivision"]
     categories = mappings["categories"]
-    total_max_marks = sum(cat["max_marks"] for cat in categories if cat.get("type") != "information")
+    col_overall_mark = mappings.get("col_overall_mark")
+    
+    col_group = mappings.get("col_group", "")
 
-    student_name = str(student_row.get(col_name, f"Student {student_index+1}")).strip()
+    active_categories = [cat for cat in categories if cat["column"] != col_overall_mark] if col_overall_mark else list(categories)
+    if col_group:
+        active_categories = [cat for cat in active_categories if cat["column"] != col_group]
+    if col_overall_mark:
+        total_max_marks = 100  # default fallback
+        for cat in categories:
+            if cat["column"] == col_overall_mark:
+                total_max_marks = cat.get("max_marks") or 100
+                break
+    else:
+        total_max_marks = sum(
+            cat["max_marks"] for cat in active_categories 
+            if cat.get("type") not in ("information", "feedback_only")
+        )
+
+    student_name = get_student_name(student_row, student_index, mappings)
     raw_student_id = student_row.get(col_id)
     student_id = format_student_id(raw_student_id) if raw_student_id is not None else f"ID-{student_index+1}"
-    student_total_score = 0
+    
+    if col_overall_mark:
+        student_total_score = numeric_mark(student_row.get(col_overall_mark, 0))
+    else:
+        student_total_score = 0
+        
     student_categories_data = []
     radar_labels = []
     student_radar_percentages = []
     avg_radar_percentages = []
 
-    for cat in categories:
+    for cat in active_categories:
         col = cat["column"]
         max_marks = cat.get("max_marks")
-        mark_val, grade_awarded = category_mark_value(student_row, cat, degree_level)
+        
+        is_feedback_only = cat.get("type") == "feedback_only"
+        
+        if is_feedback_only:
+            mark_val = None
+            grade_awarded = None
+            calculated_grade_band = None
+            feedback_comment = str(student_row.get(col) or "").strip()
+        else:
+            mark_val, grade_awarded = category_mark_value(student_row, cat, degree_level)
+            feedback_comment = student_row.get(cat.get("comments_column", ""), "")
 
-        if cat.get("type") != "information":
-            student_total_score += mark_val
+        if cat.get("type") != "information" and not is_feedback_only:
+            if not col_overall_mark:
+                student_total_score += mark_val
             student_pct = (mark_val / max_marks) * 100 if max_marks and max_marks > 0 else 0
             avg_pct = (category_averages[col] / max_marks) * 100 if max_marks and max_marks > 0 else 0
 
@@ -344,9 +457,10 @@ def build_assessment_student_context(student_row, student_index, mappings, categ
             "mark": mark_val,
             "max_marks": max_marks,
             "grade_awarded": grade_awarded,
-            "feedback_comment": student_row.get(cat.get("comments_column", ""), ""),
+            "feedback_comment": feedback_comment,
             "is_grade": cat["type"] == "grade",
             "is_information": cat["type"] == "information",
+            "is_feedback_only": is_feedback_only,
             "unit": cat.get("unit", ""),
             "calculated_grade_band": calculated_grade_band,
         })
@@ -367,6 +481,7 @@ def build_assessment_student_context(student_row, student_index, mappings, categ
     return {
         "student_name": student_name,
         "student_id": student_id,
+        "student_group": str(student_row.get(mappings.get("col_group", ""), "") or "").strip(),
         "categories": student_categories_data,
         "total_score": student_total_score,
         "total_max_marks": total_max_marks,
@@ -417,10 +532,29 @@ def upload_file(request):
                             row_dict[headers[idx]] = cell
                     data_rows.append(row_dict)
             
+            # Check for split first/last name columns
+            first_name_col = ""
+            last_name_col = ""
+            group_col = ""
+            group_keywords = ("group", "team", "cohort", "class", "section", "lab", "tutorial")
+            for h in headers:
+                hl = h.lower()
+                if "first" in hl or "forename" in hl or "given" in hl:
+                    first_name_col = h
+                elif "last" in hl or "surname" in hl or "family" in hl:
+                    last_name_col = h
+                elif any(kw in hl for kw in group_keywords) and not group_col:
+                    group_col = h
+
             # Auto-infer column roles
             inferred_mappings = {
                 "col_student_name": "",
                 "col_student_id": "",
+                "col_overall_mark": "",
+                "col_group": "",
+                "col_first_name": first_name_col,
+                "col_last_name": last_name_col,
+                "name_mode": "split" if (first_name_col and last_name_col) else "full",
                 "categories": [],
                 "degree_level": "BEng",  # default
                 "subdivision": "none",   # default
@@ -430,19 +564,35 @@ def upload_file(request):
                 "assessment_title": "Feedback Report",
                 "academic_year": "2025/2026",
             }
+
+            # Validate group_col: confirm values are non-numeric (i.e. real group labels)
+            if group_col:
+                inferred_mappings["col_group"] = group_col
             
-            # 1. Infer Name & ID
+            # 1. Infer Name, ID & Overall Mark
+            # ID is checked first so "Student ID" is never mistaken for a name column.
             for h in headers:
                 hl = h.lower()
-                # Fix: parenthesise correctly so both conditions check the guard
-                if (("name" in hl or "student" in hl) and not inferred_mappings["col_student_name"]):
-                    inferred_mappings["col_student_name"] = h
-                elif (("id" in hl or "number" in hl or "code" in hl) and not inferred_mappings["col_student_id"]):
+                is_id_like = "id" in hl or "number" in hl or "code" in hl
+
+                if is_id_like and not inferred_mappings["col_student_id"]:
                     inferred_mappings["col_student_id"] = h
+                elif (("name" in hl or "student" in hl) and not is_id_like
+                        and not inferred_mappings["col_student_name"]):
+                    if h != first_name_col and h != last_name_col:
+                        inferred_mappings["col_student_name"] = h
+                elif (("total" in hl or "final" in hl or "overall" in hl)
+                        and not inferred_mappings.get("col_overall_mark")):
+                    if not is_id_like:
+                        inferred_mappings["col_overall_mark"] = h
             
             # Fallback if names/ids not matched
-            if not inferred_mappings["col_student_name"] and headers:
-                inferred_mappings["col_student_name"] = headers[0]
+            if inferred_mappings["name_mode"] == "split":
+                if not inferred_mappings["col_student_name"]:
+                    inferred_mappings["col_student_name"] = first_name_col
+            else:
+                if not inferred_mappings["col_student_name"] and headers:
+                    inferred_mappings["col_student_name"] = headers[0]
             if not inferred_mappings["col_student_id"] and len(headers) > 1:
                 inferred_mappings["col_student_id"] = headers[1]
                 
@@ -453,7 +603,10 @@ def upload_file(request):
             # We look for numeric columns as category candidates
             candidate_categories = []
             for h in headers:
-                if h == inferred_mappings["col_student_name"] or h == inferred_mappings["col_student_id"]:
+                if (h == inferred_mappings["col_student_name"] or
+                    h == inferred_mappings["col_student_id"] or
+                    h == inferred_mappings.get("col_first_name") or
+                    h == inferred_mappings.get("col_last_name")):
                     continue
 
                 # Skip columns that are clearly comment/text columns
@@ -533,14 +686,17 @@ def upload_file(request):
                 # Weighting is no longer used
                 weight = None
 
-                # Find matching feedback comments column
+                # Find matching feedback comments column.
+                # Only attempt a match when the cleaned category name is long enough
+                # to be meaningful — short/blank names would match any comment column.
                 comments_col = ""
                 cat_clean = re.sub(r'[/()%\d\s]+', '', cat).lower()  # e.g. "design"
-                for h in headers:
-                    hl = h.lower()
-                    if h != cat and ("comment" in hl or "feedback" in hl) and cat_clean in hl:
-                        comments_col = h
-                        break
+                if len(cat_clean) >= 3:
+                    for h in headers:
+                        hl = h.lower()
+                        if h != cat and ("comment" in hl or "feedback" in hl) and cat_clean in hl:
+                            comments_col = h
+                            break
 
                 # Pre-compute rubric band marks so confirm page can display them
                 rubric_marks = []
@@ -635,8 +791,13 @@ def confirm_mappings(request):
         
     if request.method == "POST":
         # Read student identifiers mapping
-        mappings["col_student_name"] = request.POST.get("col_student_name")
-        mappings["col_student_id"] = request.POST.get("col_student_id")
+        mappings["col_student_name"] = request.POST.get("col_student_name", "")
+        mappings["col_student_id"] = request.POST.get("col_student_id", "")
+        mappings["col_overall_mark"] = request.POST.get("col_overall_mark", "")
+        mappings["col_group"] = request.POST.get("col_group", "")
+        mappings["name_mode"] = request.POST.get("name_mode", "full")
+        mappings["col_first_name"] = request.POST.get("col_first_name", "")
+        mappings["col_last_name"] = request.POST.get("col_last_name", "")
         mappings["degree_level"] = request.POST.get("degree_level", "BEng")
         
         # Read module and assessment details
@@ -649,59 +810,134 @@ def confirm_mappings(request):
         # Read updated categories configs
         updated_categories = []
         has_mark_or_rubric = False
-        for idx, cat_dict in enumerate(mappings["categories"]):
-            col_name = cat_dict["column"]
-            cat_type = request.POST.get(f"type_{idx}", "numeric")
-            comments_col = request.POST.get(f"comments_{idx}")
-            
-            if cat_type in ("numeric", "grade"):
-                has_mark_or_rubric = True
-                max_marks = parse_positive_int(request.POST.get(f"max_{idx}"))
-                if max_marks is None:
-                    return render(request, "assessment_feedback/confirm.html",
-                                  assessment_confirm_context(
-                                      headers,
-                                      mappings,
-                                      uploaded_data,
-                                      f"Max marks for {col_name} must be a positive whole number.",
-                                  ))
-                unit_val = ""
-            else:
-                max_marks = None
-                unit_val = request.POST.get(f"unit_{idx}", "").strip()
 
-            cat_subdivision = cat_dict.get("subdivision", "none")
+        # Determine if we use the col_name_N or positional loop
+        use_col_name_loop = any(f"col_name_{i}" in request.POST for i in range(100))
 
-            # Rebuild rubric_marks from submitted band mark inputs (user may have edited them)
-            existing_rubric = cat_dict.get("rubric_marks", [])
-            rubric_marks = []
-            if cat_type == "grade":
-                if existing_rubric and rubric_marks_match_degree(existing_rubric, mappings["degree_level"]):
-                    for band_idx, band in enumerate(existing_rubric):
-                        submitted_mark = request.POST.get(f"rubric_mark_{idx}_{band_idx}")
-                        try:
-                            mark_val = int(submitted_mark)
-                        except (TypeError, ValueError):
-                            mark_val = band["marks"]
-                        rubric_marks.append({"grade": band["grade"], "marks": mark_val})
-                else:
-                    rubric_marks = calculate_grade_bands(
-                        max_marks,
-                        cat_subdivision,
-                        degree_level=mappings["degree_level"],
-                    )
+        if use_col_name_loop:
+            existing_cats_by_col = {cat["column"]: cat for cat in mappings.get("categories", [])}
+            idx = 0
+            while True:
+                col_name_key = f"col_name_{idx}"
+                if col_name_key not in request.POST:
+                    break
+                
+                if request.POST.get(f"removed_{idx}") == "1":
+                    idx += 1
+                    continue
+                
+                col_name = request.POST[col_name_key]
+                cat_dict = existing_cats_by_col.get(col_name, {})
+                cat_type = request.POST.get(f"type_{idx}", "numeric")
+                comments_col = request.POST.get(f"comments_{idx}")
+                
+                if cat_type in ("numeric", "grade"):
+                    has_mark_or_rubric = True
+                    max_marks = parse_positive_int(request.POST.get(f"max_{idx}"))
+                    if max_marks is None:
+                        return render(request, "assessment_feedback/confirm.html",
+                                      assessment_confirm_context(
+                                          headers,
+                                          mappings,
+                                          uploaded_data,
+                                          f"Max marks for {col_name} must be a positive whole number.",
+                                      ))
+                    unit_val = ""
+                elif cat_type == "information":
+                    max_marks = None
+                    unit_val = request.POST.get(f"unit_{idx}", "").strip()
+                else:  # feedback_only
+                    max_marks = None
+                    unit_val = ""
+                
+                cat_subdivision = cat_dict.get("subdivision", "none")
+                
+                existing_rubric = cat_dict.get("rubric_marks", [])
+                rubric_marks = []
+                if cat_type == "grade":
+                    if existing_rubric and rubric_marks_match_degree(existing_rubric, mappings["degree_level"]):
+                        for band_idx, band in enumerate(existing_rubric):
+                            submitted_mark = request.POST.get(f"rubric_mark_{idx}_{band_idx}")
+                            try:
+                                mark_val = int(submitted_mark)
+                            except (TypeError, ValueError):
+                                mark_val = band["marks"]
+                            rubric_marks.append({"grade": band["grade"], "marks": mark_val})
+                    else:
+                        rubric_marks = calculate_grade_bands(
+                            max_marks,
+                            cat_subdivision,
+                            degree_level=mappings["degree_level"],
+                        )
+                
+                updated_categories.append({
+                    "column": col_name,
+                    "max_marks": max_marks,
+                    "weight": None,
+                    "comments_column": comments_col,
+                    "type": cat_type,
+                    "subdivision": cat_subdivision,
+                    "rubric_marks": rubric_marks,
+                    "unit": unit_val,
+                })
+                idx += 1
+        else:
+            # Fallback for old/test POST data (no col_name_N fields)
+            for idx, cat_dict in enumerate(mappings["categories"]):
+                col_name = cat_dict["column"]
+                cat_type = request.POST.get(f"type_{idx}", "numeric")
+                comments_col = request.POST.get(f"comments_{idx}")
+                
+                if cat_type in ("numeric", "grade"):
+                    has_mark_or_rubric = True
+                    max_marks = parse_positive_int(request.POST.get(f"max_{idx}"))
+                    if max_marks is None:
+                        return render(request, "assessment_feedback/confirm.html",
+                                      assessment_confirm_context(
+                                          headers,
+                                          mappings,
+                                          uploaded_data,
+                                          f"Max marks for {col_name} must be a positive whole number.",
+                                      ))
+                    unit_val = ""
+                elif cat_type == "information":
+                    max_marks = None
+                    unit_val = request.POST.get(f"unit_{idx}", "").strip()
+                else:  # feedback_only
+                    max_marks = None
+                    unit_val = ""
+                    
+                cat_subdivision = cat_dict.get("subdivision", "none")
+                
+                existing_rubric = cat_dict.get("rubric_marks", [])
+                rubric_marks = []
+                if cat_type == "grade":
+                    if existing_rubric and rubric_marks_match_degree(existing_rubric, mappings["degree_level"]):
+                        for band_idx, band in enumerate(existing_rubric):
+                            submitted_mark = request.POST.get(f"rubric_mark_{idx}_{band_idx}")
+                            try:
+                                mark_val = int(submitted_mark)
+                            except (TypeError, ValueError):
+                                mark_val = band["marks"]
+                            rubric_marks.append({"grade": band["grade"], "marks": mark_val})
+                    else:
+                        rubric_marks = calculate_grade_bands(
+                            max_marks,
+                            cat_subdivision,
+                            degree_level=mappings["degree_level"],
+                        )
+                
+                updated_categories.append({
+                    "column": col_name,
+                    "max_marks": max_marks,
+                    "weight": None,
+                    "comments_column": comments_col,
+                    "type": cat_type,
+                    "subdivision": cat_subdivision,
+                    "rubric_marks": rubric_marks,
+                    "unit": unit_val,
+                })
 
-            updated_categories.append({
-                "column": col_name,
-                "max_marks": max_marks,
-                "weight": None,
-                "comments_column": comments_col,
-                "type": cat_type,
-                "subdivision": cat_subdivision,
-                "rubric_marks": rubric_marks,
-                "unit": unit_val,
-            })
-            
         if not has_mark_or_rubric:
             return render(request, "assessment_feedback/confirm.html",
                           assessment_confirm_context(
@@ -838,12 +1074,14 @@ def configure_layout(request):
         uploaded_data,
         categories,
         mappings["degree_level"],
+        mappings.get("col_overall_mark"),
+        mappings.get("col_group"),
     )
 
     # Prepare student selection list
     students_list = []
     for idx, r in enumerate(uploaded_data):
-        s_name = str(r.get(col_name, f"Student {idx+1}")).strip()
+        s_name = get_student_name(r, idx, mappings)
         raw_s_id = r.get(col_id)
         s_id = format_student_id(raw_s_id) if raw_s_id is not None else f"ID-{idx+1}"
         if s_name or s_id:
@@ -908,15 +1146,17 @@ def process_feedback(request):
 
     cohort_final_marks, category_averages = build_assessment_cohort_stats(
         uploaded_data,
-        categories,
+        mappings["categories"],
         mappings["degree_level"],
+        mappings.get("col_overall_mark"),
+        mappings.get("col_group"),
     )
     
     zip_buffer = io.BytesIO()
     
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
         for idx, student_row in enumerate(uploaded_data):
-            student_name = str(student_row.get(col_name, f"Student {idx+1}")).strip()
+            student_name = get_student_name(student_row, idx, mappings)
             raw_student_id = student_row.get(col_id)
             student_id = format_student_id(raw_student_id) if raw_student_id is not None else f"ID-{idx+1}"
             
@@ -1009,7 +1249,7 @@ def download_email_xlsm(request):
     # Populate rows
     row_idx = 2
     for idx, student_row in enumerate(uploaded_data):
-        student_name = str(student_row.get(col_name, f"Student {idx+1}")).strip()
+        student_name = get_student_name(student_row, idx, mappings)
         raw_student_id = student_row.get(col_id)
         student_id = format_student_id(raw_student_id) if raw_student_id is not None else f"ID-{idx+1}"
         

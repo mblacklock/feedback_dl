@@ -1,4 +1,5 @@
 {% extends "rubric_generator/base.html" %}
+{% load rubric_generator_filters %}
 
 {% block title %}Confirm Mappings{% endblock %}
 
@@ -78,6 +79,14 @@
         font-weight: 600;
         border: 1px solid #a7f3d0;
     }
+
+    .overall-mark-badge {
+        background-color: #e0e7ff;
+        color: #4361ee;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border: 1px solid #c7d2fe;
+    }
 </style>
 {% endblock %}
 
@@ -103,24 +112,57 @@
 
                     <!-- Section 1: Core Student Details -->
                     <h4 class="fw-bold mb-4">1. Core Identifiers</h4>
-                    <div class="row g-4 mb-5">
-                        <div class="col-md-6">
+                    
+                    <!-- Row 1: Student Name Format and Name/ID Selectors -->
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold text-secondary">Student Name Format</label>
+                            <select name="name_mode" class="form-select rounded-3" id="name_mode">
+                                <option value="full" {% if mappings.name_mode == 'full' %}selected{% endif %}>Single Column (e.g. Full Name)</option>
+                                <option value="split" {% if mappings.name_mode == 'split' %}selected{% endif %}>Two Columns (e.g. First & Last Name)</option>
+                            </select>
+                            <div class="form-text">Select if names are in a single column or split.</div>
+                        </div>
+
+                        <!-- Single name column field -->
+                        <div class="col-md-5 name-field-full {% if mappings.name_mode == 'split' %}d-none{% endif %}">
                             <label class="form-label fw-semibold text-secondary">Student Name Column</label>
-                            <select name="col_student_name" class="form-select rounded-3" required
-                                id="col_student_name">
-                                {% for h in headers %}
-                                <option value="{{ h }}" {% if h == mappings.col_student_name %}selected{% endif %}>{{ h }}
+                            <select name="col_student_name" class="form-select rounded-3" id="col_student_name">
+                                {% for h_raw, h_label in headers_with_labels %}
+                                <option value="{{ h_raw }}" {% if h_raw == mappings.col_student_name %}selected{% endif %}>{{ h_label }}
                                 </option>
                                 {% endfor %}
                             </select>
-                            <div class="form-text">Used for identifying student names on individual Feedback Sheets.
-                            </div>
+                            <div class="form-text">Used for identifying student names on individual Feedback Sheets.</div>
                         </div>
-                        <div class="col-md-6">
+
+                        <!-- Split name column fields -->
+                        <div class="col-md-2.5 name-field-split {% if mappings.name_mode != 'split' %}d-none{% endif %}" style="width: 20%;">
+                            <label class="form-label fw-semibold text-secondary">First Name Column</label>
+                            <select name="col_first_name" class="form-select rounded-3" id="col_first_name">
+                                {% for h_raw, h_label in headers_with_labels %}
+                                <option value="{{ h_raw }}" {% if h_raw == mappings.col_first_name %}selected{% endif %}>{{ h_label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">First/Forename.</div>
+                        </div>
+                        <div class="col-md-2.5 name-field-split {% if mappings.name_mode != 'split' %}d-none{% endif %}" style="width: 20%;">
+                            <label class="form-label fw-semibold text-secondary">Last Name Column</label>
+                            <select name="col_last_name" class="form-select rounded-3" id="col_last_name">
+                                {% for h_raw, h_label in headers_with_labels %}
+                                <option value="{{ h_raw }}" {% if h_raw == mappings.col_last_name %}selected{% endif %}>{{ h_label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Last/Surname.</div>
+                        </div>
+
+                        <div class="col-md-4">
                             <label class="form-label fw-semibold text-secondary">Student ID Column</label>
                             <select name="col_student_id" class="form-select rounded-3" required id="col_student_id">
-                                {% for h in headers %}
-                                <option value="{{ h }}" {% if h == mappings.col_student_id %}selected{% endif %}>{{ h }}
+                                {% for h_raw, h_label in headers_with_labels %}
+                                <option value="{{ h_raw }}" {% if h_raw == mappings.col_student_id %}selected{% endif %}>{{ h_label }}
                                 </option>
                                 {% endfor %}
                             </select>
@@ -128,11 +170,37 @@
                         </div>
                     </div>
 
+                    <!-- Row 2: Overall Mark + Group Column Selectors -->
+                    <div class="row g-4 mb-5">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold text-secondary">Overall / Final Mark Column</label>
+                            <select name="col_overall_mark" class="form-select rounded-3" id="col_overall_mark">
+                                <option value="">[Sum categories dynamically]</option>
+                                {% for h_raw, h_label in headers_with_labels %}
+                                <option value="{{ h_raw }}" {% if h_raw == mappings.col_overall_mark %}selected{% endif %}>{{ h_label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Select a specific column for the overall mark, or leave to sum categories.</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold text-secondary">Group / Team Column <span class="text-muted fw-normal">(optional)</span></label>
+                            <select name="col_group" class="form-select rounded-3" id="col_group">
+                                <option value="">— None —</option>
+                                {% for h_raw, h_label in headers_with_labels %}
+                                <option value="{{ h_raw }}" {% if h_raw and h_raw == mappings.col_group %}selected{% endif %}>{{ h_label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">If students belong to a group or team, select the column to display it on their feedback sheet.</div>
+                        </div>
+                    </div>
+
                     <!-- Section 2: Module & Assessment Details -->
                     <h4 class="fw-bold mb-4">2. Module & Assessment Details</h4>
                     <div class="row g-4 mb-4">
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold text-secondary">Module Code / Name</label>
+                            <label class="form-label fw-semibold text-secondary">Module Code</label>
                             <input type="text" name="module_code" class="form-control rounded-3" required
                                 value="{{ mappings.module_code|default:'COMP101' }}" placeholder="e.g. COMP101">
                             <div class="form-text">The official code or short name of the module.</div>
@@ -190,13 +258,18 @@
                                     <th>Category Type</th>
                                     <th>Max Marks / Unit</th>
                                     <th>Matched Comments/Feedback Column</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
+                                {# Render all sub-categories (excluding the overall mark column) #}
                                 {% for cat in mappings.categories %}
-                                <tr id="cat-row-{{ forloop.counter0 }}">
+                                {% if cat.column != mappings.col_overall_mark %}
+                                <tr id="cat-row-{{ forloop.counter0 }}" data-column-name="{{ cat.column }}"{% if cat.column == mappings.col_group %} class="d-none"{% endif %}>
+                                    <input type="hidden" name="col_name_{{ forloop.counter0 }}" value="{{ cat.column }}">
+                                    <input type="hidden" name="removed_{{ forloop.counter0 }}" value="0" id="removed-input-{{ forloop.counter0 }}">
                                     <td class="fw-bold">
-                                        {{ cat.column }}
+                                        {{ header_label_map|get_item:cat.column }}
                                     </td>
                                     <td>
                                         <select name="type_{{ forloop.counter0 }}"
@@ -205,14 +278,15 @@
                                             <option value="numeric" {% if cat.type == 'numeric' %}selected{% endif %}>Mark</option>
                                             <option value="grade" {% if cat.type == 'grade' %}selected{% endif %}>Rubric grade</option>
                                             <option value="information" {% if cat.type == 'information' %}selected{% endif %}>Information</option>
+                                            <option value="feedback_only" {% if cat.type == 'feedback_only' %}selected{% endif %}>Feedback text</option>
                                         </select>
                                     </td>
                                     <td>
-                                        <div class="max-marks-container-{{ forloop.counter0 }} {% if cat.type == 'information' %}d-none{% endif %}">
+                                        <div class="max-marks-container-{{ forloop.counter0 }} {% if cat.type == 'information' or cat.type == 'feedback_only' %}d-none{% endif %}">
                                              <input type="number" name="max_{{ forloop.counter0 }}"
                                                  class="form-control form-control-sm rounded-3 max-marks-input"
                                                  value="{{ cat.max_marks|default:'' }}" style="width: 80px;"
-                                                 {% if cat.type == 'information' %}disabled{% endif %}>
+                                                 {% if cat.type == 'information' or cat.type == 'feedback_only' %}disabled{% endif %}>
                                         </div>
                                         <div
                                             class="unit-container-{{ forloop.counter0 }} {% if cat.type != 'information' %}d-none{% endif %}">
@@ -227,19 +301,22 @@
                                         <select name="comments_{{ forloop.counter0 }}"
                                             class="form-select form-select-sm rounded-3">
                                             <option value="">-- No Comment Column --</option>
-                                            {% for h in headers %}
-                                            <option value="{{ h }}" {% if h == cat.comments_column %}selected{% endif %}>
-                                                {{ h }}</option>
+                                            {% for h_raw, h_label in headers_with_labels %}
+                                            <option value="{{ h_raw }}" {% if h_raw and h_raw == cat.comments_column %}selected{% endif %}>
+                                                {{ h_label }}</option>
                                             {% endfor %}
                                         </select>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn" data-idx="{{ forloop.counter0 }}" title="Remove category row">&times;</button>
                                     </td>
                                 </tr>
 
                                 <tr id="rubric-panel-{{ forloop.counter0 }}"
-                                    class="rubric-panel {% if cat.type != 'grade' %}d-none{% endif %}"
+                                    class="rubric-panel {% if cat.type != 'grade' or cat.column == mappings.col_group %}d-none{% endif %}"
                                     data-idx="{{ forloop.counter0 }}" data-col="{{ cat.column }}"
                                     data-subdivision="{{ cat.subdivision|default:'none' }}">
-                                    <td colspan="4" class="p-0">
+                                    <td colspan="5" class="p-0">
                                         <div
                                             style="background:#f8fafc; border-left:3px solid #4361ee; padding:16px 20px;">
                                             <p class="text-muted small fw-semibold mb-2"
@@ -266,10 +343,163 @@
                                         </div>
                                     </td>
                                 </tr>
-
+                                {% endif %}
                                 {% endfor %}
+
+                                {# Render the overall mark column at the bottom as a highlighted row if mapped #}
+                                {% if mappings.col_overall_mark %}
+                                {% for cat in mappings.categories %}
+                                {% if cat.column == mappings.col_overall_mark %}
+                                <tr id="cat-row-{{ forloop.counter0 }}" data-column-name="{{ cat.column }}" style="background-color: rgba(67, 97, 238, 0.08); border-left: 4px solid #4361ee;">
+                                    <input type="hidden" name="col_name_{{ forloop.counter0 }}" value="{{ cat.column }}">
+                                    <input type="hidden" name="removed_{{ forloop.counter0 }}" value="0" id="removed-input-{{ forloop.counter0 }}">
+                                    <td class="fw-bold d-flex align-items-center">
+                                        <div class="d-flex align-items-center gap-2">
+                                            {{ header_label_map|get_item:cat.column }}
+                                            <span class="badge overall-mark-badge">Overall Mark</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <select name="type_{{ forloop.counter0 }}"
+                                            class="form-select form-select-sm rounded-3 type-select"
+                                            data-idx="{{ forloop.counter0 }}">
+                                            <option value="numeric" {% if cat.type == 'numeric' %}selected{% endif %}>Mark</option>
+                                            <option value="grade" {% if cat.type == 'grade' %}selected{% endif %}>Rubric grade</option>
+                                            <option value="information" {% if cat.type == 'information' %}selected{% endif %}>Information</option>
+                                            <option value="feedback_only" {% if cat.type == 'feedback_only' %}selected{% endif %}>Feedback text</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <div class="max-marks-container-{{ forloop.counter0 }} {% if cat.type == 'information' or cat.type == 'feedback_only' %}d-none{% endif %}">
+                                             <input type="number" name="max_{{ forloop.counter0 }}"
+                                                 class="form-control form-control-sm rounded-3 max-marks-input"
+                                                 value="{{ cat.max_marks|default:'' }}" style="width: 80px;"
+                                                 {% if cat.type == 'information' or cat.type == 'feedback_only' %}disabled{% endif %}>
+                                        </div>
+                                        <div
+                                            class="unit-container-{{ forloop.counter0 }} {% if cat.type != 'information' %}d-none{% endif %}">
+                                            <input type="text" name="unit_{{ forloop.counter0 }}"
+                                                class="form-control form-control-sm rounded-3 unit-input"
+                                                value="{{ cat.unit|default:'' }}" placeholder="e.g. N, kg, ms"
+                                                style="width: 100px;"
+                                                {% if cat.type != 'information' %}disabled{% endif %}>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <select name="comments_{{ forloop.counter0 }}"
+                                            class="form-select form-select-sm rounded-3" disabled>
+                                            <option value="">-- Mapped as Overall Mark --</option>
+                                            {% for h_raw, h_label in headers_with_labels %}
+                                            <option value="{{ h_raw }}" {% if h_raw and h_raw == cat.comments_column %}selected{% endif %}>
+                                                {{ h_label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <input type="hidden" name="comments_{{ forloop.counter0 }}" value="">
+                                    </td>
+                                    <td>
+                                        <!-- No actions for overall mark row -->
+                                    </td>
+                                </tr>
+
+                                <tr id="rubric-panel-{{ forloop.counter0 }}"
+                                    class="rubric-panel {% if cat.type != 'grade' %}d-none{% endif %}"
+                                    data-idx="{{ forloop.counter0 }}" data-col="{{ cat.column }}"
+                                    data-subdivision="{{ cat.subdivision|default:'none' }}">
+                                    <td colspan="5" class="p-0">
+                                        <div
+                                            style="background:#f8fafc; border-left:3px solid #4361ee; padding:16px 20px;">
+                                            <p class="text-muted small fw-semibold mb-2"
+                                                style="text-transform:uppercase;letter-spacing:.05em;">
+                                                Grade Band → Numeric Mark Mapping
+                                                <span class="text-secondary fw-normal ms-2">— edit to override
+                                                    auto-calculated values</span>
+                                            </p>
+                                            <div class="rubric-bands-container"
+                                                style="display:flex;flex-wrap:wrap;gap:6px;padding-bottom:2px;">
+                                                {% for band in cat.rubric_marks %}
+                                                <div
+                                                    style="background:white;border:1px solid #e2e8f0;border-radius:6px;padding:4px 7px;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:62px;text-align:center;">
+                                                    <div
+                                                        style="font-size:.7rem;font-weight:600;color:#64748b;white-space:nowrap;">
+                                                        {{ band.grade }}</div>
+                                                    <input type="number"
+                                                        name="rubric_mark_{{ forloop.parentloop.counter0 }}_{{ forloop.counter0 }}"
+                                                        value="{{ band.marks }}" class="form-control form-control-sm"
+                                                        style="width:45px;font-weight:700;color:#1e3a8a;text-align:center;padding:1px;height:24px;margin:0;font-size:0.8rem;">
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% endfor %}
+                                {% endif %}
                             </tbody>
                         </table>
+                    </div>
+
+                    <!-- Hidden Template Rows for Add Column (JS cloning) -->
+                    <table class="d-none">
+                        <tbody>
+                            <tr id="row-template">
+                                <td class="fw-bold col-name-label"></td>
+                                <td>
+                                    <select class="form-select form-select-sm rounded-3 type-select">
+                                        <option value="numeric">Mark</option>
+                                        <option value="grade">Rubric grade</option>
+                                        <option value="information">Information</option>
+                                        <option value="feedback_only">Feedback text</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <div class="max-marks-container">
+                                         <input type="number" class="form-control form-control-sm rounded-3 max-marks-input"
+                                             value="100" style="width: 80px;">
+                                    </div>
+                                    <div class="unit-container d-none">
+                                        <input type="text" class="form-control form-control-sm rounded-3 unit-input"
+                                            value="" placeholder="e.g. N, kg, ms" style="width: 100px;" disabled>
+                                    </div>
+                                </td>
+                                <td>
+                                    <select class="form-select form-select-sm rounded-3 comments-select">
+                                        <option value="">-- No Comment Column --</option>
+                                        {% for h_raw, h_label in headers_with_labels %}
+                                        <option value="{{ h_raw }}">{{ h_label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn" title="Remove category row">&times;</button>
+                                </td>
+                            </tr>
+                            <tr id="rubric-panel-template" class="rubric-panel d-none" data-subdivision="none">
+                                <td colspan="5" class="p-0">
+                                    <div style="background:#f8fafc; border-left:3px solid #4361ee; padding:16px 20px;">
+                                        <p class="text-muted small fw-semibold mb-2" style="text-transform:uppercase;letter-spacing:.05em;">
+                                            Grade Band → Numeric Mark Mapping
+                                            <span class="text-secondary fw-normal ms-2">— edit to override auto-calculated values</span>
+                                        </p>
+                                        <div class="rubric-bands-container" style="display:flex;flex-wrap:wrap;gap:6px;padding-bottom:2px;">
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- Add Column controls -->
+                    <div class="d-flex align-items-center gap-3 mb-5 p-3 rounded-3" style="background-color: #f8fafc; border: 1px dashed #cbd5e1;">
+                        <div class="fw-semibold text-secondary small">Add Undetected Column:</div>
+                        <div style="min-width: 250px;">
+                            <select id="add-column-select" class="form-select form-select-sm rounded-3">
+                                <option value="">— Select Column —</option>
+                            </select>
+                        </div>
+                        <button type="button" id="add-column-btn" class="btn btn-sm btn-primary rounded-3 px-3 fw-semibold">
+                            + Add Column
+                        </button>
                     </div>
 
                     <div class="text-center">
@@ -338,8 +568,8 @@
     }
 
 
-    // ── Type select changes ──────────────────────────────────────────────────
-    document.querySelectorAll('.type-select').forEach(select => {
+    // ── Generalized Event Binders ────────────────────────────────────────────
+    function bindTypeSelectEvent(select) {
         select.addEventListener('change', function () {
             const idx = this.getAttribute('data-idx');
             const type = this.value;
@@ -349,7 +579,7 @@
             const unitInput = document.querySelector(`input[name="unit_${idx}"]`);
             const panel = document.getElementById(`rubric-panel-${idx}`);
 
-            if (type === 'information') {
+            if (type === 'information' || type === 'feedback_only') {
                 if (maxContainer) {
                     maxContainer.classList.add('d-none');
                 }
@@ -358,8 +588,13 @@
                     maxInput.required = false;
                 }
                 if (unitContainer && unitInput) {
-                    unitContainer.classList.remove('d-none');
-                    unitInput.disabled = false;
+                    if (type === 'information') {
+                        unitContainer.classList.remove('d-none');
+                        unitInput.disabled = false;
+                    } else {
+                        unitContainer.classList.add('d-none');
+                        unitInput.disabled = true;
+                    }
                 }
                 if (panel) {
                     panel.classList.add('d-none');
@@ -391,10 +626,9 @@
                 }
             }
         });
-    });
+    }
 
-    // ── Max marks input ──────────────────────────────────────────────────────
-    document.querySelectorAll('input[name^="max_"]').forEach(input => {
+    function bindMaxInputEvent(input) {
         input.addEventListener('input', function () {
             const idx = this.getAttribute('name').split('_')[1];
             const panel = document.getElementById(`rubric-panel-${idx}`);
@@ -408,6 +642,175 @@
 
             fetchAndRenderBands(idx, panel, currentSubdivision(idx), 400);
         });
+    }
+
+    // Bind existing rows
+    document.querySelectorAll('.type-select').forEach(bindTypeSelectEvent);
+    document.querySelectorAll('input[name^="max_"]').forEach(bindMaxInputEvent);
+
+    // ── Dynamic Column Management ────────────────────────────────────────────
+    let availableHeaders = {{ available_headers_json|safe }};
+    let nextRowIdx = {{ mappings.categories|length }};
+
+    function updateAvailableHeadersDropdown() {
+        const select = document.getElementById('add-column-select');
+        if (!select) return;
+        
+        select.innerHTML = '<option value="">— Select Column —</option>';
+        
+        // Sort availableHeaders alphabetically by label
+        availableHeaders.sort((a, b) => a.label.localeCompare(b.label));
+        
+        availableHeaders.forEach(h => {
+            const opt = document.createElement('option');
+            opt.value = h.raw;
+            opt.textContent = h.label;
+            select.appendChild(opt);
+        });
+    }
+
+    function removeCategoryRow(idx) {
+        const row = document.getElementById(`cat-row-${idx}`);
+        const panel = document.getElementById(`rubric-panel-${idx}`);
+        const removedInput = document.getElementById(`removed-input-${idx}`);
+        
+        if (row) row.classList.add('d-none');
+        if (panel) panel.classList.add('d-none');
+        if (removedInput) removedInput.value = '1';
+        
+        const colName = row.getAttribute('data-column-name');
+        const colLabel = row.querySelector('td:first-child').textContent.trim();
+        
+        if (colName && !availableHeaders.some(h => h.raw === colName)) {
+            // Re-infer if it was numeric. Check current type
+            const typeSelect = row.querySelector('.type-select');
+            const wasNumeric = typeSelect ? (typeSelect.value === 'numeric' || typeSelect.value === 'grade') : true;
+            availableHeaders.push({raw: colName, label: colLabel, is_numeric: wasNumeric});
+            updateAvailableHeadersDropdown();
+        }
+    }
+
+    function addColumnRow(colName, colLabel, isNumeric) {
+        const tbody = document.querySelector('.mapping-table tbody');
+        
+        // Clone row template
+        const rowTemplate = document.getElementById('row-template');
+        const newRow = rowTemplate.cloneNode(true);
+        newRow.id = `cat-row-${nextRowIdx}`;
+        newRow.classList.remove('d-none');
+        newRow.setAttribute('data-column-name', colName);
+        
+        newRow.querySelector('.col-name-label').textContent = colLabel;
+        
+        // Add hidden inputs for backend identification
+        const hiddenColName = document.createElement('input');
+        hiddenColName.type = 'hidden';
+        hiddenColName.name = `col_name_${nextRowIdx}`;
+        hiddenColName.value = colName;
+        newRow.appendChild(hiddenColName);
+        
+        const hiddenRemoved = document.createElement('input');
+        hiddenRemoved.type = 'hidden';
+        hiddenRemoved.name = `removed_${nextRowIdx}`;
+        hiddenRemoved.id = `removed-input-${nextRowIdx}`;
+        hiddenRemoved.value = '0';
+        newRow.appendChild(hiddenRemoved);
+        
+        // Set type select names and classes
+        const typeSelect = newRow.querySelector('.type-select');
+        typeSelect.name = `type_${nextRowIdx}`;
+        typeSelect.setAttribute('data-idx', nextRowIdx);
+        typeSelect.classList.add('type-select'); // to match querySelectorAll
+        
+        const maxContainer = newRow.querySelector('.max-marks-container');
+        maxContainer.className = `max-marks-container-${nextRowIdx}`;
+        
+        const maxInput = newRow.querySelector('.max-marks-input');
+        maxInput.name = `max_${nextRowIdx}`;
+        
+        const unitContainer = newRow.querySelector('.unit-container');
+        unitContainer.className = `unit-container-${nextRowIdx}`;
+        
+        const unitInput = newRow.querySelector('.unit-input');
+        unitInput.name = `unit_${nextRowIdx}`;
+        
+        const commentsSelect = newRow.querySelector('.comments-select');
+        commentsSelect.name = `comments_${nextRowIdx}`;
+        
+        // Clone rubric panel template
+        const panelTemplate = document.getElementById('rubric-panel-template');
+        const newPanel = panelTemplate.cloneNode(true);
+        newPanel.id = `rubric-panel-${nextRowIdx}`;
+        newPanel.setAttribute('data-idx', nextRowIdx);
+        newPanel.setAttribute('data-col', colName);
+        
+        // Bind events
+        bindTypeSelectEvent(typeSelect);
+        bindMaxInputEvent(maxInput);
+        
+        const removeBtn = newRow.querySelector('.remove-row-btn');
+        removeBtn.addEventListener('click', function() {
+            removeCategoryRow(nextRowIdx);
+        });
+        
+        // Find overall mark row if exists, to keep it at the bottom
+        let overallRow = null;
+        document.querySelectorAll('.mapping-table tbody tr[id^="cat-row-"]').forEach(row => {
+            if (row.querySelector('.overall-mark-badge')) {
+                overallRow = row;
+            }
+        });
+        
+        if (overallRow) {
+            tbody.insertBefore(newRow, overallRow);
+            tbody.insertBefore(newPanel, overallRow);
+        } else {
+            tbody.appendChild(newRow);
+            tbody.appendChild(newPanel);
+        }
+        
+        // Default values based on numeric detection
+        if (!isNumeric) {
+            typeSelect.value = 'feedback_only';
+        } else {
+            typeSelect.value = 'numeric';
+        }
+        typeSelect.dispatchEvent(new Event('change'));
+        
+        // Increment global counter
+        nextRowIdx++;
+        
+        // Remove from available headers and update dropdown
+        availableHeaders = availableHeaders.filter(h => h.raw !== colName);
+        updateAvailableHeadersDropdown();
+    }
+
+    // Initialize dropdown on page load
+    updateAvailableHeadersDropdown();
+
+    // Bind Add Column button
+    const addColumnBtn = document.getElementById('add-column-btn');
+    if (addColumnBtn) {
+        addColumnBtn.addEventListener('click', function() {
+            const select = document.getElementById('add-column-select');
+            const selectedVal = select.value;
+            if (!selectedVal) return;
+            
+            const selectedHeader = availableHeaders.find(h => h.raw === selectedVal);
+            if (selectedHeader) {
+                addColumnRow(selectedHeader.raw, selectedHeader.label, selectedHeader.is_numeric);
+            }
+        });
+    }
+
+    // Bind existing remove buttons
+    document.querySelectorAll('.remove-row-btn').forEach(btn => {
+        const idx = btn.getAttribute('data-idx');
+        if (idx) {
+            btn.addEventListener('click', function() {
+                removeCategoryRow(idx);
+            });
+        }
     });
 
     const degreeLevelInput = document.querySelector('select[name="degree_level"]');
@@ -420,6 +823,194 @@
             });
         });
     }
+
+    // ── Overall mark column dynamic highlighting listener ──────────────────────
+    const overallMarkSelect = document.getElementById('col_overall_mark');
+    let prevOverallMarkCol = overallMarkSelect ? overallMarkSelect.value : '';
+
+    if (overallMarkSelect) {
+        overallMarkSelect.addEventListener('change', function () {
+            const selectedVal = this.value;
+            
+            // 1. Restore the old overall mark column row if it exists in the table
+            if (prevOverallMarkCol && prevOverallMarkCol !== selectedVal) {
+                const oldRow = document.querySelector(`tr[id^="cat-row-"][data-column-name="${CSS.escape(prevOverallMarkCol)}"]`);
+                if (oldRow) {
+                    oldRow.style.backgroundColor = "";
+                    oldRow.style.borderLeft = "";
+                    const badge = oldRow.querySelector('.overall-mark-badge');
+                    if (badge) badge.remove();
+                    const commentsSelect = oldRow.querySelector('select[name^="comments_"]');
+                    if (commentsSelect) {
+                        commentsSelect.disabled = false;
+                        const firstOpt = commentsSelect.options[0];
+                        if (firstOpt) firstOpt.textContent = "-- No Comment Column --";
+                        
+                        // Remove hidden comments input to avoid conflicting with re-enabled select on submit
+                        const idx = oldRow.id.slice('cat-row-'.length);
+                        const hiddenInput = oldRow.querySelector(`input[type="hidden"][name="comments_${idx}"]`);
+                        if (hiddenInput) hiddenInput.remove();
+                    }
+                    const removeBtn = oldRow.querySelector('.remove-row-btn');
+                    if (removeBtn) removeBtn.classList.remove('d-none');
+                } else {
+                    // It wasn't in the table, so make it available in the dropdown
+                    const option = Array.from(overallMarkSelect.options).find(opt => opt.value === prevOverallMarkCol);
+                    const label = option ? option.textContent.trim() : prevOverallMarkCol;
+                    if (!availableHeaders.some(h => h.raw === prevOverallMarkCol)) {
+                        availableHeaders.push({raw: prevOverallMarkCol, label: label, is_numeric: true});
+                        updateAvailableHeadersDropdown();
+                    }
+                }
+            }
+            
+            // 2. Handle the new overall mark column row
+            if (selectedVal !== "") {
+                let newRow = document.querySelector(`tr[id^="cat-row-"][data-column-name="${CSS.escape(selectedVal)}"]`);
+                if (!newRow) {
+                    // It's not in the table yet! Let's find its label and add it automatically.
+                    const option = Array.from(overallMarkSelect.options).find(opt => opt.value === selectedVal);
+                    const label = option ? option.textContent.trim() : selectedVal;
+                    
+                    // Add it as a numeric column
+                    addColumnRow(selectedVal, label, true);
+                    newRow = document.querySelector(`tr[id^="cat-row-"][data-column-name="${CSS.escape(selectedVal)}"]`);
+                }
+                
+                if (newRow) {
+                    newRow.style.backgroundColor = "rgba(67, 97, 238, 0.08)";
+                    newRow.style.borderLeft = "4px solid #4361ee";
+                    
+                    const titleCell = newRow.querySelector('td:first-child');
+                    if (titleCell && !titleCell.querySelector('.overall-mark-badge')) {
+                        const badgeSpan = document.createElement('span');
+                        badgeSpan.className = "badge overall-mark-badge ms-2";
+                        badgeSpan.textContent = "Overall Mark";
+                        
+                        const container = titleCell.querySelector('.d-flex');
+                        if (container) {
+                            container.appendChild(badgeSpan);
+                        } else {
+                            titleCell.appendChild(badgeSpan);
+                        }
+                    }
+                    
+                    const commentsSelect = newRow.querySelector('select[name^="comments_"]');
+                    if (commentsSelect) {
+                        commentsSelect.disabled = true;
+                        commentsSelect.value = "";
+                        const firstOpt = commentsSelect.options[0];
+                        if (firstOpt) firstOpt.textContent = "-- Mapped as Overall Mark --";
+                        
+                        // Add hidden input so that form submits empty value for comments when disabled
+                        const idx = newRow.id.slice('cat-row-'.length);
+                        let hiddenInput = newRow.querySelector(`input[type="hidden"][name="comments_${idx}"]`);
+                        if (!hiddenInput) {
+                            hiddenInput = document.createElement('input');
+                            hiddenInput.type = 'hidden';
+                            hiddenInput.name = `comments_${idx}`;
+                            hiddenInput.value = '';
+                            newRow.appendChild(hiddenInput);
+                        }
+                    }
+                    
+                    const removeBtn = newRow.querySelector('.remove-row-btn');
+                    if (removeBtn) removeBtn.classList.add('d-none');
+                }
+            }
+            
+            prevOverallMarkCol = selectedVal;
+        });
+    }
+    // ── Student name format toggler listener ───────────────────────────────
+    /** Scan each split-name select and pick the best matching option if nothing is chosen yet. */
+    function tryAutoSelectSplitNameCols() {
+        const firstSel = document.getElementById('col_first_name');
+        const lastSel  = document.getElementById('col_last_name');
+
+        if (firstSel && !firstSel.value) {
+            for (const opt of firstSel.options) {
+                const v = opt.value.toLowerCase();
+                if (v.includes('first') || v.includes('forename') || v.includes('given')) {
+                    firstSel.value = opt.value;
+                    break;
+                }
+            }
+        }
+        if (lastSel && !lastSel.value) {
+            for (const opt of lastSel.options) {
+                const v = opt.value.toLowerCase();
+                if (v.includes('last') || v.includes('surname') || v.includes('family')) {
+                    lastSel.value = opt.value;
+                    break;
+                }
+            }
+        }
+    }
+
+    const nameModeSelect = document.getElementById('name_mode');
+    if (nameModeSelect) {
+        nameModeSelect.addEventListener('change', function () {
+            const isSplit = this.value === 'split';
+            
+            document.querySelectorAll('.name-field-full').forEach(el => {
+                if (isSplit) el.classList.add('d-none');
+                else el.classList.remove('d-none');
+            });
+            
+            document.querySelectorAll('.name-field-split').forEach(el => {
+                if (isSplit) el.classList.remove('d-none');
+                else el.classList.add('d-none');
+            });
+
+            if (isSplit) {
+                tryAutoSelectSplitNameCols();
+            }
+        });
+
+        // Also run on page load in case split is the active mode but cols weren't inferred
+        if (nameModeSelect.value === 'split') {
+            tryAutoSelectSplitNameCols();
+        }
+    }
+
+    // ── Group column toggle ──────────────────────────────────────────────────
+    // When the user picks a group column its category row (and rubric panel) is
+    // hidden so it doesn't appear in the marks table.  Deselecting restores it.
+    const groupColSelect = document.getElementById('col_group');
+    let _prevGroupCol = groupColSelect ? groupColSelect.value : '';
+
+    function setGroupRowHidden(columnName, hidden) {
+        const catRow = document.querySelector(
+            `tr[id^="cat-row-"][data-column-name="${CSS.escape(columnName)}"]`
+        );
+        if (!catRow) return;
+
+        const idx = catRow.id.slice('cat-row-'.length);
+        const rubricPanel = document.getElementById(`rubric-panel-${idx}`);
+        const typeSelect  = document.querySelector(`select[name="type_${idx}"]`);
+
+        if (hidden) {
+            catRow.classList.add('d-none');
+            if (rubricPanel) rubricPanel.classList.add('d-none');
+        } else {
+            catRow.classList.remove('d-none');
+            // Restore rubric panel only if the row's type is currently 'grade'
+            if (rubricPanel && typeSelect && typeSelect.value === 'grade') {
+                rubricPanel.classList.remove('d-none');
+            }
+        }
+    }
+
+    if (groupColSelect) {
+        groupColSelect.addEventListener('change', function () {
+            const newVal = this.value;
+            if (_prevGroupCol) setGroupRowHidden(_prevGroupCol, false);
+            if (newVal)        setGroupRowHidden(newVal, true);
+            _prevGroupCol = newVal;
+        });
+    }
+
 </script>
 
 {% endblock %}

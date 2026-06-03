@@ -206,7 +206,28 @@
 }
 
 .marks-table tbody tr:last-child td {
-    border-bottom: none;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.marks-table tr.overall-row td {
+    background: #f8fafc !important;
+    border-top: 2px solid var(--brand-navy) !important;
+    border-bottom: 2px solid var(--brand-navy) !important;
+    font-weight: 700 !important;
+}
+
+.marks-table tr.overall-row td.label {
+    color: var(--brand-navy) !important;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+}
+
+.marks-table tr.overall-row td.band {
+    color: var(--brand-gold) !important;
+}
+
+.marks-table tr.overall-row td.right {
+    color: var(--brand-navy) !important;
 }
 
 /* ── Feedback blocks ── */
