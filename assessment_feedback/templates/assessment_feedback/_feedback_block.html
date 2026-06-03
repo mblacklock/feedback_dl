@@ -131,14 +131,22 @@ Depends on: sheet_layout.css
 
 <div class="chart-box">
     <div class="chart-box-title">Visual Breakdown of Marks</div>
-    <img src="data:image/svg+xml;base64,{{ radar_base64 }}" alt="Radar chart">
+    {% if radar_svg %}
+        {{ radar_svg|safe }}
+    {% else %}
+        <img src="data:image/svg+xml;base64,{{ radar_base64 }}" alt="Radar chart">
+    {% endif %}
 </div>
 
 {% elif block.id == "histogram" %}
 
 <div class="chart-box">
     <div class="chart-box-title">Cohort Mark Distribution</div>
-    <img src="data:image/svg+xml;base64,{{ hist_base64 }}" alt="Histogram">
+    {% if hist_svg %}
+        {{ hist_svg|safe }}
+    {% else %}
+        <img src="data:image/svg+xml;base64,{{ hist_base64 }}" alt="Histogram">
+    {% endif %}
 </div>
 
 {% endif %}

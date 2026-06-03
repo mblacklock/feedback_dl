@@ -4,6 +4,8 @@ import numpy as np
 import matplotlib
 # Use non-interactive Agg backend to avoid GUI threads/issues
 matplotlib.use('Agg')
+# Render native SVG text elements for smaller file sizes and tooltip manipulation
+matplotlib.rcParams['svg.fonttype'] = 'none'
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 
@@ -121,7 +123,18 @@ def generate_radar_chart(categories, student_percentages, average_percentages, p
     plt.savefig(buf, format='svg', bbox_inches='tight', transparent=False)
     plt.close(fig)
 
-    return buf.getvalue().decode('utf-8')
+    svg_data = buf.getvalue().decode('utf-8')
+
+    # Post-process SVG to inject mouseover tooltips (<title> tags) on radar category labels
+    import html
+    import re
+    for cat in categories:
+        short_label = cat if len(cat) <= 7 else cat[:6] + '…'
+        escaped_label = re.escape(short_label)
+        pattern = re.compile(rf'(<text\b[^>]*>)({escaped_label})(</text>)')
+        svg_data = pattern.sub(rf'\1<title>{html.escape(cat)}</title>\2\3', svg_data, count=1)
+
+    return svg_data
 
 
 def generate_cohort_histogram(scores, student_score=None, degree_level=None):

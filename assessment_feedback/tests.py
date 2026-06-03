@@ -2151,3 +2151,28 @@ class AssessmentFeedbackViewsTest(TestCase):
         self.assertEqual(ws.cell(row=2, column=2).value, "Alice Smith")
         self.assertIsNone(ws.cell(row=3, column=1).value)
         self.assertIsNone(ws.cell(row=3, column=2).value)
+
+    def test_radar_chart_tooltips(self):
+        """generate_radar_chart includes native SVG <title> tooltips for category labels, including truncated ones."""
+        from core.utils.charts import generate_radar_chart
+        
+        categories = ["Design /30", "Very Long Category Name /40", "Short /20"]
+        student_percentages = [80.0, 70.0, 90.0]
+        average_percentages = [60.0, 50.0, 80.0]
+        
+        svg_content = generate_radar_chart(categories, student_percentages, average_percentages)
+        
+        # Check that it's a valid SVG string
+        self.assertIn("<svg", svg_content)
+        self.assertIn("</svg>", svg_content)
+        
+        # Check that the full names are present in <title> tags
+        self.assertIn("<title>Design /30</title>", svg_content)
+        self.assertIn("<title>Very Long Category Name /40</title>", svg_content)
+        self.assertIn("<title>Short /20</title>", svg_content)
+        
+        # Check that the shortened/truncated text labels are still rendered inside the corresponding <text> elements
+        self.assertIn("Design…", svg_content)
+        self.assertIn("Very L…", svg_content)
+        self.assertIn("Short …", svg_content)
+

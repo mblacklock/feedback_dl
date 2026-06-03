@@ -271,7 +271,8 @@
     margin-bottom: 8px;
 }
 
-.chart-box img {
+.chart-box img,
+.chart-box svg {
     width: 100%;
     height: auto;
     display: block;

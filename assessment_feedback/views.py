@@ -490,6 +490,8 @@ def build_assessment_student_context(student_row, student_index, mappings, categ
         "overall_percentage": round(overall_pct),
         "radar_base64": base64.b64encode(radar_svg.encode("utf-8")).decode("utf-8") if radar_svg else "",
         "hist_base64": base64.b64encode(hist_svg.encode("utf-8")).decode("utf-8") if hist_svg else "",
+        "radar_svg": radar_svg,
+        "hist_svg": hist_svg,
         "degree_level": degree_level,
         "module_code": mappings.get("module_code", "COMP101"),
         "module_title": mappings.get("module_title", "Module Performance"),

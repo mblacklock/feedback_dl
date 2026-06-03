@@ -114,7 +114,7 @@
 
                     <!-- Live Content Rendered inside the block -->
                     <div class="block-preview-content">
-                        {% include "assessment_feedback/_feedback_block.html" with categories=preview_student.categories radar_base64=preview_student.radar_base64 hist_base64=preview_student.hist_base64 block=block is_editor=True show_numeric_grade_bands=show_numeric_grade_bands general_comments=general_comments overall_grade=preview_student.overall_grade total_score=preview_student.total_score total_max_marks=preview_student.total_max_marks %}
+                        {% include "assessment_feedback/_feedback_block.html" with categories=preview_student.categories radar_base64=preview_student.radar_base64 hist_base64=preview_student.hist_base64 radar_svg=preview_student.radar_svg hist_svg=preview_student.hist_svg block=block is_editor=True show_numeric_grade_bands=show_numeric_grade_bands general_comments=general_comments overall_grade=preview_student.overall_grade total_score=preview_student.total_score total_max_marks=preview_student.total_max_marks %}
                     </div>
 
                     <!-- Exclusion Overlay for visual indicator -->
