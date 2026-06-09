@@ -15,13 +15,11 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include, re_path
-from django.views.static import serve
+from django.urls import path, include
+from django.views.generic import RedirectView
 from django.conf import settings
 from . import views
 
-# Root of the MkDocs build output
-DOCS_ROOT = settings.BASE_DIR / "site"
 
 urlpatterns = [
     path("", views.portal_home, name="portal_home"),
@@ -33,7 +31,7 @@ urlpatterns = [
     path("marking-sheet-builder/", include("marking_sheet_builder.urls")),
     path("module-summary/", include("module_summary.urls")),
     path("cohort-report/", include("cohort_report.urls")),
-    # Serve the MkDocs static build at /docs/
-    path("docs/", serve, {"document_root": DOCS_ROOT, "path": "index.html"}),
-    re_path(r"^docs/(?P<path>.+)$", serve, {"document_root": DOCS_ROOT}),
+    # Redirect /docs/ to the GitHub Pages site
+    path("docs/", RedirectView.as_view(url="https://mblacklock.github.io/feedback_dl/", permanent=False)),
+    path("docs/<path:path>", RedirectView.as_view(url="https://mblacklock.github.io/feedback_dl/%(path)s", permanent=False)),
 ]
