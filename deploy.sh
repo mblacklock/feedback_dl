@@ -27,9 +27,6 @@ echo "==> Running database migrations"
 echo "==> Collecting static files"
 "$PYTHON" "$PROJECT_DIR/manage.py" collectstatic --noinput --settings="$DJANGO_SETTINGS"
 
-echo "==> Building MkDocs documentation"
-"$PYTHON" -m mkdocs build --config-file "$PROJECT_DIR/mkdocs.yml"
-
 echo "==> Reloading web app"
 touch "$WSGI_FILE"
 

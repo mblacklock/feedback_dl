@@ -67,7 +67,7 @@ feedback_project/
 ## Requirements
 - Split into two files under `requirements/`:
   - `requirements/base.txt` — production dependencies only (no Selenium)
-  - `requirements/dev.txt` — includes `-r base.txt` plus Selenium and its transitive deps
+  - `requirements/dev.txt` — includes `-r base.txt` plus Selenium, MkDocs, and their transitive deps
 - `requirements.txt` at the root redirects to `base.txt` for backwards compatibility — do not add packages there directly
 - Local dev install: `pip install -r requirements/dev.txt`
 - Production install (deploy script): `pip install -r requirements/base.txt`
@@ -81,8 +81,9 @@ feedback_project/
   - `re_path(r"^docs/(?P<path>.+)$", ...)` → serves all sub-pages
 - Live preview (separate from Django): `.venv\Scripts\python.exe -m mkdocs serve` on port 8001
 - When updating docs: edit the `.md` file in `docs/`, then run `mkdocs build` to refresh what Django serves
-- Deploy script: `deploy.sh` at the project root — run `bash deploy.sh` from PythonAnywhere's bash console
-  - Runs: `git pull` → `pip install` → `migrate` → `collectstatic` → `mkdocs build` → `touch` wsgi file to reload
+- Docs are deployed to **GitHub Pages**, not served by Django on PythonAnywhere — `mkdocs gh-deploy` from local machine
+- Deploy script (`deploy.sh`) does **not** run `mkdocs build` — docs are a separate concern
+  - Runs: `git pull` → `pip install` → `migrate` → `collectstatic` → `touch` wsgi file to reload
 
 ## Rules
 - Dedicated files for CSS and JS

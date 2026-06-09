@@ -3,6 +3,10 @@
 
 -r base.txt
 
+# MkDocs (build docs locally; deployed to GitHub Pages, not PythonAnywhere)
+mkdocs==1.6.1
+mkdocs-material==9.7.6
+
 # Functional testing (Selenium + ChromeDriver)
 selenium==4.38.0
 webdriver-manager==4.0.2
