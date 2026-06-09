@@ -1,6 +1,7 @@
 site_name: Feedback Generator — User Guide
 site_description: User documentation for the Northumbria University Feedback Generator tools
 site_author: Northumbria University
+site_url: https://mblacklock.github.io/feedback_dl/
 
 docs_dir: docs
 site_dir: site
