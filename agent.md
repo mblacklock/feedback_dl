@@ -76,11 +76,11 @@ feedback_project/
 - User guides live in `docs/` as Markdown files, one per app, with a home page at `docs/index.md`
 - Config: `mkdocs.yml` at the project root using the **Material** theme
 - Built output goes to `site/` (git-ignored) — rebuild with `.venv\Scripts\python.exe -m mkdocs build`
-- Django serves the built site at `/docs/` via `django.views.static.serve` (configured in `core/urls.py`)
-  - `path("docs/", ...)` → serves `site/index.html`
-  - `re_path(r"^docs/(?P<path>.+)$", ...)` → serves all sub-pages
+- Django redirects `/docs/` to the GitHub Pages site via `RedirectView` (configured in `core/urls.py`)
+  - `path("docs/", ...)` → redirects to `https://mblacklock.github.io/feedback_dl/`
+  - `path("docs/<path:path>", ...)` → redirects sub-pages to their GitHub Pages equivalents
 - Live preview (separate from Django): `.venv\Scripts\python.exe -m mkdocs serve` on port 8001
-- When updating docs: edit the `.md` file in `docs/`, then run `mkdocs build` to refresh what Django serves
+- When updating docs: edit the `.md` file in `docs/`, then run `mkdocs gh-deploy` to publish to GitHub Pages
 - Docs are deployed to **GitHub Pages**, not served by Django on PythonAnywhere — `mkdocs gh-deploy` from local machine
 - Deploy script (`deploy.sh`) does **not** run `mkdocs build` — docs are a separate concern
   - Runs: `git pull` → `pip install` → `migrate` → `collectstatic` → `touch` wsgi file to reload
