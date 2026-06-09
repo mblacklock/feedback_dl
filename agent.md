@@ -73,7 +73,8 @@ feedback_project/
   - `re_path(r"^docs/(?P<path>.+)$", ...)` → serves all sub-pages
 - Live preview (separate from Django): `.venv\Scripts\python.exe -m mkdocs serve` on port 8001
 - When updating docs: edit the `.md` file in `docs/`, then run `mkdocs build` to refresh what Django serves
-- `site/` is excluded from `.gitignore` — it is a build artefact, not source
+- Deploy script: `deploy.sh` at the project root — run `bash deploy.sh` from PythonAnywhere's bash console
+  - Runs: `git pull` → `pip install` → `migrate` → `collectstatic` → `mkdocs build` → `touch` wsgi file to reload
 
 ## Rules
 - Dedicated files for CSS and JS
