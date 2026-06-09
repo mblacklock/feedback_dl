@@ -64,6 +64,14 @@ feedback_project/
 - Functional tests (Selenium using Chrome/ChromeDriver) written first, then unit tests
 - Test fixtures: `dummy_grades.xlsx`, `gc_2025SEM1_KB5034BNN01_dummy.xls`, `KB5034_blank_MCRF_25-26_dummy.xls` (all anonymised)
 
+## Requirements
+- Split into two files under `requirements/`:
+  - `requirements/base.txt` — production dependencies only (no Selenium)
+  - `requirements/dev.txt` — includes `-r base.txt` plus Selenium and its transitive deps
+- `requirements.txt` at the root redirects to `base.txt` for backwards compatibility — do not add packages there directly
+- Local dev install: `pip install -r requirements/dev.txt`
+- Production install (deploy script): `pip install -r requirements/base.txt`
+
 ## Documentation (MkDocs)
 - User guides live in `docs/` as Markdown files, one per app, with a home page at `docs/index.md`
 - Config: `mkdocs.yml` at the project root using the **Material** theme

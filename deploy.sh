@@ -19,7 +19,7 @@ echo "==> Pulling latest code"
 git pull
 
 echo "==> Installing / updating dependencies"
-"$PYTHON" -m pip install -q -r "$PROJECT_DIR/requirements.txt" --no-cache-dir
+"$PYTHON" -m pip install -q -r "$PROJECT_DIR/requirements/base.txt" --no-cache-dir
 
 echo "==> Running database migrations"
 "$PYTHON" "$PROJECT_DIR/manage.py" migrate --settings="$DJANGO_SETTINGS"
