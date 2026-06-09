@@ -65,3 +65,5 @@ wsproto==1.2.0
 xhtml2pdf==0.2.17
 zopfli==0.4.2
 xlrd==2.0.2
+mkdocs==1.6.1
+mkdocs-material==9.7.6
