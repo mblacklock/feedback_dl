@@ -1,4 +1,4 @@
-# Cohort Report
+# Cohort Summary Report
 
 Generate a **tutor-facing** cohort analytics report from a completed MCRF spreadsheet.
 The report shows aggregated statistics and histograms for each assessment component and
@@ -22,7 +22,7 @@ the overall module — **no per-student data appears in the output**.
 
 The app automatically detects:
 
-- Student name and ID columns (used for internal processing only, never shown in output)
+- Student name and ID columns (used for internal processing only, never shown in output)  ****DOES IT NEED TO LOOK AT STUDENT NAME?***
 - Assessment **component mark** columns (headers containing "mark", excluding totals and averages)
 - **Module code**, **module title**, **year**, **period**, and **occurrence** from the MCRF header
 - **Component weights** from column headers (e.g. `CW1 40%`); split evenly if not found

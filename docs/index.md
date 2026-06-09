@@ -9,9 +9,9 @@ personalised student feedback sheets, cohort analytics reports, and marking reso
 |-----|-------------|
 | [Assessment Feedback](assessment_feedback.md) | Per-student feedback sheets from a marks spreadsheet |
 | [Module Summary](module_summary.md) | Per-student module summary from an MCRF spreadsheet |
-| [Cohort Report](cohort_report.md) | Cohort-level analytics report from an MCRF spreadsheet |
+| [Cohort Summary Report](cohort_report.md) | Cohort-level analytics report from an MCRF spreadsheet |
 | [Comments Generator](comments_generator.md) | Build reusable feedback comment pools |
-| [Marking Converters](marking_converters.md) | Convert between gradebook formats and populate MCRF files |
+| [Marking Sheet Converters](marking_converters.md) | Convert between gradebook formats and populate MCRF files |
 | [Marking Sheet Builder](marking_sheet_builder.md) | Generate a blank marking spreadsheet template |
 | [Rubric Generator](rubric_generator.md) | Create and manage reusable assessment rubric templates |
 
