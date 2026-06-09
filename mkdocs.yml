@@ -1,0 +1,34 @@
+site_name: Feedback Generator — User Guide
+site_description: User documentation for the Northumbria University Feedback Generator tools
+site_author: Northumbria University
+
+docs_dir: docs
+site_dir: site
+
+nav:
+  - Home: index.md
+  - Apps:
+    - Assessment Feedback: assessment_feedback.md
+    - Module Summary: module_summary.md
+    - Cohort Report: cohort_report.md
+    - Comments Generator: comments_generator.md
+    - Marking Converters: marking_converters.md
+    - Marking Sheet Builder: marking_sheet_builder.md
+    - Rubric Generator: rubric_generator.md
+
+theme:
+  name: material
+  palette:
+    primary: indigo
+    accent: amber
+  features:
+    - navigation.tabs
+    - navigation.top
+    - search.highlight
+    - content.code.copy
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true

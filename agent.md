@@ -64,6 +64,17 @@ feedback_project/
 - Functional tests (Selenium using Chrome/ChromeDriver) written first, then unit tests
 - Test fixtures: `dummy_grades.xlsx`, `gc_2025SEM1_KB5034BNN01_dummy.xls`, `KB5034_blank_MCRF_25-26_dummy.xls` (all anonymised)
 
+## Documentation (MkDocs)
+- User guides live in `docs/` as Markdown files, one per app, with a home page at `docs/index.md`
+- Config: `mkdocs.yml` at the project root using the **Material** theme
+- Built output goes to `site/` (git-ignored) — rebuild with `.venv\Scripts\python.exe -m mkdocs build`
+- Django serves the built site at `/docs/` via `django.views.static.serve` (configured in `core/urls.py`)
+  - `path("docs/", ...)` → serves `site/index.html`
+  - `re_path(r"^docs/(?P<path>.+)$", ...)` → serves all sub-pages
+- Live preview (separate from Django): `.venv\Scripts\python.exe -m mkdocs serve` on port 8001
+- When updating docs: edit the `.md` file in `docs/`, then run `mkdocs build` to refresh what Django serves
+- `site/` is excluded from `.gitignore` — it is a build artefact, not source
+
 ## Rules
 - Dedicated files for CSS and JS
 - Keep it DRY across each app and the project
