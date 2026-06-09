@@ -4,10 +4,6 @@
 
 {% block extra_css %}
 <style>
-    body {
-        background: #f7f9fc;
-        color: #172033;
-    }
 
     .portal-header {
         margin: 0 auto 1.5rem;
@@ -66,7 +62,13 @@
 {% block content %}
 <section class="portal-header">
     <h1>Feedback Portal</h1>
-    <p>Choose a tool to generate feedback sheets, module summaries, reusable rubrics, or supporting gradebook files.</p>
+    <p class="mb-3">Choose a tool to generate feedback sheets, module summaries, reusable rubrics, or supporting gradebook files.</p>
+    <a href="{% url 'user_guide' %}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary btn-sm px-3 rounded-pill">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-book-half me-1 align-text-top" viewBox="0 0 16 16">
+          <path d="M8.5 2.687c.654-.689 1.782-.886 3.112-.752 1.234.124 2.503.523 3.388.893v9.923c-.918-.35-2.107-.692-3.287-.81-1.094-.111-2.278-.039-3.213.492zM8 1.783C7.012.746 5.688.855 4.306 1.007 2.906 1.154 1.56 1.586.73 1.782v9.94c.83-.197 2.185-.607 3.536-.754 1.378-.152 2.7-.07 3.687.797zm0 13.06c-.969-.843-2.314-1.037-3.753-1.184-1.348-.147-2.698.118-3.535.35V2.48c.83-.197 2.185-.607 3.536-.754 1.353-.15 2.778-.02 3.753.848z"/>
+        </svg>
+        Read the User Guide
+    </a>
 </section>
 
 <section class="tool-grid" aria-label="Feedback tools">
