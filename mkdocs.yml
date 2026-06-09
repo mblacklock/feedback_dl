@@ -5,8 +5,6 @@ site_url: https://mblacklock.github.io/feedback_dl/
 
 docs_dir: docs
 site_dir: site
-extra_files:
-  - .nojekyll
 
 nav:
   - Home: index.md
