@@ -7,9 +7,11 @@
 - [ ] Add basic upload limits or row-count guardrails for large spreadsheets.
 - [ ] Review whether parsed spreadsheet data should be stored in Django sessions for large cohorts.
 
+## Documentation 
+
+- [ ] Read throug and check 
+
 ## Future Enhancements
 
-- [x] Ability to have non-mark categories, e.g. for performance data.
-- [x] General assessment feedback/freeform comments.
-- [x] Create a marking spreadsheet from a template.
-- [x] Add a changelog file.
+ - [ ] Rubric generator - Review app
+ - [ ] Comment generator - Allow option to upload pool comments.  Allow option to create categories 

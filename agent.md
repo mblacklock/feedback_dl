@@ -81,6 +81,7 @@ feedback_project/
   - `path("docs/<path:path>", ...)` → redirects sub-pages to their GitHub Pages equivalents
 - Live preview (separate from Django): `.venv\Scripts\python.exe -m mkdocs serve` on port 8001
 - When updating docs: edit the `.md` file in `docs/`, then run `mkdocs gh-deploy` to publish to GitHub Pages
+- Changelog: edit `CHANGELOG.md` at the project root only. A hook (`docs/hooks.py`) automatically copies it to `docs/changelog.md` during MkDocs builds. The generated `docs/changelog.md` file is git-ignored.
 - Docs are deployed to **GitHub Pages**, not served by Django on PythonAnywhere — `mkdocs gh-deploy` from local machine
 - Deploy script (`deploy.sh`) does **not** run `mkdocs build` — docs are a separate concern
   - Runs: `git pull` → `pip install` → `migrate` → `collectstatic` → `touch` wsgi file to reload
@@ -88,4 +89,5 @@ feedback_project/
 ## Rules
 - Dedicated files for CSS and JS
 - Keep it DRY across each app and the project
-- Suggest a git commit message for the user at the end of each task (do NOT run modifying git commands on the terminal; read-only commands like git status/diff are okay)
+- Suggest a git commit message for the user at the end of each task in the full format "git commit -m ''" (do NOT run modifying git commands on the terminal; read-only commands like git status/diff are okay)
+- Changelog updates: When introducing new user-facing features or tool updates, add them to `CHANGELOG.md` at the project root under the latest release. Keep entries high-level and focused on feature updates for colleagues (avoid technical developer details like dependencies, scripting, or setup). Never edit `docs/changelog.md` directly.

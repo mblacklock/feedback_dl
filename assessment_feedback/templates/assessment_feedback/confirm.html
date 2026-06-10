@@ -53,8 +53,10 @@
                             <label class="form-label fw-semibold text-secondary">Student Name Column</label>
                             <select name="col_student_name" class="form-select rounded-3" id="col_student_name">
                                 {% for h_raw, h_label in headers_with_labels %}
+                                {% if h_raw %}
                                 <option value="{{ h_raw }}" {% if h_raw == mappings.col_student_name %}selected{% endif %}>{{ h_label }}
                                 </option>
+                                {% endif %}
                                 {% endfor %}
                             </select>
                             <div class="form-text">Used for identifying student names on individual Feedback Sheets.</div>
@@ -65,8 +67,10 @@
                             <label class="form-label fw-semibold text-secondary">First Name Column</label>
                             <select name="col_first_name" class="form-select rounded-3" id="col_first_name">
                                 {% for h_raw, h_label in headers_with_labels %}
+                                {% if h_raw %}
                                 <option value="{{ h_raw }}" {% if h_raw == mappings.col_first_name %}selected{% endif %}>{{ h_label }}
                                 </option>
+                                {% endif %}
                                 {% endfor %}
                             </select>
                             <div class="form-text">First/Forename.</div>
@@ -75,8 +79,10 @@
                             <label class="form-label fw-semibold text-secondary">Last Name Column</label>
                             <select name="col_last_name" class="form-select rounded-3" id="col_last_name">
                                 {% for h_raw, h_label in headers_with_labels %}
+                                {% if h_raw %}
                                 <option value="{{ h_raw }}" {% if h_raw == mappings.col_last_name %}selected{% endif %}>{{ h_label }}
                                 </option>
+                                {% endif %}
                                 {% endfor %}
                             </select>
                             <div class="form-text">Last/Surname.</div>
@@ -86,8 +92,10 @@
                             <label class="form-label fw-semibold text-secondary">Student ID Column</label>
                             <select name="col_student_id" class="form-select rounded-3" required id="col_student_id">
                                 {% for h_raw, h_label in headers_with_labels %}
+                                {% if h_raw %}
                                 <option value="{{ h_raw }}" {% if h_raw == mappings.col_student_id %}selected{% endif %}>{{ h_label }}
                                 </option>
+                                {% endif %}
                                 {% endfor %}
                             </select>
                             <div class="form-text">Used for Feedback Sheet filenames and records layout.</div>
@@ -101,8 +109,10 @@
                             <select name="col_overall_mark" class="form-select rounded-3" id="col_overall_mark">
                                 <option value="">[Sum categories dynamically]</option>
                                 {% for h_raw, h_label in headers_with_labels %}
+                                {% if h_raw %}
                                 <option value="{{ h_raw }}" {% if h_raw == mappings.col_overall_mark %}selected{% endif %}>{{ h_label }}
                                 </option>
+                                {% endif %}
                                 {% endfor %}
                             </select>
                             <div class="form-text">Select a specific column for the overall mark, or leave to sum categories.</div>
@@ -112,8 +122,10 @@
                             <select name="col_group" class="form-select rounded-3" id="col_group">
                                 <option value="">— None —</option>
                                 {% for h_raw, h_label in headers_with_labels %}
-                                <option value="{{ h_raw }}" {% if h_raw and h_raw == mappings.col_group %}selected{% endif %}>{{ h_label }}
+                                {% if h_raw %}
+                                <option value="{{ h_raw }}" {% if h_raw == mappings.col_group %}selected{% endif %}>{{ h_label }}
                                 </option>
+                                {% endif %}
                                 {% endfor %}
                             </select>
                             <div class="form-text">If students belong to a group or team, select the column to display it on their feedback sheet.</div>

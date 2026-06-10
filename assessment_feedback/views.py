@@ -198,6 +198,10 @@ def clean_category_title(title):
     cleaned = re.sub(r'\b\d+\b\s*$', '', cleaned)
     # Strip whitespace and trailing punctuation/special characters
     cleaned_str = cleaned.strip()
+    if not cleaned_str:
+        # Nothing survived cleaning — the title was entirely numeric (e.g. "002").
+        # Return the original so purely-numeric component labels are preserved.
+        return title.strip()
     if cleaned_str.isupper():
         return cleaned_str.capitalize()
     return cleaned_str
@@ -524,15 +528,26 @@ def upload_file(request):
             
             # Extract headers (clean trailing/leading spaces)
             headers = [str(cell).strip() if cell is not None else "" for cell in rows[0]]
-            
-            # Extract student rows (ignoring fully empty rows)
+
+            # Deduplicate headers: first-occurrence wins for each non-blank header name.
+            # Spreadsheets often have a summary table to the right of the data that
+            # repeats the same column labels — this causes row_dict overwrites and
+            # confuses category detection.
+            header_col_index = {}  # header name -> first column index that uses it
+            for idx, h in enumerate(headers):
+                if h and h not in header_col_index:
+                    header_col_index[h] = idx
+            unique_headers = list(header_col_index.keys())
+
+            # Extract student rows (ignoring fully empty rows).
+            # Use header_col_index so first-occurrence column value is always used.
             data_rows = []
             for r in rows[1:]:
                 if any(cell is not None for cell in r):
-                    row_dict = {}
-                    for idx, cell in enumerate(r):
-                        if idx < len(headers):
-                            row_dict[headers[idx]] = cell
+                    row_dict = {
+                        h: (r[idx] if idx < len(r) else None)
+                        for h, idx in header_col_index.items()
+                    }
                     data_rows.append(row_dict)
             
             # Check for split first/last name columns
@@ -540,7 +555,7 @@ def upload_file(request):
             last_name_col = ""
             group_col = ""
             group_keywords = ("group", "team", "cohort", "class", "section", "lab", "tutorial")
-            for h in headers:
+            for h in unique_headers:
                 hl = h.lower()
                 if "first" in hl or "forename" in hl or "given" in hl:
                     first_name_col = h
@@ -574,7 +589,7 @@ def upload_file(request):
             
             # 1. Infer Name, ID & Overall Mark
             # ID is checked first so "Student ID" is never mistaken for a name column.
-            for h in headers:
+            for h in unique_headers:
                 hl = h.lower()
                 is_id_like = "id" in hl or "number" in hl or "code" in hl
 
@@ -594,18 +609,19 @@ def upload_file(request):
                 if not inferred_mappings["col_student_name"]:
                     inferred_mappings["col_student_name"] = first_name_col
             else:
-                if not inferred_mappings["col_student_name"] and headers:
-                    inferred_mappings["col_student_name"] = headers[0]
-            if not inferred_mappings["col_student_id"] and len(headers) > 1:
-                inferred_mappings["col_student_id"] = headers[1]
+                if not inferred_mappings["col_student_name"] and unique_headers:
+                    inferred_mappings["col_student_name"] = unique_headers[0]
+            if not inferred_mappings["col_student_id"] and len(unique_headers) > 1:
+                inferred_mappings["col_student_id"] = unique_headers[1]
                 
             # Columns known to be non-category (text/comment columns)
             comment_keywords = ("comment", "feedback", "notes", "remarks", "text")
 
             # 2. Infer Categories & Comments
-            # We look for numeric columns as category candidates
+            # We look for numeric columns as category candidates.
+            # unique_headers is already deduplicated, so no need for seen_headers.
             candidate_categories = []
-            for h in headers:
+            for h in unique_headers:
                 if (h == inferred_mappings["col_student_name"] or
                     h == inferred_mappings["col_student_id"] or
                     h == inferred_mappings.get("col_first_name") or
@@ -738,7 +754,7 @@ def upload_file(request):
                 })
             
             # Save parsed state inside session
-            request.session["headers"] = headers
+            request.session["headers"] = unique_headers
             request.session["uploaded_data"] = data_rows
             request.session["mappings"] = inferred_mappings
             request.session.modified = True
