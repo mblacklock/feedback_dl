@@ -2,6 +2,11 @@
 
 All notable changes to the Feedback Portal tools will be documented here.
 
+## [Unreleased]
+
+### Fixed
+- **Assessment Feedback**: Improved compatibility with a wider range of spreadsheet layouts — column detection and category labels now work correctly regardless of how the spreadsheet is structured.
+
 ## [1.0.0] - 2026-06-09
 
 ### Added
