@@ -24,6 +24,9 @@ git merge "$CURRENT_BRANCH"
 echo "==> Pushing prod to remote origin..."
 git push origin prod
 
+echo "==> Deploying documentation to GitHub Pages..."
+./.venv/Scripts/mkdocs gh-deploy
+
 echo "==> Returning to $CURRENT_BRANCH branch..."
 git switch "$CURRENT_BRANCH"
 
