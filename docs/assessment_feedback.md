@@ -83,6 +83,10 @@ A drag-and-drop WYSIWYG editor lets you arrange the blocks that appear on each f
 Each block can be set to **full width** or **half width**, enabled or disabled, and reordered
 by dragging. A live preview updates as you make changes.
 
+Within the **Marks table** preview block, you can also customize row layouts:
+- **Highlight rows**: Hover over a row and click the **Highlight** badge to toggle it as a section header (bold, light background, hiding mark/comment fields).
+- **Add divider lines**: Hover over the boundary between rows and click **━ Add Divider** to insert a solid gray separator line. Hover and click **✕ Remove Divider** to remove it.
+
 Click **Generate** to produce the output.
 
 ---

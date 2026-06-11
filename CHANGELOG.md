@@ -4,6 +4,9 @@ All notable changes to the Feedback Portal tools will be documented here.
 
 ## [Unreleased]
 
+### Added
+- **Assessment Feedback**: Added the ability to highlight category rows and insert visual dividers directly within the interactive live layout editor.
+
 ### Fixed
 - **Assessment Feedback**: Improved compatibility with a wider range of spreadsheet layouts — column detection and category labels now work correctly regardless of how the spreadsheet is structured.
 

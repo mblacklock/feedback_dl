@@ -27,6 +27,7 @@ feedback_project/
 - Upload a marks spreadsheet → column mapping confirmation → configure layout → generate zip of HTML files per student
 - Each HTML contains: student details, criterion marks + UK grade band labels, feedback comments, radar chart, cohort histogram
 - Layout is configurable (block order, full/half width, enable/disable) via a WYSIWYG drag-and-drop editor
+- Category visual styles are configurable directly in the preview table (highlighting a row to make it a section header, or inserting a solid gray visual divider line below a row)
 - Also generates a pre-populated `.xlsm` email file (template at `assessment_feedback/resources/email_template.xlsm`) using `openpyxl` with `keep_vba=True` — never saved to disk
 
 ### `module_summary`
