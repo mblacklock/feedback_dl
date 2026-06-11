@@ -1,10 +1,11 @@
 {% extends "rubric_generator/base.html" %}
+{% load static_helpers %}
 
 {% block title %}Gradebook Populator - Match Columns{% endblock %}
 
 {% block extra_css %}
 <style>
-    {% include "css/brand_design.css" %}
+    {% inline_static "core/css/brand_design.css" %}
     
     .mapping-card {
         background: #ffffff;

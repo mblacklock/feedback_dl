@@ -1,12 +1,13 @@
 {% extends "rubric_generator/base.html" %}
 {% load static %}
+{% load static_helpers %}
 
 {% block title %}Marking Sheet Builder{% endblock %}
 
 {% block extra_css %}
 <style>
-    {% include "css/brand_design.css" %}
-    {% include "css/sheet_builder.css" %}
+    {% inline_static "core/css/brand_design.css" %}
+    {% inline_static "core/css/sheet_builder.css" %}
 </style>
 {% endblock %}
 

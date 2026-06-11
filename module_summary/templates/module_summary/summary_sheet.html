@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+{% load static_helpers %}<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -30,8 +30,8 @@
             box-shadow: 0 2px 16px rgba(0, 0, 0, 0.10);
         }
 
-        {% include "css/brand_design.css" %}
-        {% include "css/sheet_layout.css" %}
+        {% inline_static "core/css/brand_design.css" %}
+        {% inline_static "core/css/sheet_layout.css" %}
     </style>
 </head>
 

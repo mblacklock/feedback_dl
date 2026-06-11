@@ -354,8 +354,17 @@ function saveNow() {
         saveTimeout = null;
     }
     
-    // Check for validation errors in grade bands
-    const hasErrors = document.querySelectorAll(".band-validation-error[style*='display: block']").length > 0;
+    // Check for validation errors in grade bands (only for active grade type rows)
+    let hasErrors = false;
+    document.querySelectorAll('.category-row').forEach(row => {
+        const gradeRadio = row.querySelector('.cat-type-grade');
+        if (gradeRadio && gradeRadio.checked) {
+            const errorEl = row.querySelector(".band-validation-error");
+            if (errorEl && errorEl.style.display === 'block') {
+                hasErrors = true;
+            }
+        }
+    });
     if (hasErrors) {
         updateSaveStatus('error');
         const statusEl = document.getElementById('save-status');
@@ -620,6 +629,12 @@ function updateGradeBandsPreview(row) {
         fetch(`/rubric-generator/grade-bands-preview/?max_marks=${maxMarks}&subdivision=${subdivision}&degree_level=${encodeURIComponent(degreeLevel)}`)
         .then(response => response.json())
         .then(data => {
+            // Check if the input value has changed since we sent the request (prevent race conditions)
+            const currentMax = parseInt(row.querySelector('.cat-max').value);
+            const currentSubdiv = row.querySelector('.subdivision-value').value;
+            if (currentMax !== maxMarks || currentSubdiv !== subdivision) {
+                return; // ignore stale request
+            }
             if (data.html) {
                 previewEl.innerHTML = data.html + `<div class="band-validation-error text-danger mt-2 small" style="display: none; font-weight: 500;"></div>`;
                 

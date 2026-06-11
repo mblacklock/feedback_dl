@@ -9,7 +9,7 @@
 
 ## Documentation 
 
-- [ ] Read throug and check 
+- [ ] Read through and check 
 
 ## Future Enhancements
 

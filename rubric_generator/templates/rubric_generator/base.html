@@ -1,3 +1,4 @@
+{% load static_helpers %}
 <!doctype html>
 <html lang="en">
 <head>
@@ -12,7 +13,7 @@
         rel="stylesheet">
     <!-- Project-wide design system -->
     <style>
-        {% include "css/brand_design.css" %}
+        {% inline_static "core/css/brand_design.css" %}
     </style>
     {% block extra_css %}{% endblock %}
 </head>

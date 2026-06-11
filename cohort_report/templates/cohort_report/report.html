@@ -1,4 +1,5 @@
 {% extends base_template %}
+{% load static_helpers %}
 
 {% block title %}Cohort Summary - {{ module_code }}{% endblock %}
 
@@ -7,8 +8,8 @@
     href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap"
     rel="stylesheet">
 <style>
-    {% include "css/brand_design.css" %}
-    {% include "css/cohort_report.css" %}
+    {% inline_static "core/css/brand_design.css" %}
+    {% inline_static "cohort_report/css/cohort_report.css" %}
 </style>
 {% endblock %}
 

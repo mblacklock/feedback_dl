@@ -1,17 +1,14 @@
 {% extends "rubric_generator/base.html" %}
+{% load static_helpers %}
 
 {% block title %}Configure Feedback Sheet Layout{% endblock %}
 
 {% block extra_css %}
 <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
 <style>
-    {% include "css/brand_design.css" %}
-</style>
-<style>
-    {% include "css/sheet_layout.css" %}
-</style>
-<style>
-    {% include "css/layout_designer.css" %}
+    {% inline_static "core/css/brand_design.css" %}
+    {% inline_static "core/css/sheet_layout.css" %}
+    {% inline_static "core/css/layout_designer.css" %}
 </style>
 <style>
     .simulated-sheet {

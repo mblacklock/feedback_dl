@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+{% load static_helpers %}<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -34,13 +34,13 @@
         }
 
         /* Shared global design tokens & core styling */
-        {% include "css/brand_design.css" %}
+        {% inline_static "core/css/brand_design.css" %}
 
         /* Shared block style sheet variables */
-        {% include "css/sheet_layout.css" %}
+        {% inline_static "core/css/sheet_layout.css" %}
 
         /* Dashboard specific overrides */
-        {% include "css/cohort_report_download.css" %}
+        {% inline_static "cohort_report/css/cohort_report_download.css" %}
     </style>
 </head>
 <body>
