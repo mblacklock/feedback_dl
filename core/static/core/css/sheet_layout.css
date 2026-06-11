@@ -14,7 +14,7 @@
 }
 
 .header-module {
-    font-size: 10px;
+    font-size: 14px;
     font-weight: 700;
     letter-spacing: 0.15em;
     text-transform: uppercase;
@@ -32,7 +32,7 @@
 }
 
 .header-sub {
-    font-size: 11px;
+    font-size: 14px;
     color: var(--brand-muted);
     letter-spacing: 0.03em;
 }
@@ -48,14 +48,14 @@
 
 .student-name {
     font-family: Georgia, 'Times New Roman', serif;
-    font-size: 18px;
+    font-size: 20px;
     font-weight: bold;
     color: var(--brand-navy);
     margin-bottom: 3px;
 }
 
 .student-meta {
-    font-size: 12px;
+    font-size: 14px;
     color: #666;
 }
 

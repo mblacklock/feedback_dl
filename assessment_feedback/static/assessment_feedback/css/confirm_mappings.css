@@ -191,3 +191,21 @@ tr.insert-zone:hover .insert-zone-btn {
 .mapping-table tr.has-divider-below:has(+ tr.rubric-panel:not(.d-none)) td {
     border-bottom: inherit !important;
 }
+
+/* ── Mapping & Confirmation Table ── */
+.mapping-table th {
+    background-color: #f1f5f9;
+    font-weight: 600;
+    color: #475569;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    border: none;
+}
+
+.mapping-table td {
+    vertical-align: middle;
+    border-bottom: 1px solid #f1f5f9;
+    padding: 16px 12px;
+}
+

@@ -1,5 +1,6 @@
 from django import template
 from django.contrib.staticfiles import finders
+from django.utils.safestring import mark_safe
 
 register = template.Library()
 
@@ -13,7 +14,8 @@ def inline_static(path):
     if file_path:
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
-                return f.read()
+                return mark_safe(f.read())
         except IOError:
             return f"/* Error reading static file: {path} */"
     return f"/* Error: Static file not found: {path} */"
+
