@@ -118,9 +118,9 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_DIRS = [
-    BASE_DIR / 'core' / 'static',
-]
+# We do not list BASE_DIR / 'core' / 'static' here, because 'core' is already in INSTALLED_APPS,
+# which automatically collects static assets from core/static/ via AppDirectoriesFinder.
+STATICFILES_DIRS = []
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
