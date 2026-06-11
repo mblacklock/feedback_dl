@@ -25,7 +25,7 @@ Depends on: sheet_layout.css
     <tbody>
         {% for cat in categories %}
         {% if not cat.is_feedback_only %}
-        <tr{% if cat.row_type == "header" or cat.divider_below or cat.header_below %} class="{% if cat.row_type == 'header' %}marks-section-header{% endif %} {% if cat.divider_below %}has-divider-below{% endif %} {% if cat.header_below %}has-header-below{% endif %}"{% endif %} id="preview-row-{{ forloop.counter0 }}">
+        <tr class="{% if cat.row_type == 'header' %}marks-section-header{% endif %} {% if cat.divider_below %}has-divider-below{% endif %} {% if cat.header_below %}has-header-below{% endif %} {% if is_editor %}draggable-row{% endif %}" {% if is_editor %}draggable="true"{% endif %} id="preview-row-{{ forloop.counter0 }}" data-column-name="{{ cat.column }}">
             <td class="label">
                 {{ cat.label }}
                 {% if is_editor %}

@@ -84,6 +84,7 @@ Each block can be set to **full width** or **half width**, enabled or disabled, 
 by dragging. A live preview updates as you make changes.
 
 Within the **Marks table** preview block, you can also customize row layouts:
+- **Reorder criteria rows**: Drag and drop any row in the Breakdown of Marks table preview to rearrange the order in which criteria appear on the final sheets.
 - **Highlight rows**: Hover over a row and click the **Highlight** badge to toggle it as a section header (bold, light background, hiding mark/comment fields).
 - **Add divider lines**: Hover over the boundary between rows and click **━ Add Divider** to insert a solid gray separator line. Hover and click **✕ Remove Divider** to remove it.
 

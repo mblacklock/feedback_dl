@@ -148,6 +148,7 @@
                 <form method="POST" id="layoutForm">
                     {% csrf_token %}
                     <input type="hidden" name="block_order" id="blockOrderInput" value="">
+                    <input type="hidden" name="category_order" id="categoryOrderInput" value="">
                     <input type="hidden" name="general_comments" id="general_comments_input" value="{{ general_comments }}">
                     
                     <!-- Hidden inputs to preserve layout configuration states on POST -->
@@ -159,8 +160,8 @@
                     
                     <!-- Hidden inputs for category visual layout styling -->
                     {% for cat in preview_student.categories %}
-                    <input type="hidden" name="row_type_{{ forloop.counter0 }}" id="layout_row_type_{{ forloop.counter0 }}" value="{{ cat.row_type|default:'criterion' }}">
-                    <input type="hidden" name="divider_below_{{ forloop.counter0 }}" id="layout_divider_below_{{ forloop.counter0 }}" value="{% if cat.divider_below %}1{% else %}0{% endif %}">
+                    <input type="hidden" name="row_type_{{ cat.column }}" id="layout_row_type_{{ forloop.counter0 }}" value="{{ cat.row_type|default:'criterion' }}">
+                    <input type="hidden" name="divider_below_{{ cat.column }}" id="layout_divider_below_{{ forloop.counter0 }}" value="{% if cat.divider_below %}1{% else %}0{% endif %}">
                     {% endfor %}
 
                     <button type="submit" class="btn btn-premium btn-lg w-100 py-3 d-flex align-items-center justify-content-center gap-2">
@@ -456,6 +457,94 @@
             initDraggable();
         }
 
+        // ── Recalculate Table Borders based on DOM relative siblings ───────
+        function recalculateTableBorders() {
+            const tbody = document.querySelector('.marks-table tbody');
+            if (!tbody) return;
+            
+            const rows = Array.from(tbody.querySelectorAll('tr:not(.overall-row)'));
+            rows.forEach((row) => {
+                row.classList.remove('has-header-below');
+                const nextRow = row.nextElementSibling;
+                if (nextRow && nextRow.classList.contains('marks-section-header')) {
+                    row.classList.add('has-header-below');
+                }
+            });
+        }
+
+        // ── Update Category Order Input serialized value ──────────────────
+        function updateCategoryOrderInput() {
+            const orderInput = document.getElementById('categoryOrderInput');
+            if (!orderInput) return;
+            
+            const tbody = document.querySelector('.marks-table tbody');
+            if (!tbody) return;
+            
+            const order = [];
+            tbody.querySelectorAll('tr:not(.overall-row)').forEach(row => {
+                const colName = row.getAttribute('data-column-name');
+                if (colName) order.push(colName);
+            });
+            orderInput.value = order.join('|||');
+        }
+
+        // ── Drag and Drop Category Rows inside marks-table ──────────────────
+        function initDraggableRows() {
+            const tbody = document.querySelector('.marks-table tbody');
+            if (!tbody) return;
+
+            let dragRow = null;
+
+            tbody.querySelectorAll('tr.draggable-row').forEach(row => {
+                row.addEventListener('dragstart', (e) => {
+                    dragRow = row;
+                    e.dataTransfer.effectAllowed = 'move';
+                    row.classList.add('row-dragging');
+                    if (floatingHandler) floatingHandler.classList.add('d-none');
+                });
+
+                row.addEventListener('dragend', () => {
+                    row.classList.remove('row-dragging');
+                    tbody.querySelectorAll('tr').forEach(r => r.classList.remove('row-drag-over'));
+                    dragRow = null;
+                    updateCategoryOrderInput();
+                });
+
+                row.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    if (row !== dragRow && !row.classList.contains('overall-row')) {
+                        tbody.querySelectorAll('tr').forEach(r => r.classList.remove('row-drag-over'));
+                        row.classList.add('row-drag-over');
+                    }
+                });
+
+                row.addEventListener('dragleave', () => {
+                    row.classList.remove('row-drag-over');
+                });
+
+                row.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!dragRow || dragRow === row || row.classList.contains('overall-row')) return;
+
+                    const rect = row.getBoundingClientRect();
+                    const midY = rect.top + rect.height / 2;
+                    const before = e.clientY < midY;
+
+                    if (before) {
+                        tbody.insertBefore(dragRow, row);
+                    } else {
+                        tbody.insertBefore(dragRow, row.nextSibling);
+                    }
+
+                    row.classList.remove('row-drag-over');
+                    updateCategoryOrderInput();
+                    recalculateTableBorders();
+                });
+            });
+        }
+
         // ── Floating Divider Toggle & Highlight Handler for Preview Sheet ──────
         const marksTable = document.querySelector('.marks-table');
         const floatingHandler = document.getElementById('floating-divider-handler');
@@ -498,6 +587,11 @@
         }
 
         if (marksTable) {
+            // Initialize dragging and sorting on startup
+            initDraggableRows();
+            updateCategoryOrderInput();
+            recalculateTableBorders();
+
             // Bind hover to rows (excluding overall row)
             marksTable.querySelectorAll('tbody tr:not(.overall-row)').forEach(row => {
                 row.addEventListener('mouseenter', () => {
@@ -557,17 +651,16 @@
 
                 const hiddenInput = document.getElementById(`layout_row_type_${idx}`);
                 const isHeader = row.classList.contains('marks-section-header');
-                const prevRow = document.getElementById(`preview-row-${idx - 1}`);
 
                 if (isHeader) {
                     row.classList.remove('marks-section-header');
                     if (hiddenInput) hiddenInput.value = 'criterion';
-                    if (prevRow) prevRow.classList.remove('has-header-below');
                 } else {
                     row.classList.add('marks-section-header');
                     if (hiddenInput) hiddenInput.value = 'header';
-                    if (prevRow) prevRow.classList.add('has-header-below');
                 }
+                
+                recalculateTableBorders();
             });
         }
     });

@@ -211,3 +211,22 @@
     color: #94a3b8 !important;
     left: 15px !important;
 }
+
+/* ── Draggable Table Rows inside simulated sheet ── */
+.marks-table tr.draggable-row {
+    cursor: grab;
+}
+
+.marks-table tr.draggable-row:active {
+    cursor: grabbing;
+}
+
+.marks-table tr.row-dragging {
+    opacity: 0.45;
+    background-color: #f1f5f9 !important;
+}
+
+.marks-table tr.row-drag-over td {
+    border-top: 2px solid #4361ee !important;
+}
+

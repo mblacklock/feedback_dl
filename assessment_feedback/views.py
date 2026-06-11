@@ -469,6 +469,7 @@ def build_assessment_student_context(student_row, student_index, mappings, categ
             calculated_grade_band = None
 
         student_categories_data.append({
+            "column": col,
             "label": cat_label,
             "row_type": row_type,
             "mark": mark_val,
@@ -1159,14 +1160,34 @@ def configure_layout(request):
                 
         # Save visual row configuration highlights & dividers
         categories = mappings.get("categories", [])
-        for idx, cat in enumerate(categories):
-            row_type_val = request.POST.get(f"row_type_{idx}")
+        for cat in categories:
+            col = cat["column"]
+            row_type_val = request.POST.get(f"row_type_{col}")
             if row_type_val:
                 cat["row_type"] = row_type_val
             
-            divider_below_val = request.POST.get(f"divider_below_{idx}")
+            divider_below_val = request.POST.get(f"divider_below_{col}")
             if divider_below_val is not None:
                 cat["divider_below"] = (divider_below_val == "1")
+
+        # Reorder categories based on submitted category_order column names
+        category_order_str = request.POST.get("category_order", "")
+        if category_order_str:
+            try:
+                order_cols = [s.strip() for s in category_order_str.split("|||") if s.strip()]
+                ordered_cats = []
+                remaining_cats = list(categories)
+                
+                for col_name in order_cols:
+                    match = next((c for c in remaining_cats if c["column"] == col_name), None)
+                    if match:
+                        ordered_cats.append(match)
+                        remaining_cats.remove(match)
+                
+                ordered_cats.extend(remaining_cats)
+                mappings["categories"] = ordered_cats
+            except Exception:
+                pass
 
         show_numeric_grade_bands = request.POST.get("show_numeric_grade_bands") == "true"
         request.session["show_numeric_grade_bands"] = show_numeric_grade_bands

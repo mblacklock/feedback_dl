@@ -4,11 +4,16 @@ All notable changes to the Feedback Portal tools will be documented here.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-06-11
+
 ### Added
 - **Assessment Feedback**: Added the ability to highlight category rows and insert visual dividers directly within the interactive live layout editor.
+- **Assessment Feedback**: Added interactive drag-and-drop category row reordering in the layout designer, allowing custom order configurations of criteria in the Breakdown of Marks table.
 
 ### Fixed
 - **Assessment Feedback**: Improved compatibility with a wider range of spreadsheet layouts — column detection and category labels now work correctly regardless of how the spreadsheet is structured.
+- **Core (static templates)**: Fixed HTML-escaping of inlined CSS files in templates rendered via custom `{% inline_static %}` tags, restoring correct Google Font loading and resolving the `.half-pair > .half` columns layout styling.
+- **Assessment Feedback**: Increased the width of generated feedback sheets and module summaries to 1100px for enhanced readability of side-by-side columns.
 
 ## [1.0.0] - 2026-06-09
 
