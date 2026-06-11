@@ -2176,3 +2176,252 @@ class AssessmentFeedbackViewsTest(TestCase):
         self.assertIn("Very L…", svg_content)
         self.assertIn("Short …", svg_content)
 
+
+    # -------------------------------------------------------------------------
+    # Row type tests (header / divider structural rows)
+    # -------------------------------------------------------------------------
+
+    def _row_type_base_mappings(self):
+        """Minimal mappings with one numeric criterion."""
+        return {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "degree_level": "BEng",
+            "subdivision": "none",
+            "categories": [
+                {
+                    "column": "Design /30",
+                    "max_marks": 30,
+                    "weight": None,
+                    "comments_column": "Design Comments",
+                    "type": "numeric",
+                    "row_type": "criterion",
+                    "label": "",
+                },
+            ],
+        }
+
+    def test_confirm_post_saves_header_row_to_session(self):
+        """POSTing a header row_type saves it with row_type='header' and preserves mark fields."""
+        session = self.client.session
+        session["headers"] = self.sample_headers
+        session["uploaded_data"] = self.sample_uploaded_data
+        session["mappings"] = self._row_type_base_mappings()
+        session.save()
+
+        form_data = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "degree_level": "BEng",
+            "col_name_0": "Design /30",
+            "row_type_0": "header",
+            "label_0": "Coursework Marks",
+            "type_0": "numeric",
+            "max_0": "30",
+            "weight_0": "",
+            "comments_0": "Design Comments",
+            "include_radar_0": "on",
+            "removed_0": "0",
+        }
+        resp = self.client.post(reverse("confirm_mappings"), form_data)
+        self.assertEqual(resp.status_code, 302)
+
+        cats = self.client.session["mappings"]["categories"]
+        by_col = {c["column"]: c for c in cats}
+        self.assertIn("Design /30", by_col)
+        header = by_col["Design /30"]
+        self.assertEqual(header["row_type"], "header")
+        self.assertEqual(header["label"], "Coursework Marks")
+        self.assertEqual(header["max_marks"], 30)
+        self.assertFalse(header.get("exclude_radar", True))
+
+    def test_confirm_post_saves_divider_row_to_session(self):
+        """POSTing a divider row_type saves it with row_type='divider'."""
+        session = self.client.session
+        session["headers"] = self.sample_headers
+        session["uploaded_data"] = self.sample_uploaded_data
+        session["mappings"] = self._row_type_base_mappings()
+        session.save()
+
+        form_data = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "degree_level": "BEng",
+            "col_name_0": "__divider_0",
+            "row_type_0": "divider",
+            "label_0": "",
+            "removed_0": "0",
+            "col_name_1": "Design /30",
+            "row_type_1": "criterion",
+            "label_1": "",
+            "type_1": "numeric",
+            "max_1": "30",
+            "weight_1": "",
+            "comments_1": "Design Comments",
+            "removed_1": "0",
+        }
+        resp = self.client.post(reverse("confirm_mappings"), form_data)
+        self.assertEqual(resp.status_code, 302)
+
+        cats = self.client.session["mappings"]["categories"]
+        by_col = {c["column"]: c for c in cats}
+        self.assertIn("__divider_0", by_col)
+        self.assertEqual(by_col["__divider_0"]["row_type"], "divider")
+
+    def test_confirm_post_saves_custom_label(self):
+        """A custom label POSTed for a criterion row is persisted in session."""
+        session = self.client.session
+        session["headers"] = self.sample_headers
+        session["uploaded_data"] = self.sample_uploaded_data
+        session["mappings"] = self._row_type_base_mappings()
+        session.save()
+
+        form_data = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "degree_level": "BEng",
+            "col_name_0": "Design /30",
+            "row_type_0": "criterion",
+            "label_0": "Creative Design",
+            "type_0": "numeric",
+            "max_0": "30",
+            "weight_0": "",
+            "comments_0": "Design Comments",
+            "removed_0": "0",
+        }
+        resp = self.client.post(reverse("confirm_mappings"), form_data)
+        self.assertEqual(resp.status_code, 302)
+
+        cats = self.client.session["mappings"]["categories"]
+        design = next(c for c in cats if c["column"] == "Design /30")
+        self.assertEqual(design["label"], "Creative Design")
+
+    def test_divider_excluded_from_mark_totals(self):
+        """Divider rows must not contribute to the student's total score."""
+        uploaded_data = [
+            {"Student Name": "Alice Smith", "Student ID": "10001",
+             "Design /30": 24, "Design Comments": "Good"},
+        ]
+        mappings = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "degree_level": "BEng",
+            "subdivision": "none",
+            "categories": [
+                {"column": "Design /30", "row_type": "criterion", "label": "",
+                 "type": "numeric", "max_marks": 30, "weight": None,
+                 "comments_column": "Design Comments", "subdivision": "none",
+                 "rubric_marks": [], "unit": "", "exclude_radar": False},
+                {"column": "__divider_1", "row_type": "divider", "label": "",
+                 "type": "feedback_only", "max_marks": None, "weight": None,
+                 "comments_column": "", "subdivision": "none",
+                 "rubric_marks": [], "unit": "", "exclude_radar": True},
+            ],
+        }
+        session = self.client.session
+        session["uploaded_data"] = uploaded_data
+        session["mappings"] = mappings
+        session.save()
+
+        resp = self.client.get(reverse("process_feedback"))
+        self.assertEqual(resp.status_code, 200)
+
+        with zipfile.ZipFile(io.BytesIO(resp.content)) as zf:
+            html = zf.read("10001_alice-smith.html").decode("utf-8")
+
+        # 24/30 = 80% -- divider should not pull total down
+        self.assertIn("80", html)
+        self.assertNotIn("Grade: Fail", html)
+
+    def test_header_divider_render_correct_html_in_feedback_sheet(self):
+        """Generated HTML must include marks-section-header class with mark values, and has-divider-below classes."""
+        uploaded_data = [
+            {"Student Name": "Alice Smith", "Student ID": "10001",
+             "Design /30": 24, "Design Comments": "Good"},
+        ]
+        mappings = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "degree_level": "BEng",
+            "subdivision": "none",
+            "categories": [
+                {"column": "Design /30", "row_type": "header", "label": "My Section",
+                 "type": "numeric", "max_marks": 30, "weight": None,
+                 "comments_column": "Design Comments", "subdivision": "none",
+                 "rubric_marks": [], "unit": "", "exclude_radar": False},
+                {"column": "__divider_1", "row_type": "divider", "label": "",
+                 "type": "feedback_only", "max_marks": None, "weight": None,
+                 "comments_column": "", "subdivision": "none",
+                 "rubric_marks": [], "unit": "", "exclude_radar": True},
+            ],
+        }
+        session = self.client.session
+        session["uploaded_data"] = uploaded_data
+        session["mappings"] = mappings
+        session.save()
+
+        resp = self.client.get(reverse("process_feedback"))
+        self.assertEqual(resp.status_code, 200)
+
+        with zipfile.ZipFile(io.BytesIO(resp.content)) as zf:
+            html = zf.read("10001_alice-smith.html").decode("utf-8")
+
+        self.assertIn("marks-section-header", html,
+                      msg="Header row should produce a marks-section-header <tr>")
+        self.assertIn("My Section", html,
+                      msg="Header label should appear in the output")
+        self.assertIn("24 / 30", html,
+                      msg="Header row should display mark information in output")
+        self.assertIn("has-divider-below", html,
+                      msg="The row preceding a divider should have has-divider-below class")
+        self.assertNotIn("marks-section-divider", html,
+                         msg="Divider should not be rendered as a separate row anymore")
+
+    def test_category_order_controls_row_sequence(self):
+        """category_order POST field determines the sequence saved to session."""
+        session = self.client.session
+        session["headers"] = self.sample_headers
+        session["uploaded_data"] = self.sample_uploaded_data
+        session["mappings"] = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "degree_level": "BEng",
+            "subdivision": "none",
+            "categories": [
+                {"column": "Design /30", "max_marks": 30, "weight": None,
+                 "comments_column": "Design Comments", "type": "numeric"},
+                {"column": "Implementation /40", "max_marks": 40, "weight": None,
+                 "comments_column": "Implementation Comments", "type": "numeric"},
+            ],
+        }
+        session.save()
+
+        form_data = {
+            "col_student_name": "Student Name",
+            "col_student_id": "Student ID",
+            "degree_level": "BEng",
+            "col_name_0": "Design /30",
+            "row_type_0": "criterion",
+            "label_0": "",
+            "type_0": "numeric",
+            "max_0": "30",
+            "weight_0": "",
+            "comments_0": "Design Comments",
+            "removed_0": "0",
+            "col_name_1": "Implementation /40",
+            "row_type_1": "criterion",
+            "label_1": "",
+            "type_1": "numeric",
+            "max_1": "40",
+            "weight_1": "",
+            "comments_1": "Implementation Comments",
+            "removed_1": "0",
+            "category_order": "1,0",
+        }
+        resp = self.client.post(reverse("confirm_mappings"), form_data)
+        self.assertEqual(resp.status_code, 302)
+
+        cats = self.client.session["mappings"]["categories"]
+        self.assertEqual(cats[0]["column"], "Implementation /40",
+                         msg="category_order=1,0 should put Implementation first")
+        self.assertEqual(cats[1]["column"], "Design /30")

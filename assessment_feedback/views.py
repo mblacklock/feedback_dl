@@ -88,9 +88,12 @@ def assessment_confirm_context(headers, mappings, uploaded_data, error=None):
 
     all_rubric_marks = {}
     for cat in mappings.get("categories", []):
-        if cat.get("type") == "information":
+        # Skip non-data rows — they have no rubric marks
+        if cat.get("type") in ("information", "feedback_only"):
             continue
-        max_marks = cat.get("max_marks", 100)
+        if cat.get("row_type", "criterion") == "divider":
+            continue
+        max_marks = cat.get("max_marks") or 100
         col = cat["column"]
         all_rubric_marks[col] = {
             sub: calculate_grade_bands(max_marks, sub, degree_level=mappings.get("degree_level", "BEng"))
@@ -343,7 +346,7 @@ def category_mark_value(student_row, category, degree_level):
 
     if category["type"] == "grade":
         rubric_marks = category.get("rubric_marks") or calculate_grade_bands(
-            category["max_marks"],
+            category.get("max_marks") or 100,
             category.get("subdivision", "none"),
             degree_level=degree_level,
         )
@@ -409,7 +412,7 @@ def build_assessment_student_context(student_row, student_index, mappings, categ
     else:
         total_max_marks = sum(
             cat["max_marks"] for cat in active_categories 
-            if cat.get("type") not in ("information", "feedback_only")
+            if cat.get("type") not in ("information", "feedback_only") and cat.get("max_marks") is not None
         )
 
     student_name = get_student_name(student_row, student_index, mappings)
@@ -428,10 +431,18 @@ def build_assessment_student_context(student_row, student_index, mappings, categ
 
     for cat in active_categories:
         col = cat["column"]
+        row_type = cat.get("row_type", "criterion")
+        cat_label = cat.get("label") or clean_category_title(col)
+
+        # Divider rows are purely presentational — mark the previous category with a divider.
+        if row_type == "divider":
+            if student_categories_data:
+                student_categories_data[-1]["divider_below"] = True
+            continue
+
         max_marks = cat.get("max_marks")
-        
         is_feedback_only = cat.get("type") == "feedback_only"
-        
+
         if is_feedback_only:
             mark_val = None
             grade_awarded = None
@@ -448,7 +459,7 @@ def build_assessment_student_context(student_row, student_index, mappings, categ
             avg_pct = (category_averages[col] / max_marks) * 100 if max_marks and max_marks > 0 else 0
 
             if not cat.get("exclude_radar", False):
-                radar_labels.append(clean_category_title(col))
+                radar_labels.append(cat_label)
                 student_radar_percentages.append(student_pct)
                 avg_radar_percentages.append(avg_pct)
 
@@ -458,7 +469,8 @@ def build_assessment_student_context(student_row, student_index, mappings, categ
             calculated_grade_band = None
 
         student_categories_data.append({
-            "label": clean_category_title(col),
+            "label": cat_label,
+            "row_type": row_type,
             "mark": mark_val,
             "max_marks": max_marks,
             "grade_awarded": grade_awarded,
@@ -468,7 +480,13 @@ def build_assessment_student_context(student_row, student_index, mappings, categ
             "is_feedback_only": is_feedback_only,
             "unit": cat.get("unit", ""),
             "calculated_grade_band": calculated_grade_band,
+            "divider_below": cat.get("divider_below", False),
+            "header_below": False,
         })
+
+    for i in range(len(student_categories_data) - 1):
+        if student_categories_data[i + 1].get("row_type") == "header":
+            student_categories_data[i]["header_below"] = True
 
     overall_pct = (student_total_score / total_max_marks) * 100 if total_max_marks > 0 else 0
     radar_svg = generate_radar_chart(radar_labels, student_radar_percentages, avg_radar_percentages)
@@ -728,6 +746,8 @@ def upload_file(request):
 
                 inferred_mappings["categories"].append({
                     "column": cat,
+                    "label": clean_category_title(cat),
+                    "row_type": "criterion",
                     "max_marks": max_marks,
                     "weight": weight,
                     "comments_column": comments_col,
@@ -836,25 +856,56 @@ def confirm_mappings(request):
 
         if use_col_name_loop:
             existing_cats_by_col = {cat["column"]: cat for cat in mappings.get("categories", [])}
-            idx = 0
-            while True:
-                col_name_key = f"col_name_{idx}"
-                if col_name_key not in request.POST:
-                    break
-                
-                if request.POST.get(f"removed_{idx}") == "1":
-                    idx += 1
+
+            # Determine processing order from category_order (captures insert-above DOM order).
+            # Fall back to sequential scan if not provided (e.g. old test data).
+            category_order_str = request.POST.get("category_order", "")
+            if category_order_str:
+                order_indices = [s.strip() for s in category_order_str.split(",") if s.strip()]
+            else:
+                seq = 0
+                order_indices = []
+                while f"col_name_{seq}" in request.POST:
+                    order_indices.append(str(seq))
+                    seq += 1
+
+            for idx_str in order_indices:
+                if request.POST.get(f"removed_{idx_str}") == "1":
                     continue
-                
+
+                col_name_key = f"col_name_{idx_str}"
+                if col_name_key not in request.POST:
+                    continue
+
                 col_name = request.POST[col_name_key]
+                row_type = request.POST.get(f"row_type_{idx_str}", "criterion")
+                label_val = request.POST.get(f"label_{idx_str}", "").strip()
+
+                # Divider rows are purely presentational — no marks needed.
+                if row_type == "divider":
+                    updated_categories.append({
+                        "column": col_name,
+                        "label": label_val,
+                        "row_type": row_type,
+                        "type": "feedback_only",
+                        "max_marks": None,
+                        "weight": None,
+                        "comments_column": "",
+                        "subdivision": "none",
+                        "rubric_marks": [],
+                        "unit": "",
+                        "exclude_radar": True,
+                    })
+                    continue
+
                 cat_dict = existing_cats_by_col.get(col_name, {})
-                cat_type = request.POST.get(f"type_{idx}", "numeric")
-                comments_col = request.POST.get(f"comments_{idx}")
-                exclude_radar = (request.POST.get(f"include_radar_{idx}") != "on") if cat_type in ("numeric", "grade") else True
-                
+                cat_type = request.POST.get(f"type_{idx_str}", "numeric")
+                comments_col = request.POST.get(f"comments_{idx_str}")
+                exclude_radar = (request.POST.get(f"include_radar_{idx_str}") != "on") if cat_type in ("numeric", "grade", "header") else True
+
                 if cat_type in ("numeric", "grade"):
                     has_mark_or_rubric = True
-                    max_marks = parse_positive_int(request.POST.get(f"max_{idx}"))
+                    max_marks = parse_positive_int(request.POST.get(f"max_{idx_str}"))
                     if max_marks is None:
                         return render(request, "assessment_feedback/confirm.html",
                                       assessment_confirm_context(
@@ -866,19 +917,19 @@ def confirm_mappings(request):
                     unit_val = ""
                 elif cat_type == "information":
                     max_marks = None
-                    unit_val = request.POST.get(f"unit_{idx}", "").strip()
+                    unit_val = request.POST.get(f"unit_{idx_str}", "").strip()
                 else:  # feedback_only
                     max_marks = None
                     unit_val = ""
-                
+
                 cat_subdivision = cat_dict.get("subdivision", "none")
-                
+
                 existing_rubric = cat_dict.get("rubric_marks", [])
                 rubric_marks = []
                 if cat_type == "grade":
                     if existing_rubric and rubric_marks_match_degree(existing_rubric, mappings["degree_level"]):
                         for band_idx, band in enumerate(existing_rubric):
-                            submitted_mark = request.POST.get(f"rubric_mark_{idx}_{band_idx}")
+                            submitted_mark = request.POST.get(f"rubric_mark_{idx_str}_{band_idx}")
                             try:
                                 mark_val = int(submitted_mark)
                             except (TypeError, ValueError):
@@ -890,9 +941,17 @@ def confirm_mappings(request):
                             cat_subdivision,
                             degree_level=mappings["degree_level"],
                         )
-                
+
+                # Default label to clean title if user left it blank
+                if not label_val:
+                    label_val = clean_category_title(col_name)
+
+                divider_below = (request.POST.get(f"divider_below_{idx_str}") == "1")
+
                 updated_categories.append({
                     "column": col_name,
+                    "label": label_val,
+                    "row_type": row_type,
                     "max_marks": max_marks,
                     "weight": None,
                     "comments_column": comments_col,
@@ -901,12 +960,14 @@ def confirm_mappings(request):
                     "rubric_marks": rubric_marks,
                     "unit": unit_val,
                     "exclude_radar": exclude_radar,
+                    "divider_below": divider_below,
                 })
-                idx += 1
         else:
             # Fallback for old/test POST data (no col_name_N fields)
             for idx, cat_dict in enumerate(mappings["categories"]):
                 col_name = cat_dict["column"]
+                row_type = cat_dict.get("row_type", "criterion")
+                label_val = ""  # will be resolved below
                 cat_type = request.POST.get(f"type_{idx}", "numeric")
                 comments_col = request.POST.get(f"comments_{idx}")
                 exclude_radar = (request.POST.get(f"include_radar_{idx}") != "on") if cat_type in ("numeric", "grade") else True
@@ -950,8 +1011,16 @@ def confirm_mappings(request):
                             degree_level=mappings["degree_level"],
                         )
                 
+                # Default label to clean title if user left it blank
+                if not label_val:
+                    label_val = cat_dict.get("label") or clean_category_title(col_name)
+
+                divider_below = (request.POST.get(f"divider_below_{idx}") == "1") or cat_dict.get("divider_below", False)
+
                 updated_categories.append({
                     "column": col_name,
+                    "label": label_val,
+                    "row_type": row_type,
                     "max_marks": max_marks,
                     "weight": None,
                     "comments_column": comments_col,
@@ -960,6 +1029,7 @@ def confirm_mappings(request):
                     "rubric_marks": rubric_marks,
                     "unit": unit_val,
                     "exclude_radar": exclude_radar,
+                    "divider_below": divider_below,
                 })
 
         if not has_mark_or_rubric:
@@ -1087,6 +1157,17 @@ def configure_layout(request):
                     "enabled": enabled
                 })
                 
+        # Save visual row configuration highlights & dividers
+        categories = mappings.get("categories", [])
+        for idx, cat in enumerate(categories):
+            row_type_val = request.POST.get(f"row_type_{idx}")
+            if row_type_val:
+                cat["row_type"] = row_type_val
+            
+            divider_below_val = request.POST.get(f"divider_below_{idx}")
+            if divider_below_val is not None:
+                cat["divider_below"] = (divider_below_val == "1")
+
         show_numeric_grade_bands = request.POST.get("show_numeric_grade_bands") == "true"
         request.session["show_numeric_grade_bands"] = show_numeric_grade_bands
 
@@ -1095,7 +1176,9 @@ def configure_layout(request):
 
         if updated_layout:
             request.session["layout"] = updated_layout
-            request.session.modified = True
+        
+        request.session["mappings"] = mappings
+        request.session.modified = True
             
         return redirect("generation_success")
 

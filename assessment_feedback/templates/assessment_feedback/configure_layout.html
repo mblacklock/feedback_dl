@@ -13,6 +13,99 @@
 <style>
     {% include "css/layout_designer.css" %}
 </style>
+<style>
+    .simulated-sheet {
+        position: relative;
+    }
+    
+    /* __ Floating Divider Hover Toggle __ */
+    #floating-divider-handler {
+        position: absolute;
+        z-index: 100;
+        pointer-events: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 20px;
+        margin-top: -10px;
+        transition: opacity 0.15s ease;
+    }
+
+    .floating-divider-line {
+        position: absolute;
+        left: 8px;
+        right: 8px;
+        height: 2px;
+        background: transparent;
+        border-top: 1.5px dashed #4361ee;
+        z-index: 1;
+    }
+
+    .floating-divider-btn {
+        pointer-events: auto;
+        background: #ffffff;
+        color: #4361ee;
+        border: 1.5px solid #4361ee;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 2px 12px;
+        border-radius: 12px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        cursor: pointer;
+        z-index: 2;
+        transition: all 0.15s ease;
+    }
+
+    .floating-divider-btn:hover {
+        background: #4361ee;
+        color: #ffffff;
+        transform: scale(1.05);
+    }
+
+    .floating-divider-btn.active {
+        background: #ef4444;
+        color: #ffffff;
+        border-color: #ef4444;
+    }
+
+    .floating-divider-btn.active:hover {
+        background: #dc2626;
+        border-color: #dc2626;
+    }
+
+    #floating-divider-handler.active .floating-divider-line {
+        border-top: 1.5px solid #cbd5e1;
+    }
+
+    /* __ Thick Border when Divider is On __ */
+    .marks-table tr.has-divider-below td {
+        border-bottom: 2px solid #cbd5e1 !important;
+    }
+
+
+
+    /* __ Highlight Toggle Badge __ */
+    .highlight-toggle-badge {
+        cursor: pointer;
+        background: #f1f5f9;
+        color: #64748b;
+        border: 1px solid #cbd5e1;
+        font-size: 0.65rem;
+        opacity: 0;
+        transition: opacity 0.15s ease;
+    }
+
+    .marks-table tr:hover .highlight-toggle-badge {
+        opacity: 1;
+    }
+
+    .marks-table tr.marks-section-header .highlight-toggle-badge {
+        background: #4361ee;
+        color: #ffffff;
+        border-color: #4361ee;
+        opacity: 1;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -65,6 +158,12 @@
                     {% for block in layout %}
                     <input type="hidden" name="enabled_{{ block.id }}" id="enabled_input_{{ block.id }}" value="{% if block.enabled %}true{% else %}false{% endif %}">
                     <input type="hidden" name="width_{{ block.id }}" id="width_input_{{ block.id }}" value="{{ block.width|default:'full' }}">
+                    {% endfor %}
+                    
+                    <!-- Hidden inputs for category visual layout styling -->
+                    {% for cat in preview_student.categories %}
+                    <input type="hidden" name="row_type_{{ forloop.counter0 }}" id="layout_row_type_{{ forloop.counter0 }}" value="{{ cat.row_type|default:'criterion' }}">
+                    <input type="hidden" name="divider_below_{{ forloop.counter0 }}" id="layout_divider_below_{{ forloop.counter0 }}" value="{% if cat.divider_below %}1{% else %}0{% endif %}">
                     {% endfor %}
 
                     <button type="submit" class="btn btn-premium btn-lg w-100 py-3 d-flex align-items-center justify-content-center gap-2">
@@ -127,6 +226,12 @@
 
             <!-- Overall Summary and Disclaimer -->
             {% include "assessment_feedback/_feedback_footer.html" with overall_percentage=preview_student.overall_percentage overall_grade=preview_student.overall_grade %}
+            
+            <!-- Floating Divider Toggle Handler -->
+            <div id="floating-divider-handler" class="d-none">
+                <div class="floating-divider-line"></div>
+                <button type="button" class="floating-divider-btn">━ Add Divider</button>
+            </div>
         </div>
         {% else %}
         <div class="alert alert-warning rounded-3 shadow-sm" role="alert">
@@ -342,6 +447,121 @@
 
         if (container) {
             initDraggable();
+        }
+
+        // ── Floating Divider Toggle & Highlight Handler for Preview Sheet ──────
+        const marksTable = document.querySelector('.marks-table');
+        const floatingHandler = document.getElementById('floating-divider-handler');
+        let activeHoveredRow = null;
+
+        function positionFloatingHandler(row) {
+            // Don't show below overall row
+            if (row.classList.contains('overall-row')) {
+                floatingHandler.classList.add('d-none');
+                return;
+            }
+
+            const rect = row.getBoundingClientRect();
+            const sheet = document.querySelector('.simulated-sheet');
+            const sheetRect = sheet.getBoundingClientRect();
+
+            const top = rect.bottom - sheetRect.top + sheet.scrollTop;
+            const left = rect.left - sheetRect.left + sheet.scrollLeft;
+            const width = rect.width;
+
+            floatingHandler.style.top = `${top}px`;
+            floatingHandler.style.left = `${left}px`;
+            floatingHandler.style.width = `${width}px`;
+            floatingHandler.classList.remove('d-none');
+            floatingHandler.setAttribute('data-target-row-id', row.id);
+
+            const isDivider = row.classList.contains('has-divider-below');
+            const btn = floatingHandler.querySelector('.floating-divider-btn');
+            if (btn) {
+                btn.textContent = isDivider ? '✕ Remove Divider' : '━ Add Divider';
+                if (isDivider) btn.classList.add('active');
+                else btn.classList.remove('active');
+            }
+            if (isDivider) {
+                floatingHandler.classList.add('active');
+            } else {
+                floatingHandler.classList.remove('active');
+            }
+            activeHoveredRow = row;
+        }
+
+        if (marksTable) {
+            // Bind hover to rows (excluding overall row)
+            marksTable.querySelectorAll('tbody tr:not(.overall-row)').forEach(row => {
+                row.addEventListener('mouseenter', () => {
+                    positionFloatingHandler(row);
+                });
+            });
+
+            // Hide handler on leaving the simulated sheet
+            const sheet = document.querySelector('.simulated-sheet');
+            sheet.addEventListener('mouseleave', () => {
+                floatingHandler.classList.add('d-none');
+                activeHoveredRow = null;
+            });
+            
+            // Keep handler visible if mouse is on it
+            floatingHandler.addEventListener('mouseenter', () => {
+                if (activeHoveredRow) {
+                    floatingHandler.classList.remove('d-none');
+                }
+            });
+
+            // Handle Add/Remove Divider click
+            const floatingBtn = floatingHandler.querySelector('.floating-divider-btn');
+            if (floatingBtn) {
+                floatingBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const rowId = floatingHandler.getAttribute('data-target-row-id');
+                    const row = document.getElementById(rowId);
+                    if (!row) return;
+
+                    const idx = rowId.replace('preview-row-', '');
+                    const hiddenInput = document.getElementById(`layout_divider_below_${idx}`);
+                    
+                    const isDivider = row.classList.contains('has-divider-below');
+                    if (isDivider) {
+                        row.classList.remove('has-divider-below');
+                        if (hiddenInput) hiddenInput.value = '0';
+                    } else {
+                        row.classList.add('has-divider-below');
+                        if (hiddenInput) hiddenInput.value = '1';
+                    }
+
+                    positionFloatingHandler(row);
+                });
+            }
+
+            // Handle Section Highlight toggle badge click
+            marksTable.addEventListener('click', (e) => {
+                const badge = e.target.closest('.highlight-toggle-badge');
+                if (!badge) return;
+
+                e.stopPropagation();
+                const idxStr = badge.getAttribute('data-idx');
+                const idx = parseInt(idxStr, 10);
+                const row = document.getElementById(`preview-row-${idx}`);
+                if (!row) return;
+
+                const hiddenInput = document.getElementById(`layout_row_type_${idx}`);
+                const isHeader = row.classList.contains('marks-section-header');
+                const prevRow = document.getElementById(`preview-row-${idx - 1}`);
+
+                if (isHeader) {
+                    row.classList.remove('marks-section-header');
+                    if (hiddenInput) hiddenInput.value = 'criterion';
+                    if (prevRow) prevRow.classList.remove('has-header-below');
+                } else {
+                    row.classList.add('marks-section-header');
+                    if (hiddenInput) hiddenInput.value = 'header';
+                    if (prevRow) prevRow.classList.add('has-header-below');
+                }
+            });
         }
     });
 </script>

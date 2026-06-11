@@ -190,29 +190,55 @@
                         <table class="table mapping-table">
                             <thead>
                                 <tr>
-                                    <th>Grading Category (Excel Header)</th>
+                                    <th>Grading Category</th>
                                     <th>Category Type</th>
-                                    <th>Max Marks / Unit</th>
-                                    <th>Matched Comments/Feedback Column</th>
+                                    <th>Max Marks</th>
+                                    <th>Matched Feedback Column</th>
                                     <th>Radar Chart</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {# Render all categories in their natural order #}
+                                {# Render all categories with insert zones between them #}
                                 {% for cat in mappings.categories %}
+
+
+
+                                {% if cat.row_type == 'divider' %}
+                                {# ── Divider row ── #}
                                 <tr id="cat-row-{{ forloop.counter0 }}" data-column-name="{{ cat.column }}"
-                                    class="{% if cat.column == mappings.col_group %}d-none{% endif %}"
+                                    data-row-type="divider" class="row-type-divider">
+                                    <input type="hidden" name="col_name_{{ forloop.counter0 }}" value="{{ cat.column }}">
+                                    <input type="hidden" name="removed_{{ forloop.counter0 }}" value="0" id="removed-input-{{ forloop.counter0 }}">
+                                    <input type="hidden" name="row_type_{{ forloop.counter0 }}" value="divider">
+                                    <td colspan="5" class="align-middle">
+                                        <div style="height: 1.5px; background: #cbd5e1; margin: 8px 0;"></div>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn"
+                                            data-idx="{{ forloop.counter0 }}" title="Remove divider">&times;</button>
+                                    </td>
+                                </tr>
+
+                                {% else %}
+                                {# ── Criterion row (including Section headers) ── #}
+                                <tr id="cat-row-{{ forloop.counter0 }}" data-column-name="{{ cat.column }}"
+                                    data-column-label="{{ header_label_map|get_item:cat.column }}"
+                                    data-row-type="{{ cat.row_type|default:'criterion' }}"
+                                    class="{% if cat.column == mappings.col_group %}d-none{% endif %} {% if cat.row_type == 'header' %}row-type-header{% endif %} {% if cat.divider_below %}has-divider-below{% endif %}"
                                     {% if cat.column == mappings.col_overall_mark %}style="background-color: rgba(67, 97, 238, 0.08); border-left: 4px solid #4361ee;"{% endif %}>
                                     <input type="hidden" name="col_name_{{ forloop.counter0 }}" value="{{ cat.column }}">
                                     <input type="hidden" name="removed_{{ forloop.counter0 }}" value="0" id="removed-input-{{ forloop.counter0 }}">
-                                    <td class="fw-bold">
-                                        <div class="d-flex align-items-center gap-2">
-                                            {{ header_label_map|get_item:cat.column }}
-                                            {% if cat.column == mappings.col_overall_mark %}
-                                            <span class="badge overall-mark-badge">Overall Mark</span>
-                                            {% endif %}
-                                        </div>
+                                    <input type="hidden" name="row_type_{{ forloop.counter0 }}" value="{{ cat.row_type|default:'criterion' }}">
+                                    <input type="hidden" name="divider_below_{{ forloop.counter0 }}" value="{% if cat.divider_below %}1{% else %}0{% endif %}" id="divider-below-input-{{ forloop.counter0 }}">
+                                    <td>
+                                        <input type="text" name="label_{{ forloop.counter0 }}"
+                                            class="label-input"
+                                            value="{{ cat.label|default:'' }}"
+                                            placeholder="Display name…">
+                                        {% if cat.column == mappings.col_overall_mark %}
+                                        <span class="badge overall-mark-badge ms-2">Overall Mark</span>
+                                        {% endif %}
                                     </td>
                                     <td>
                                         <select name="type_{{ forloop.counter0 }}"
@@ -267,8 +293,8 @@
                                             <input class="form-check-input radar-toggle-input" type="checkbox" role="switch"
                                                 name="include_radar_{{ forloop.counter0 }}"
                                                 id="include_radar_{{ forloop.counter0 }}"
-                                                {% if not cat.exclude_radar and cat.type != 'information' and cat.type != 'feedback_only' %}checked{% endif %}
-                                                {% if cat.type == 'information' or cat.type == 'feedback_only' %}disabled{% endif %}>
+                                                {% if not cat.exclude_radar and cat.type != 'information' and cat.type != 'feedback_only' and cat.row_type != 'header' %}checked{% endif %}
+                                                {% if cat.type == 'information' or cat.type == 'feedback_only' or cat.row_type == 'header' %}disabled{% endif %}>
                                         </div>
                                     </td>
                                     <td>
@@ -282,7 +308,7 @@
                                     data-subdivision="{{ cat.subdivision|default:'none' }}">
                                     <td colspan="6" class="p-0">
                                         <div
-                                            style="background:#f8fafc; border-left:3px solid #4361ee; padding:16px 20px;">
+                                            style="background:#f8fafc; padding:16px 20px;">
                                             <p class="text-muted small fw-semibold mb-2"
                                                 style="text-transform:uppercase;letter-spacing:.05em;">
                                                 Grade Band → Numeric Mark Mapping
@@ -307,19 +333,23 @@
                                         </div>
                                     </td>
                                 </tr>
+                                {% endif %}
                                 {% endfor %}
                             </tbody>
                         </table>
+                        <!-- Floating Divider Toggle Handler -->
+                        <div id="floating-divider-handler" class="d-none">
+                            <div class="floating-divider-line"></div>
+                            <button type="button" class="floating-divider-btn">━ Add Divider</button>
+                        </div>
                     </div>
 
                     <!-- Hidden Template Rows for Add Column (JS cloning) -->
                     <table class="d-none">
                         <tbody>
                             <tr id="row-template">
-                                <td class="fw-bold">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <span class="col-name-label"></span>
-                                    </div>
+                                <td>
+                                    <input type="text" class="label-input" placeholder="Display name…">
                                 </td>
                                 <td>
                                     <select class="form-select form-select-sm rounded-3 type-select">
@@ -356,9 +386,10 @@
                                     <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn" title="Remove category row">&times;</button>
                                 </td>
                             </tr>
+
                             <tr id="rubric-panel-template" class="rubric-panel d-none" data-subdivision="none">
                                 <td colspan="6" class="p-0">
-                                    <div style="background:#f8fafc; border-left:3px solid #4361ee; padding:16px 20px;">
+                                    <div style="background:#f8fafc; padding:16px 20px;">
                                         <p class="text-muted small fw-semibold mb-2" style="text-transform:uppercase;letter-spacing:.05em;">
                                             Grade Band → Numeric Mark Mapping
                                             <span class="text-secondary fw-normal ms-2">— edit to override auto-calculated values</span>
@@ -384,6 +415,9 @@
                         </button>
                     </div>
 
+
+
+                    <input type="hidden" name="category_order" id="category-order-input" value="">
                     <div class="text-center">
                         <button type="submit" class="btn btn-premium btn-lg w-100">Build Feedback Sheet
                             Layout</button>

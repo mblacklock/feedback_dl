@@ -10,6 +10,7 @@
     let availableHeaders = config.availableHeaders || [];
     let nextRowIdx = config.nextRowIdx || 0;
     const debounceTimers = {};
+    let removeCategoryRow;
 
     function currentSubdivision(idx) {
         const panel = document.getElementById(`rubric-panel-${idx}`);
@@ -60,6 +61,32 @@
 
 
     // ── Generalized Event Binders ────────────────────────────────────────────
+    function bindHeaderToggleEvent(toggle) {
+        toggle.addEventListener('change', function () {
+            const idx = this.getAttribute('data-idx');
+            const row = document.getElementById(`cat-row-${idx}`);
+            const rowTypeInput = document.querySelector(`input[type="hidden"][name="row_type_${idx}"]`);
+            const labelInput = row ? row.querySelector(`input[name="label_${idx}"]`) : null;
+            
+            if (rowTypeInput) {
+                rowTypeInput.value = this.checked ? 'header' : 'criterion';
+            }
+            if (row) {
+                if (this.checked) {
+                    row.classList.add('row-type-header');
+                    if (labelInput) {
+                        labelInput.placeholder = 'Section heading…';
+                    }
+                } else {
+                    row.classList.remove('row-type-header');
+                    if (labelInput) {
+                        labelInput.placeholder = 'Display name…';
+                    }
+                }
+            }
+        });
+    }
+
     function bindTypeSelectEvent(select) {
         select.addEventListener('change', function () {
             const idx = this.getAttribute('data-idx');
@@ -70,6 +97,7 @@
             const unitInput = document.querySelector(`input[name="unit_${idx}"]`);
             const panel = document.getElementById(`rubric-panel-${idx}`);
             const radarCheckbox = document.querySelector(`input[name="include_radar_${idx}"]`);
+            const commentSelect = document.querySelector(`select[name="comments_${idx}"]`);
 
             if (type === 'information' || type === 'feedback_only') {
                 if (maxContainer) {
@@ -94,6 +122,10 @@
                 if (radarCheckbox) {
                     radarCheckbox.disabled = true;
                     radarCheckbox.checked = false;
+                }
+                if (commentSelect) {
+                    commentSelect.disabled = true;
+                    commentSelect.value = "";
                 }
             } else {
                 if (maxContainer) {
@@ -124,6 +156,9 @@
                     radarCheckbox.disabled = false;
                     radarCheckbox.checked = true;
                 }
+                if (commentSelect) {
+                    commentSelect.disabled = false;
+                }
             }
         });
     }
@@ -143,6 +178,8 @@
             fetchAndRenderBands(idx, panel, currentSubdivision(idx), 400);
         });
     }
+
+
 
     // Initialize logic on DOM Content Loaded
     document.addEventListener('DOMContentLoaded', function() {
@@ -167,7 +204,7 @@
             });
         }
 
-        function removeCategoryRow(idx) {
+        removeCategoryRow = function(idx) {
             const row = document.getElementById(`cat-row-${idx}`);
             const panel = document.getElementById(`rubric-panel-${idx}`);
             const removedInput = document.getElementById(`removed-input-${idx}`);
@@ -177,7 +214,7 @@
             if (removedInput) removedInput.value = '1';
             
             const colName = row.getAttribute('data-column-name');
-            const colLabel = row.querySelector('td:first-child').textContent.trim();
+            const colLabel = row.getAttribute('data-column-label') || colName;
             
             if (colName && !availableHeaders.some(h => h.raw === colName)) {
                 // Re-infer if it was numeric. Check current type
@@ -197,8 +234,7 @@
             newRow.id = `cat-row-${nextRowIdx}`;
             newRow.classList.remove('d-none');
             newRow.setAttribute('data-column-name', colName);
-            
-            newRow.querySelector('.col-name-label').textContent = colLabel;
+            newRow.setAttribute('data-column-label', colLabel);
             
             // Add hidden inputs for backend identification
             const hiddenColName = document.createElement('input');
@@ -213,12 +249,39 @@
             hiddenRemoved.id = `removed-input-${nextRowIdx}`;
             hiddenRemoved.value = '0';
             newRow.appendChild(hiddenRemoved);
+
+            const hiddenDivider = document.createElement('input');
+            hiddenDivider.type = 'hidden';
+            hiddenDivider.name = `divider_below_${nextRowIdx}`;
+            hiddenDivider.id = `divider-below-input-${nextRowIdx}`;
+            hiddenDivider.value = '0';
+            newRow.appendChild(hiddenDivider);
             
             // Set type select names and classes
             const typeSelect = newRow.querySelector('.type-select');
             typeSelect.name = `type_${nextRowIdx}`;
             typeSelect.setAttribute('data-idx', nextRowIdx);
             typeSelect.classList.add('type-select'); // to match querySelectorAll
+
+            // Create hidden row_type input with default 'criterion'
+            const hiddenRowType = document.createElement('input');
+            hiddenRowType.type = 'hidden';
+            hiddenRowType.name = `row_type_${nextRowIdx}`;
+            hiddenRowType.value = 'criterion';
+            newRow.appendChild(hiddenRowType);
+
+            // Rename criterion-only-cell classes to include the idx
+            newRow.querySelectorAll('.criterion-only-cell').forEach(cell => {
+                cell.classList.remove('criterion-only-cell');
+                cell.classList.add(`criterion-only-${nextRowIdx}`);
+            });
+
+            // Set label input name
+            const labelInput = newRow.querySelector('.label-input');
+            if (labelInput) {
+                labelInput.name = `label_${nextRowIdx}`;
+                labelInput.value = colLabel;
+            }
             
             const maxContainer = newRow.querySelector('.max-marks-container');
             maxContainer.className = `max-marks-container-${nextRowIdx}`;
@@ -251,6 +314,8 @@
             // Bind events
             bindTypeSelectEvent(typeSelect);
             bindMaxInputEvent(maxInput);
+            
+
             
             const removeBtn = newRow.querySelector('.remove-row-btn');
             removeBtn.addEventListener('click', function() {
@@ -495,6 +560,22 @@
                 if (_prevGroupCol) setGroupRowHidden(_prevGroupCol, false);
                 if (newVal)        setGroupRowHidden(newVal, true);
                 _prevGroupCol = newVal;
+            });
+        }
+
+
+
+        // ── Collect DOM category order before form submit ────────────────────────
+        const theForm = document.querySelector('form');
+        if (theForm) {
+            theForm.addEventListener('submit', function () {
+                const orderInput = document.getElementById('category-order-input');
+                if (!orderInput) return;
+                const order = [];
+                document.querySelectorAll('tr[id^="cat-row-"]').forEach(row => {
+                    order.push(row.id.replace('cat-row-', ''));
+                });
+                orderInput.value = order.join(',');
             });
         }
     });

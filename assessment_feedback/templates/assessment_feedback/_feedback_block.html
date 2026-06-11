@@ -25,8 +25,13 @@ Depends on: sheet_layout.css
     <tbody>
         {% for cat in categories %}
         {% if not cat.is_feedback_only %}
-        <tr>
-            <td class="label">{{ cat.label }}</td>
+        <tr{% if cat.row_type == "header" or cat.divider_below or cat.header_below %} class="{% if cat.row_type == 'header' %}marks-section-header{% endif %} {% if cat.divider_below %}has-divider-below{% endif %} {% if cat.header_below %}has-header-below{% endif %}"{% endif %} id="preview-row-{{ forloop.counter0 }}">
+            <td class="label">
+                {{ cat.label }}
+                {% if is_editor %}
+                <span class="badge highlight-toggle-badge ms-2" data-idx="{{ forloop.counter0 }}" style="cursor: pointer; font-size: 0.65rem;">Highlight</span>
+                {% endif %}
+            </td>
             <td class="band">
                 {% if cat.is_information %}
                 

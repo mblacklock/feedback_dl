@@ -189,6 +189,7 @@
     padding: 8px 12px;
     border-bottom: 1px solid #f0f0f0;
     color: var(--brand-navy);
+    background-clip: padding-box !important;
 }
 
 .marks-table td.right {
@@ -214,6 +215,7 @@
     border-top: 2px solid var(--brand-navy) !important;
     border-bottom: 2px solid var(--brand-navy) !important;
     font-weight: 700 !important;
+    background-clip: padding-box !important;
 }
 
 .marks-table tr.overall-row td.label {
@@ -228,6 +230,25 @@
 
 .marks-table tr.overall-row td.right {
     color: var(--brand-navy) !important;
+}
+
+.marks-table tr.marks-section-header {
+    background: #f1f5f9 !important;
+}
+
+.marks-table tr.marks-section-header td {
+    border-top: 1px solid #cbd5e1 !important;
+    border-bottom: 1px solid #cbd5e1 !important;
+}
+
+.marks-table tr.has-header-below td {
+    border-bottom: 1px solid #cbd5e1 !important;
+    background-clip: padding-box !important;
+}
+
+.marks-table tr.has-divider-below td {
+    border-bottom: 2px solid #cbd5e1 !important;
+    background-clip: padding-box !important;
 }
 
 /* ── Feedback blocks ── */

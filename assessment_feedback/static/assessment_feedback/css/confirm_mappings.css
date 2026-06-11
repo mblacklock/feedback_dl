@@ -17,3 +17,177 @@
     font-weight: 600;
     border: 1px solid #c7d2fe;
 }
+
+/* __ Row type: header __ */
+tr.row-type-header td {
+    background-color: #f0f3f8 !important;
+}
+
+tr.row-type-header td:first-of-type {
+    border-left: 3px solid #4361ee;
+}
+
+tr.row-type-header .label-input {
+    font-weight: 700;
+    color: #1a1a2e;
+}
+
+/* __ Row type: divider __ */
+tr.row-type-divider td {
+    background-color: #fafafa !important;
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+}
+
+tr.row-type-divider td:first-of-type {
+    border-left: 3px solid #cbd5e1;
+}
+
+/* __ Label input (editable display name) __ */
+.label-input {
+    border: 1px solid transparent;
+    background: transparent;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    min-width: 120px;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.label-input:hover,
+.label-input:focus {
+    border-color: #c7d2fe;
+    background: #fff;
+    outline: none;
+}
+
+/* __ Insert Zone rows __ */
+tr.insert-zone {
+    line-height: 0;
+    background: transparent;
+}
+
+tr.insert-zone td.insert-zone-cell {
+    padding: 6px 0;
+    border: none;
+    text-align: center;
+    position: relative;
+    overflow: visible;
+    height: 12px;
+}
+
+tr.insert-zone:hover td.insert-zone-cell::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 8px;
+    right: 8px;
+    border-top: 1px dashed #cbd5e1;
+    z-index: 0;
+}
+
+.insert-zone-btn {
+    display: none;
+    font-size: 0.75rem;
+    padding: 2px 12px;
+    border-radius: 12px;
+    border: 1px solid #cbd5e1;
+    color: #64748b;
+    background: #ffffff;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.15s;
+    position: relative;
+    z-index: 1;
+    white-space: nowrap;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+tr.insert-zone:hover .insert-zone-btn {
+    display: inline-block;
+}
+
+.insert-zone-btn:hover {
+    background: #e0e7ff;
+    color: #4361ee;
+    border-color: #4361ee;
+    transform: scale(1.05);
+}
+
+/* __ Row type select (on structural rows only) __ */
+.row-type-select {
+    max-width: 140px;
+    font-size: 0.8rem;
+}
+
+/* __ Relative container for positioning floating handler __ */
+.table-responsive {
+    position: relative;
+}
+
+/* __ Floating Divider Hover Toggle __ */
+#floating-divider-handler {
+    position: absolute;
+    z-index: 100;
+    pointer-events: none; /* Let pointer events pass through to the line area */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 20px;
+    margin-top: -10px; /* Offset to center it on the row boundary */
+    transition: opacity 0.15s ease;
+}
+
+.floating-divider-line {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    height: 2px;
+    background: transparent;
+    border-top: 1.5px dashed #4361ee;
+    z-index: 1;
+}
+
+.floating-divider-btn {
+    pointer-events: auto; /* Clickable */
+    background: #ffffff;
+    color: #4361ee;
+    border: 1.5px solid #4361ee;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 2px 12px;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    cursor: pointer;
+    z-index: 2;
+    transition: all 0.15s ease;
+}
+
+.floating-divider-btn:hover {
+    background: #4361ee;
+    color: #ffffff;
+    transform: scale(1.05);
+}
+
+.floating-divider-btn.active {
+    background: #ef4444;
+    color: #ffffff;
+    border-color: #ef4444;
+}
+
+.floating-divider-btn.active:hover {
+    background: #dc2626;
+    border-color: #dc2626;
+}
+
+/* __ Thick Border when Divider is On __ */
+.mapping-table tr.has-divider-below td {
+    border-bottom: 2px solid #4361ee !important;
+}
+
+.mapping-table tr.has-divider-below + tr.rubric-panel:not(.d-none) td {
+    border-bottom: 2px solid #4361ee !important;
+}
+
+.mapping-table tr.has-divider-below:has(+ tr.rubric-panel:not(.d-none)) td {
+    border-bottom: inherit !important;
+}
