@@ -1741,6 +1741,18 @@ class AssessmentFeedbackViewsTest(TestCase):
         self.assertIn("Group", category_columns,
                       msg="Numeric group column should appear in categories for toggling")
 
+    def test_group_column_ignores_non_obvious_names(self):
+        """Headers with substrings like 'class' or 'tutorial' should not be auto-detected as group."""
+        headers = ["Student Name", "Student ID", "Classification", "Tutorial Comments", "Design /30"]
+        rows = [
+            ["Alice Smith", "10001", "High", "Good", 24],
+            ["Bob Jones",   "10002", "Low", "OK", 18],
+        ]
+        mappings = self._upload_in_memory_excel(headers, rows)
+
+        self.assertEqual(mappings.get("col_group"), "",
+                         msg="Columns like 'Classification' or 'Tutorial Comments' should not auto-detect as group")
+
     def test_confirm_post_group_column_stays_in_categories(self):
         """When the user sets col_group on the confirm form, the group column is
         kept in saved categories (so the confirm page can restore its row when

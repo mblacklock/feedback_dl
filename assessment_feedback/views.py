@@ -658,14 +658,13 @@ def upload_file(request):
             first_name_col = ""
             last_name_col = ""
             group_col = ""
-            group_keywords = ("group", "team", "cohort", "class", "section", "lab", "tutorial")
             for h in unique_headers:
                 hl = h.lower()
                 if "first" in hl or "forename" in hl or "given" in hl:
                     first_name_col = h
                 elif "last" in hl or "surname" in hl or "family" in hl:
                     last_name_col = h
-                elif any(kw in hl for kw in group_keywords) and not group_col:
+                elif any(re.search(rf'\b{kw}\b', hl) for kw in ("group", "team")) and not group_col:
                     group_col = h
 
             # Auto-infer column roles
