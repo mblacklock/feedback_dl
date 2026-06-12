@@ -323,8 +323,12 @@ def build_feedback_sheet_layout_rows(layout):
             rows.append({"type": "full", "blocks": [block]})
             i += 1
         else:  # half
-            # Look ahead for a second consecutive half block
-            if i + 1 < len(enabled) and enabled[i + 1]["width"] == "half":
+            # Look ahead for a second consecutive half block that does not force its own row,
+            # and only if the current block does not force its own row.
+            if (not block.get("own_row") and
+                i + 1 < len(enabled) and
+                enabled[i + 1]["width"] == "half" and
+                not enabled[i + 1].get("own_row")):
                 rows.append({"type": "half-pair", "blocks": [block, enabled[i + 1]]})
                 i += 2
             else:
@@ -1078,11 +1082,11 @@ def ensure_layout_defaults(layout, session=None):
     Ensure all default blocks exist in the loaded layout to handle stale sessions.
     """
     default_blocks = {
-        "category_marks": {"id": "category_marks", "name": "Category Marks", "width": "full", "enabled": True},
-        "feedback": {"id": "feedback", "name": "Feedback Comments", "width": "full", "enabled": True},
-        "general_feedback": {"id": "general_feedback", "name": "General Feedback", "width": "full", "enabled": False},
-        "radar_chart": {"id": "radar_chart", "name": "Radar Chart", "width": "half", "enabled": True},
-        "histogram": {"id": "histogram", "name": "Histogram Chart", "width": "half", "enabled": True},
+        "category_marks": {"id": "category_marks", "name": "Category Marks", "width": "full", "enabled": True, "own_row": False},
+        "feedback": {"id": "feedback", "name": "Feedback Comments", "width": "full", "enabled": True, "own_row": False},
+        "general_feedback": {"id": "general_feedback", "name": "General Feedback", "width": "full", "enabled": False, "own_row": False},
+        "radar_chart": {"id": "radar_chart", "name": "Radar Chart", "width": "half", "enabled": True, "own_row": False},
+        "histogram": {"id": "histogram", "name": "Histogram Chart", "width": "half", "enabled": True, "own_row": False},
     }
     if not layout:
         return list(default_blocks.values())
@@ -1104,6 +1108,12 @@ def ensure_layout_defaults(layout, session=None):
                     layout.append(block_def.copy())
             else:
                 layout.append(block_def.copy())
+            modified = True
+
+    # Ensure all layout blocks have 'own_row' defined
+    for b in layout:
+        if "own_row" not in b:
+            b["own_row"] = False
             modified = True
 
     if modified and session is not None:
@@ -1150,12 +1160,14 @@ def configure_layout(request):
                 width = request.POST.get(f"width_{bid}", "full")
                 if width not in ["half", "full"]:
                     width = "full"
+                own_row = request.POST.get(f"own_row_{bid}") == "true"
                     
                 updated_layout.append({
                     "id": bid,
                     "name": name_map[bid],
                     "width": width,
-                    "enabled": enabled
+                    "enabled": enabled,
+                    "own_row": own_row
                 })
                 
         # Save visual row configuration highlights & dividers

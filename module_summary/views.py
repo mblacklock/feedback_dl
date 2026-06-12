@@ -312,11 +312,21 @@ def configure_module_layout(request):
         return redirect("module_upload")
         
     default_layout = [
-        {"id": "assessment_table", "name": "Assessment Breakdown Table", "width": "half", "enabled": True},
-        {"id": "comparison_chart", "name": "Comparative Visual Chart", "width": "half", "enabled": True},
-        {"id": "overall_card", "name": "Weighted Final Module Score Card", "width": "full", "enabled": True},
+        {"id": "assessment_table", "name": "Assessment Breakdown Table", "width": "half", "enabled": True, "own_row": False},
+        {"id": "comparison_chart", "name": "Comparative Visual Chart", "width": "half", "enabled": True, "own_row": False},
+        {"id": "overall_card", "name": "Weighted Final Module Score Card", "width": "full", "enabled": True, "own_row": False},
     ]
     layout = request.session.get("module_layout", default_layout)
+    
+    # Ensure all layout blocks have 'own_row' defined
+    modified_layout = False
+    for b in layout:
+        if "own_row" not in b:
+            b["own_row"] = False
+            modified_layout = True
+    if modified_layout:
+        request.session["module_layout"] = layout
+        request.session.modified = True
     
     if request.method == "POST":
         block_order = request.POST.get("block_order", "").split(",")
@@ -337,12 +347,14 @@ def configure_module_layout(request):
                 width = request.POST.get(f"width_{bid}", "full")
                 if width not in ["half", "full"]:
                     width = "full"
+                own_row = request.POST.get(f"own_row_{bid}") == "true"
                     
                 updated_layout.append({
                     "id": bid,
                     "name": name_map[bid],
                     "width": width,
-                    "enabled": enabled
+                    "enabled": enabled,
+                    "own_row": own_row
                 })
                 
         if updated_layout:

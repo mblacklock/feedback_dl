@@ -15,5 +15,5 @@
 
  - [ ] Rubric generator - Review app
  - [ ] Comment generator - Allow option to upload pool comments.  Allow option to create categories 
- - [ ] Move row in layout
- - [ ] Half category on own row
+ - [x] Move row in layout
+ - [x] Half category on own row

@@ -156,6 +156,7 @@
                     {% for block in layout %}
                     <input type="hidden" name="enabled_{{ block.id }}" id="enabled_input_{{ block.id }}" value="{% if block.enabled %}true{% else %}false{% endif %}">
                     <input type="hidden" name="width_{{ block.id }}" id="width_input_{{ block.id }}" value="{{ block.width|default:'full' }}">
+                    <input type="hidden" name="own_row_{{ block.id }}" id="own_row_input_{{ block.id }}" value="{% if block.own_row %}true{% else %}false{% endif %}">
                     {% endfor %}
                     
                     <!-- Hidden inputs for category visual layout styling -->
@@ -205,6 +206,15 @@
                         </span>
                         
                         <div class="block-editor-controls">
+                            <!-- Own Row checkbox/toggle for 50% width blocks -->
+                            <div class="own-row-container me-3 {% if block.width != 'half' %}d-none{% endif %}" id="own_row_container_{{ block.id }}">
+                                <div class="form-check mb-0">
+                                    <input class="form-check-input block-own-row-checkbox shadow-sm" type="checkbox" 
+                                           id="checkbox_own_row_{{ block.id }}" {% if block.own_row %}checked{% endif %} title="Force block onto its own row">
+                                    <label class="form-check-label small text-secondary fw-bold" for="checkbox_own_row_{{ block.id }}">Own Row</label>
+                                </div>
+                            </div>
+
                             <!-- Width toggle buttons -->
                             <div class="width-selector-mini shadow-sm">
                                 <button type="button" class="btn-size {% if block.width == 'half' %}active{% endif %}" data-width="half" title="Set to 50% width">50%</button>
@@ -286,8 +296,19 @@
             while (i < blocks.length) {
                 const current = blocks[i];
                 if (current.classList.contains('width-half')) {
-                    // Check if there is a next block and it is also 50% wide
-                    if (i + 1 < blocks.length && blocks[i + 1].classList.contains('width-half')) {
+                    const currentId = current.getAttribute('data-id');
+                    const currentOwnRow = document.getElementById(`own_row_input_${currentId}`).value === 'true';
+                    
+                    let canPair = false;
+                    if (!currentOwnRow && i + 1 < blocks.length && blocks[i + 1].classList.contains('width-half')) {
+                        const nextId = blocks[i + 1].getAttribute('data-id');
+                        const nextOwnRow = document.getElementById(`own_row_input_${nextId}`).value === 'true';
+                        if (!nextOwnRow) {
+                            canPair = true;
+                        }
+                    }
+                    
+                    if (canPair) {
                         // They sit side-by-side on the row
                         i += 2;
                     } else {
@@ -319,6 +340,12 @@
                         card.classList.add('disabled');
                         hidden.value = 'false';
                     }
+                    alignLoneHalfBlocks();
+                } else if (e.target.classList.contains('block-own-row-checkbox')) {
+                    const card    = e.target.closest('.draggable-block');
+                    const blockId = card.getAttribute('data-id');
+                    const hidden  = document.getElementById(`own_row_input_${blockId}`);
+                    hidden.value = e.target.checked ? 'true' : 'false';
                     alignLoneHalfBlocks();
                 } else if (e.target.classList.contains('toggle-numeric-grades-input')) {
                     const hidden = document.getElementById('show_numeric_grade_bands_input');
@@ -375,12 +402,16 @@
                 const newWidth = widthBtn.getAttribute('data-width');
                 hidden.value = newWidth;
                 
+                const ownRowContainer = document.getElementById(`own_row_container_${blockId}`);
+                
                 if (newWidth === 'half') {
                     card.classList.remove('width-full');
                     card.classList.add('width-half');
+                    if (ownRowContainer) ownRowContainer.classList.remove('d-none');
                 } else {
                     card.classList.remove('width-half');
                     card.classList.add('width-full');
+                    if (ownRowContainer) ownRowContainer.classList.add('d-none');
                 }
                 alignLoneHalfBlocks();
             });

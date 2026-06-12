@@ -2425,3 +2425,40 @@ class AssessmentFeedbackViewsTest(TestCase):
         self.assertEqual(cats[0]["column"], "Implementation /40",
                          msg="category_order=1,0 should put Implementation first")
         self.assertEqual(cats[1]["column"], "Design /30")
+
+    def test_build_feedback_sheet_layout_rows_respects_own_row(self):
+        """build_feedback_sheet_layout_rows must not pair half-width blocks if either has own_row=True."""
+        from assessment_feedback.views import build_feedback_sheet_layout_rows
+        
+        # Test Case 1: normal consecutive half-width blocks pair up
+        layout_normal = [
+            {"id": "block1", "width": "half", "enabled": True, "own_row": False},
+            {"id": "block2", "width": "half", "enabled": True, "own_row": False},
+        ]
+        rows = build_feedback_sheet_layout_rows(layout_normal)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["type"], "half-pair")
+        
+        # Test Case 2: first block has own_row=True
+        layout_first_own = [
+            {"id": "block1", "width": "half", "enabled": True, "own_row": True},
+            {"id": "block2", "width": "half", "enabled": True, "own_row": False},
+        ]
+        rows = build_feedback_sheet_layout_rows(layout_first_own)
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(rows[0]["type"], "half-single")
+        self.assertEqual(rows[0]["blocks"][0]["id"], "block1")
+        self.assertEqual(rows[1]["type"], "half-single")
+        self.assertEqual(rows[1]["blocks"][0]["id"], "block2")
+        
+        # Test Case 3: second block has own_row=True
+        layout_second_own = [
+            {"id": "block1", "width": "half", "enabled": True, "own_row": False},
+            {"id": "block2", "width": "half", "enabled": True, "own_row": True},
+        ]
+        rows = build_feedback_sheet_layout_rows(layout_second_own)
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(rows[0]["type"], "half-single")
+        self.assertEqual(rows[0]["blocks"][0]["id"], "block1")
+        self.assertEqual(rows[1]["type"], "half-single")
+        self.assertEqual(rows[1]["blocks"][0]["id"], "block2")
