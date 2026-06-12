@@ -153,34 +153,38 @@ def assessment_confirm_context(headers, mappings, uploaded_data, error=None):
 # ---------------------------------------------------------------------------
 # Grade-string sets used for rubric column detection
 # ---------------------------------------------------------------------------
-_GRADE_STRINGS_NONE = {
-    # Qualified 1st variants (used when no external subdivision is applied)
-    "max 1st", "high 1st", "mid 1st", "low 1st",
-    # Bare grade names — used in simple rubric columns with no subdivision
-    "1st", "2:1", "2:2", "3rd", "fail",
-}
-_GRADE_STRINGS_HIGH_LOW = {
-    "max 1st", "high 1st", "low 1st",
-    "high 2:1", "low 2:1",
-    "high 2:2", "low 2:2",
-    "high 3rd", "low 3rd",
-}
-_GRADE_STRINGS_HIGH_MID_LOW = {
-    "max 1st", "high 1st", "mid 1st", "low 1st",
-    "high 2:1", "mid 2:1", "low 2:1",
-    "high 2:2", "mid 2:2", "low 2:2",
-    "high 3rd", "mid 3rd", "low 3rd",
-}
-_FAIL_STRINGS = {"close fail", "fail", "poor fail", "zero fail"}
-_ALL_GRADE_STRINGS = (
-    _GRADE_STRINGS_NONE
-    | _GRADE_STRINGS_HIGH_LOW
-    | _GRADE_STRINGS_HIGH_MID_LOW
-    | _FAIL_STRINGS
-    # M-level suffixed variants
-    | {s.replace("1st", "1st/dist").replace("2:1", "2:1/merit").replace("2:2", "2:2/pass")
-       for s in _GRADE_STRINGS_HIGH_MID_LOW}
-)
+def _generate_all_grade_strings():
+    prefixes = {"", "max ", "high ", "mid ", "med ", "medium ", "middle ", "low ", "close ", "poor ", "zero "}
+    first_terms = {
+        "1st", "distinction", "dist", "d",
+        "1st/dist", "dist/1st", "1st/distinction", "distinction/1st", "1st/d", "d/1st", "dist/d", "d/dist"
+    }
+    two_one_terms = {
+        "2:1", "2.1", "merit", "m",
+        "2:1/merit", "merit/2:1", "2:1/m", "m/2:1", "merit/m", "m/merit"
+    }
+    two_two_terms = {
+        "2:2", "2.2", "pass", "p",
+        "2:2/pass", "pass/2:2", "2:2/p", "p/2:2", "pass/p", "p/pass"
+    }
+    third_terms = {"3rd", "3"}
+    fail_terms = {"fail", "f", "close fail", "poor fail", "zero fail"}
+    
+    all_strs = set()
+    for p in prefixes:
+        for t in first_terms:
+            all_strs.add(p + t)
+        for t in two_one_terms:
+            all_strs.add(p + t)
+        for t in two_two_terms:
+            all_strs.add(p + t)
+        for t in third_terms:
+            all_strs.add(p + t)
+            
+    all_strs.update(fail_terms)
+    return all_strs
+
+_ALL_GRADE_STRINGS = _generate_all_grade_strings()
 
 
 def clean_category_title(title):
@@ -278,26 +282,103 @@ def infer_rubric_type(column_values):
 
     # Detect which subdivision is in use
     # "Mid X:Y" patterns (excluding Mid 1st which appears in 'none') distinguish high_mid_low
-    if any("mid 2:" in v or "mid 3rd" in v for v in normalised):
+    if any("mid 2:" in v or "mid 3rd" in v or "mid merit" in v or "mid pass" in v for v in normalised):
         return "grade", "high_mid_low"
     # "High/Low X:Y" patterns (on non-1st bands) distinguish high_low
     if any(
-        any(p in v for p in ("high 2:", "low 2:", "high 3rd", "low 3rd"))
+        any(p in v for p in ("high 2:", "low 2:", "high 3rd", "low 3rd", "high merit", "low merit", "high pass", "low pass"))
         for v in normalised
     ):
         return "grade", "high_low"
     return "grade", "none"
 
 
+def parse_grade_components(s):
+    """
+    Parses a grade string into a normalized (prefix, base_grade) tuple.
+    Prefix can be: "", "max", "high", "mid", "low", "close", "poor", "zero".
+    Base grade can be: "1st", "2:1", "2:2", "3rd", "fail".
+    """
+    s = str(s).strip().lower()
+    tokens = re.split(r'[\s/\\-]+', s)
+    
+    prefix = ""
+    prefix_map = {
+        "max": "max",
+        "high": "high",
+        "mid": "mid",
+        "med": "mid",
+        "medium": "mid",
+        "middle": "mid",
+        "low": "low",
+        "close": "close",
+        "poor": "poor",
+        "zero": "zero",
+    }
+    for token in tokens:
+        if token in prefix_map:
+            prefix = prefix_map[token]
+            break
+            
+    first_tokens = {"1st", "distinction", "dist", "d"}
+    two_one_tokens = {"2:1", "2.1", "merit", "m", "21"}
+    two_two_tokens = {"2:2", "2.2", "pass", "p", "22"}
+    third_tokens = {"3rd", "3"}
+    fail_tokens = {"fail", "f"}
+    
+    base_grade = None
+    for token in tokens:
+        if token in first_tokens:
+            base_grade = "1st"
+        elif token in two_one_tokens:
+            base_grade = "2:1"
+        elif token in two_two_tokens:
+            base_grade = "2:2"
+        elif token in third_tokens:
+            base_grade = "3rd"
+        elif token in fail_tokens:
+            base_grade = "fail"
+            
+    return prefix, base_grade
+
+
 def rubric_mark_from_label(grade_label, rubric_marks):
     """
     Look up a grade string (e.g. "Mid 2:1") in the rubric_marks list and
     return the corresponding numeric mark.  Returns 0 if not found.
+    
+    Performs exact matches first, then flexible component-based matching,
+    and fallback matching for prefix-less grades.
     """
     label_lower = str(grade_label).strip().lower()
     for band in rubric_marks:
         if band["grade"].lower() == label_lower:
             return band["marks"]
+            
+    p_label, b_label = parse_grade_components(grade_label)
+    if b_label is None:
+        return 0
+        
+    # Attempt 1: matching both prefix and base grade
+    for band in rubric_marks:
+        p_band, b_band = parse_grade_components(band["grade"])
+        if b_band == b_label and p_band == p_label:
+            return band["marks"]
+            
+    # Attempt 2: if label has no prefix (e.g., bare "1st", "Merit", "Pass", "2:1"),
+    # fall back to matching the band with a "low" prefix (or the first match for that grade)
+    if not p_label:
+        for fallback_prefix in ("low", ""):
+            for band in rubric_marks:
+                p_band, b_band = parse_grade_components(band["grade"])
+                if b_band == b_label and p_band == fallback_prefix:
+                    return band["marks"]
+        # Absolute fallback: match the first band that shares the base grade
+        for band in rubric_marks:
+            p_band, b_band = parse_grade_components(band["grade"])
+            if b_band == b_label:
+                return band["marks"]
+                
     return 0
 
 

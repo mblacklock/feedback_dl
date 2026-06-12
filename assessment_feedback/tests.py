@@ -950,6 +950,112 @@ class AssessmentFeedbackViewsTest(TestCase):
         self.assertEqual(grade_for_percentage_and_degree(45, "MEng"), "Fail")
         self.assertEqual(grade_for_percentage_and_degree(35, "MEng"), "Fail")
 
+    def test_parse_grade_components(self):
+        """Verify that parse_grade_components extracts the correct prefix and base grade."""
+        from assessment_feedback.views import parse_grade_components
+        
+        # Standard BEng style
+        self.assertEqual(parse_grade_components("High 1st"), ("high", "1st"))
+        self.assertEqual(parse_grade_components("mid 2:1"), ("mid", "2:1"))
+        self.assertEqual(parse_grade_components("Low 2:2"), ("low", "2:2"))
+        
+        # MEng style
+        self.assertEqual(parse_grade_components("High Distinction"), ("high", "1st"))
+        self.assertEqual(parse_grade_components("merit"), ("", "2:1"))
+        self.assertEqual(parse_grade_components("low pass"), ("low", "2:2"))
+        
+        # Combinations
+        self.assertEqual(parse_grade_components("1st/Distinction"), ("", "1st"))
+        self.assertEqual(parse_grade_components("distinction/1st"), ("", "1st"))
+        self.assertEqual(parse_grade_components("High 2:1/Merit"), ("high", "2:1"))
+        self.assertEqual(parse_grade_components("low 2:2/pass"), ("low", "2:2"))
+        
+        # Abbreviations
+        self.assertEqual(parse_grade_components("1st/D"), ("", "1st"))
+        self.assertEqual(parse_grade_components("2:1/M"), ("", "2:1"))
+        self.assertEqual(parse_grade_components("2:2/P"), ("", "2:2"))
+        self.assertEqual(parse_grade_components("m/2:1"), ("", "2:1"))
+        
+        # Fails
+        self.assertEqual(parse_grade_components("Close Fail"), ("close", "fail"))
+        self.assertEqual(parse_grade_components("poor fail"), ("poor", "fail"))
+        self.assertEqual(parse_grade_components("zero fail"), ("zero", "fail"))
+        self.assertEqual(parse_grade_components("f"), ("", "fail"))
+
+    def test_rubric_mark_from_label_flexible_matching(self):
+        """Verify that rubric_mark_from_label maps various postgraduate grade labels to correct band marks."""
+        from assessment_feedback.views import rubric_mark_from_label
+        
+        # Sample rubric marks for MEng none subdivision
+        rubric_marks_none = [
+            {"grade": "Max 1st/Dist", "marks": 30},
+            {"grade": "High 1st/Dist", "marks": 27},
+            {"grade": "Mid 1st/Dist", "marks": 24},
+            {"grade": "Low 1st/Dist", "marks": 21},
+            {"grade": "2:1/Merit", "marks": 18},
+            {"grade": "2:2/Pass", "marks": 15},
+            {"grade": "Close Fail", "marks": 11},
+            {"grade": "Fail", "marks": 8},
+        ]
+        
+        # Exact match
+        self.assertEqual(rubric_mark_from_label("2:1/Merit", rubric_marks_none), 18)
+        
+        # Flexible match (different case / spaces)
+        self.assertEqual(rubric_mark_from_label("  2:1 / merit  ", rubric_marks_none), 18)
+        
+        # PG name only
+        self.assertEqual(rubric_mark_from_label("Merit", rubric_marks_none), 18)
+        
+        # UG name only
+        self.assertEqual(rubric_mark_from_label("2:1", rubric_marks_none), 18)
+        self.assertEqual(rubric_mark_from_label("2.1", rubric_marks_none), 18)
+        
+        # Abbreviated combination
+        self.assertEqual(rubric_mark_from_label("2:1/M", rubric_marks_none), 18)
+        
+        # Prefixed flexible matches (High 1st/Dist)
+        self.assertEqual(rubric_mark_from_label("High Distinction", rubric_marks_none), 27)
+        self.assertEqual(rubric_mark_from_label("High 1st", rubric_marks_none), 27)
+        self.assertEqual(rubric_mark_from_label("High 1st/Distinction", rubric_marks_none), 27)
+        self.assertEqual(rubric_mark_from_label("High 1st/D", rubric_marks_none), 27)
+        
+        # Fallback for bare grade (no prefix) in subdivided rubric
+        self.assertEqual(rubric_mark_from_label("Distinction", rubric_marks_none), 21) # Low 1st/Dist
+        self.assertEqual(rubric_mark_from_label("1st", rubric_marks_none), 21) # Low 1st/Dist
+
+        # Fail matching
+        self.assertEqual(rubric_mark_from_label("Close Fail", rubric_marks_none), 11)
+        self.assertEqual(rubric_mark_from_label("Fail", rubric_marks_none), 8)
+
+    def test_infer_rubric_type_detect_postgraduate_grade_labels(self):
+        """Verify that infer_rubric_type auto-detects columns containing postgraduate grade strings."""
+        from assessment_feedback.views import infer_rubric_type
+        
+        # 1. subdivision "none": no qualified non-1st bands
+        values_none = ["Distinction", "Merit", "Pass", "Fail", None]
+        cat_type, subdivision = infer_rubric_type(values_none)
+        self.assertEqual(cat_type, "grade")
+        self.assertEqual(subdivision, "none")
+        
+        # 2. subdivision "high_low": contains "Low Pass" (non-1st qualified)
+        values_hl = ["High Distinction", "Merit", "Low Pass", "Fail"]
+        cat_type, subdivision = infer_rubric_type(values_hl)
+        self.assertEqual(cat_type, "grade")
+        self.assertEqual(subdivision, "high_low")
+        
+        # 3. subdivision "high_low" with combined strings: contains "Low 2:2/Pass"
+        values_combo = ["High 1st/Dist", "2:1/Merit", "Low 2:2/Pass", "Close Fail"]
+        cat_type, subdivision = infer_rubric_type(values_combo)
+        self.assertEqual(cat_type, "grade")
+        self.assertEqual(subdivision, "high_low")
+
+        # 4. subdivision "high_mid_low": contains "Mid Merit" or "Mid 2:1/Merit"
+        values_hml = ["Max 1st/Dist", "Mid Merit", "Pass", "Fail"]
+        cat_type, subdivision = infer_rubric_type(values_hml)
+        self.assertEqual(cat_type, "grade")
+        self.assertEqual(subdivision, "high_mid_low")
+
     def test_category_marks_block_renders_toggle_and_numeric_grade_bands(self):
         """Verify that the category marks block renders toggle checkbox/scripts ONLY in editor,
         and correctly applies static inline display styles in both viewports."""
