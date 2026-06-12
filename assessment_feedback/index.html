@@ -859,14 +859,15 @@ is a self-contained HTML file with no external dependencies — safe to email di
 <h2 id="step-by-step">Step-by-step<a class="headerlink" href="#step-by-step" title="Permanent link">&para;</a></h2>
 <h3 id="step-1-upload">Step 1 — Upload<a class="headerlink" href="#step-1-upload" title="Permanent link">&para;</a></h3>
 <ol>
-<li>Go to <strong>Assessment Feedback → Upload</strong>.</li>
-<li>Select your <code>.xlsx</code> file and click <strong>Upload</strong>.</li>
+<li>Go to <strong>Assessment Feedback</strong>.</li>
+<li>Drag and drop your marks spreadheet in the box or click to browse your local files.</li>
+<li>Click <strong>Analyse Spreadsheet</strong>.</li>
 <li>The app reads the file entirely in memory — nothing is saved to disk.</li>
 </ol>
 <p>The app automatically detects:</p>
 <ul>
-<li>The student <strong>name</strong> column (looks for "name", "student", "forename", "surname" etc.)</li>
-<li>The student <strong>ID</strong> column (looks for "id", "number", "code")</li>
+<li>The <strong>student name</strong> column (looks for "name", "student", "forename", "surname" etc.)</li>
+<li>The <strong>student ID</strong> column (looks for "id", "number", "code")</li>
 <li>Any <strong>overall / total</strong> column</li>
 <li>Mark columns (numeric) and rubric columns (grade-string values such as "High 2:1")</li>
 <li>Matching <strong>comment</strong> columns paired to each mark column</li>
@@ -876,7 +877,7 @@ is a self-contained HTML file with no external dependencies — safe to email di
 <p>If no grading columns are detected the upload is rejected with an error message.</p>
 <hr />
 <h3 id="step-2-confirm-mappings">Step 2 — Confirm mappings<a class="headerlink" href="#step-2-confirm-mappings" title="Permanent link">&para;</a></h3>
-<p>The confirm page shows the auto-detected column assignments alongside a three-row data preview.</p>
+<p>The Mappings page shows the auto-detected column assignments and allows you to change them if needed. </p>
 <table>
 <thead>
 <tr>
@@ -895,7 +896,7 @@ is a self-contained HTML file with no external dependencies — safe to email di
 </tr>
 <tr>
 <td><strong>Overall mark</strong></td>
-<td>Pre-calculated total column, if present</td>
+<td>Pre-calculated total column, if present, or select <strong>[Sum categories dynamically]</strong> to calculate total from all numeric and rubric columns</td>
 </tr>
 <tr>
 <td><strong>Group</strong></td>
@@ -916,19 +917,20 @@ is a self-contained HTML file with no external dependencies — safe to email di
 <li>Edit the <strong>column title</strong> (denominators are stripped automatically)</li>
 <li>Change the <strong>max marks</strong> (denominator)</li>
 <li>Change the <strong>column type</strong>: Numeric, Rubric, Information, or Feedback only</li>
-<li>Set a matching <strong>comments column</strong></li>
+<li>Set a matching <strong>comments column</strong>, if present</li>
 <li>Toggle <strong>exclude from radar chart</strong></li>
 <li>Remove the column entirely</li>
-<li>Add extra columns using <strong>+ Add Column</strong></li>
+<li>Add extra columns using <strong>Add Undetected Column</strong></li>
 </ul>
 <blockquote>
 <p><strong>Rubric columns</strong> contain grade strings such as "Mid 2:1" or "High 1st" instead of numbers.
-The app detects these automatically and maps them to numeric marks using the UK grade band scale.</p>
+The app detects these automatically and maps them to numeric marks using the UK grade band scale.
+You can edit the rubric mappings to match your own custom rubric.</p>
 </blockquote>
-<p>Click <strong>Confirm &amp; Continue</strong> when you are happy with the settings.</p>
+<p>Click <strong>Build Feedback Sheet Layout</strong> when you are happy with the settings.</p>
 <hr />
 <h3 id="step-3-configure-layout">Step 3 — Configure layout<a class="headerlink" href="#step-3-configure-layout" title="Permanent link">&para;</a></h3>
-<p>A drag-and-drop WYSIWYG editor lets you arrange the blocks that appear on each feedback sheet:</p>
+<p>A drag-and-drop WYSIWYG editor lets you arrange the blocks that appear on each feedback sheet. A preview for each student can be seen by updating the dropdown box.</p>
 <table>
 <thead>
 <tr>
@@ -938,16 +940,12 @@ The app detects these automatically and maps them to numeric marks using the UK 
 </thead>
 <tbody>
 <tr>
-<td><strong>Student details</strong></td>
+<td><strong>Assessment &amp; Student details</strong></td>
 <td>Name, ID, module, assessment, academic year</td>
 </tr>
 <tr>
 <td><strong>Marks table</strong></td>
 <td>Per-criterion mark, max marks, grade band label</td>
-</tr>
-<tr>
-<td><strong>Feedback comments</strong></td>
-<td>Text from matched comment columns</td>
 </tr>
 <tr>
 <td><strong>Radar chart</strong></td>
@@ -957,21 +955,29 @@ The app detects these automatically and maps them to numeric marks using the UK 
 <td><strong>Cohort histogram</strong></td>
 <td>Grade distribution with student's mark highlighted</td>
 </tr>
+<tr>
+<td><strong>Feedback comments</strong></td>
+<td>Text from matched comment columns</td>
+</tr>
+<tr>
+<td><strong>General feedback comments</strong></td>
+<td>Free text editor to add whole-class comments</td>
+</tr>
 </tbody>
 </table>
 <p>Each block can be set to <strong>full width</strong> or <strong>half width</strong>, enabled or disabled, and reordered
-by dragging. A live preview updates as you make changes.</p>
+by dragging. When a block is selectded to <strong>half width</strong> it can be toggled to be on its own row or next to another half-width block.</p>
+<p>A live preview updates as you make changes. </p>
 <p>Within the <strong>Marks table</strong> preview block, you can also customize row layouts:
 - <strong>Reorder criteria rows</strong>: Drag and drop any row in the Breakdown of Marks table preview to rearrange the order in which criteria appear on the final sheets.
 - <strong>Highlight rows</strong>: Hover over a row and click the <strong>Highlight</strong> badge to toggle it as a section header (bold, light background, hiding mark/comment fields).
 - <strong>Add divider lines</strong>: Hover over the boundary between rows and click <strong>━ Add Divider</strong> to insert a solid gray separator line. Hover and click <strong>✕ Remove Divider</strong> to remove it.</p>
-<p>Click <strong>Generate</strong> to produce the output.</p>
+<p>Click <strong>Generate Student Feedback Sheets</strong> to produce the output.</p>
 <hr />
 <h3 id="output">Output<a class="headerlink" href="#output" title="Permanent link">&para;</a></h3>
 <ul>
-<li>A <strong>ZIP file</strong> containing one HTML file per student, named
-  <code>feedback_&lt;student_id&gt;_&lt;student_name&gt;.html</code></li>
-<li>A pre-populated <strong>email template</strong> (<code>.xlsm</code>) using the institution email macro workbook</li>
+<li>A <strong>ZIP file</strong> containing one HTML file per student, named <code>&lt;student_id&gt;_&lt;student_name&gt;.html</code></li>
+<li>A pre-populated <strong>email template</strong> macro workbook (<code>.xlsm</code>). This can be used alongside MS Outlook to programmatically send emails to students with the relevant HTML feedback file attached.</li>
 </ul>
 <p>Each HTML file is fully self-contained — all CSS, SVG charts, and data are embedded inline.</p>
 <hr />
@@ -983,8 +989,8 @@ by dragging. A live preview updates as you make changes.</p>
 <li>Rubric columns (grade strings) must have ≥ 70 % of values matching recognised UK grade strings
   to be detected automatically.</li>
 <li>For Master's-level modules, select <strong>MEng/MSc</strong> as the degree level — the pass boundary
-  shifts to 50 % and grade labels change to Distinction / Merit / Pass.</li>
-<li>The radar chart excludes "Information" and "Feedback only" columns by default.</li>
+  shifts to 50 % and Distinction / Merit / Pass grade labels will also be auto-detected along with the standard 1st / 2:1 etc. rubric strings.</li>
+<li>The radar chart excludes "Information" and "Feedback only" columns by default. You may exclude other categories on the mapping page.</li>
 </ul>
 
 
