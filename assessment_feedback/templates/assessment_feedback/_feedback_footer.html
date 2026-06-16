@@ -1,14 +1,5 @@
 <!-- Overall summary -->
-<div class="overall-card">
-    <div class="overall-cell">
-        <div class="overall-label">Overall Assessment Mark</div>
-        <div class="overall-score">{{ overall_percentage }}%</div>
-    </div>
-    <div class="overall-cell">
-        <div class="overall-label">Awarded Grade</div>
-        <div class="overall-grade">{{ overall_grade }}</div>
-    </div>
-</div>
+{% include "core/_overall_card.html" with label_score="Overall Assessment Mark" score=overall_percentage label_grade="Awarded Grade" grade=overall_grade %}
 
 <!-- Disclaimer -->
 <div class="disclaimer">

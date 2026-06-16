@@ -1,0 +1,10 @@
+<div class="overall-card">
+    <div>
+        <div class="overall-label">{{ label_score|default:"Overall Assessment Mark" }}</div>
+        <div class="overall-score">{{ score|floatformat:0 }}%</div>
+    </div>
+    <div class="overall-card-right">
+        <div class="overall-label">{{ label_grade|default:"Awarded Grade" }}</div>
+        <div class="overall-grade-badge">{{ grade }}</div>
+    </div>
+</div>

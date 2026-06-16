@@ -101,42 +101,51 @@
 }
 
 .overall-card {
-    display: flex;
+    background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+    color: #ffffff;
+    border-radius: 8px;
+    padding: 18px 24px;
     margin-top: 20px;
+    margin-bottom: 20px;
     border-top: 4px solid var(--brand-gold);
-}
-
-.overall-cell {
-    flex: 1;
-    background: var(--brand-navy);
-    padding: 16px 24px;
-}
-
-.overall-cell+.overall-cell {
-    border-left: 1px solid var(--brand-navy-light);
+    border-bottom: 4px solid var(--brand-gold);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
 }
 
 .overall-label {
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 0.14em;
+    font-size: 11px;
     text-transform: uppercase;
-    color: var(--brand-muted);
-    margin-bottom: 6px;
+    letter-spacing: 0.1em;
+    color: #cbd5e1;
+    margin-bottom: 4px;
+    font-weight: 600;
 }
 
 .overall-score {
-    font-size: 28px;
-    font-weight: 700;
+    font-size: 24px;
+    font-weight: 800;
     color: #ffffff;
+    font-family: 'Outfit', sans-serif;
     line-height: 1;
 }
 
-.overall-grade {
-    font-size: 24px;
+.overall-card-right {
+    text-align: right;
+}
+
+.overall-grade-badge {
+    background-color: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 30px;
+    padding: 4px 14px;
     font-weight: 700;
-    color: var(--brand-gold);
-    line-height: 1;
+    font-size: 12px;
+    display: inline-block;
+    color: #ffffff;
+    font-family: 'Outfit', sans-serif;
 }
 
 .disclaimer {
