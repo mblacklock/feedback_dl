@@ -909,13 +909,13 @@ the overall module — <strong>no per-student data appears in the output</strong
 <h2 id="step-by-step">Step-by-step<a class="headerlink" href="#step-by-step" title="Permanent link">&para;</a></h2>
 <h3 id="step-1-upload">Step 1 — Upload<a class="headerlink" href="#step-1-upload" title="Permanent link">&para;</a></h3>
 <ol>
-<li>Go to <strong>Cohort Report → Upload</strong>.</li>
-<li>Select your MCRF <code>.xls</code> file and click <strong>Upload</strong>.</li>
-<li>The file is parsed in memory — nothing is written to disk.</li>
+<li>Go to <strong>Cohort Summary Report → Upload</strong>.</li>
+<li>Drag and drop your MCRF spreadheet in the box or click to browse your local files.</li>
+<li>Click <strong>Analyse Cohort Data</strong>.</li>
+<li>The app reads the file entirely in memory — nothing is saved to disk.</li>
 </ol>
 <p>The app automatically detects:</p>
 <ul>
-<li>Student name and ID columns (used for internal processing only, never shown in output)  <strong><em>*DOES IT NEED TO LOOK AT STUDENT NAME?</em></strong></li>
 <li>Assessment <strong>component mark</strong> columns (headers containing "mark", excluding totals and averages)</li>
 <li><strong>Module code</strong>, <strong>module title</strong>, <strong>year</strong>, <strong>period</strong>, and <strong>occurrence</strong> from the MCRF header</li>
 <li><strong>Component weights</strong> from column headers (e.g. <code>CW1 40%</code>); split evenly if not found</li>
@@ -949,61 +949,20 @@ the overall module — <strong>no per-student data appears in the output</strong
 </tr>
 </tbody>
 </table>
-<p>Click <strong>Confirm &amp; Continue</strong>.</p>
+<p>Click <strong>Generate Cohort Report</strong>.</p>
 <hr />
 <h3 id="step-3-view-and-download-report">Step 3 — View and download report<a class="headerlink" href="#step-3-view-and-download-report" title="Permanent link">&para;</a></h3>
 <p>The report is rendered directly in the browser, showing:</p>
 <h4 id="per-component">Per component<a class="headerlink" href="#per-component" title="Permanent link">&para;</a></h4>
-<table>
-<thead>
-<tr>
-<th>Statistic</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Mean</td>
-<td>Average percentage</td>
-</tr>
-<tr>
-<td>Median</td>
-<td>Middle value</td>
-</tr>
-<tr>
-<td>Std dev</td>
-<td>Standard deviation</td>
-</tr>
-<tr>
-<td>Max</td>
-<td>Highest percentage</td>
-</tr>
-<tr>
-<td>n</td>
-<td>Number of students</td>
-</tr>
-<tr>
-<td>% 1st</td>
-<td>Proportion scoring ≥ 70 %</td>
-</tr>
-<tr>
-<td>% 2:1 and above</td>
-<td>Proportion scoring ≥ 60 %</td>
-</tr>
-<tr>
-<td>% 2:2 and above</td>
-<td>Proportion scoring ≥ 50 %</td>
-</tr>
-<tr>
-<td>% Fail</td>
-<td>Proportion below the pass threshold</td>
-</tr>
-</tbody>
-</table>
-<p>Each component also has a <strong>cohort histogram</strong> with UK grade band colours and 10 % bins.</p>
+<ul>
+<li><strong>Aggregated statistics</strong>: Mean, median, standard deviation, maximum, and cohort size.</li>
+<li><strong>UK grade bands</strong>: Proportion of students scoring 1st (≥ 70%), 2:1 and above (≥ 60%), and Fail (below the pass threshold).</li>
+<li><strong>Cohort histogram</strong>: Chart with UK grade band colours and 10% bins.</li>
+</ul>
 <h4 id="overall-module">Overall module<a class="headerlink" href="#overall-module" title="Permanent link">&para;</a></h4>
 <p>The same statistics and histogram calculated from each student's <strong>weighted final mark</strong>
-(sum of component percentages multiplied by their weights).</p>
+(sum of component marks multiplied by their weights). Each student's mark is rounded to the
+nearest integer, with values ending in 9 rounded up to the next decade (e.g., 59% becomes 60%).</p>
 <h3 id="downloading">Downloading<a class="headerlink" href="#downloading" title="Permanent link">&para;</a></h3>
 <p>Click <strong>Download Report</strong> to save a single self-contained HTML file with all charts and
 statistics embedded inline — no internet connection required to view it.</p>
