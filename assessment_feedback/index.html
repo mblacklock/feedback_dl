@@ -977,15 +977,16 @@ by dragging. When a block is selectded to <strong>half width</strong> it can be 
 <h3 id="output">Output<a class="headerlink" href="#output" title="Permanent link">&para;</a></h3>
 <ul>
 <li>A <strong>ZIP file</strong> containing one HTML file per student, named <code>&lt;student_id&gt;_&lt;student_name&gt;.html</code></li>
-<li>A pre-populated <strong>email template</strong> macro workbook (<code>.xlsm</code>). This can be used alongside MS Outlook to programmatically send emails to students with the relevant HTML feedback file attached.</li>
+<li>A pre-populated <strong>email template</strong> macro workbook (<code>.xlsm</code>). This can be used alongside MS Outlook to programmatically send emails to students with the relevant HTML feedback file attached. It does not require access to your account information to send emails. It uses the an open MS Outlook instance to send the emails.</li>
 </ul>
 <p>Each HTML file is fully self-contained — all CSS, SVG charts, and data are embedded inline.</p>
 <hr />
 <h2 id="tips">Tips<a class="headerlink" href="#tips" title="Permanent link">&para;</a></h2>
 <ul>
-<li>If the wrong column is detected as the student name, correct it on the confirm page before proceeding.</li>
+<li>If the wrong column is detected as the student name, correct it on the mapping page before proceeding.</li>
 <li>Columns whose headers contain <code>/20</code>, <code>(30)</code>, or a trailing integer have their denominator
-  inferred automatically. If no denominator is found, the app checks the data maximum.</li>
+  inferred automatically. If no denominator is found, the app checks the data maximum. 
+  The maximum mark for a category can be edited in the mapping page.</li>
 <li>Rubric columns (grade strings) must have ≥ 70 % of values matching recognised UK grade strings
   to be detected automatically.</li>
 <li>For Master's-level modules, select <strong>MEng/MSc</strong> as the degree level — the pass boundary
