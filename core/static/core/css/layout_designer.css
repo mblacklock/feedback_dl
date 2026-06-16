@@ -13,11 +13,11 @@
 }
 
 .gradient-header {
-    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-dark) 100%);
     border-radius: 20px 20px 0 0;
     padding: 30px;
     color: white;
-    border-bottom: 4px solid #c8a951;
+    border-bottom: 4px solid var(--brand-accent);
 }
 
 .control-pane {
@@ -36,21 +36,21 @@
 }
 
 .btn-premium {
-    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-light) 100%);
     color: white;
-    border: 1px solid #c8a951;
+    border: 1px solid var(--brand-accent);
     border-radius: 12px;
     padding: 14px 40px;
     font-weight: 700;
     transition: all 0.25s ease;
-    box-shadow: 0 4px 15px rgba(15, 23, 42, 0.2);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 .btn-premium:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(200, 169, 81, 0.35);
-    color: #c8a951;
-    border-color: #c8a951;
+    color: var(--brand-accent);
+    border-color: var(--brand-accent);
 }
 
 /* ── Simulated sheet chrome ── */
@@ -90,13 +90,13 @@
 
 .draggable-block.dragging {
     opacity: 0.35;
-    border-color: #4361ee;
+    border-color: var(--brand-primary);
     border-style: solid;
 }
 
 .draggable-block.drag-over {
-    border-color: #4361ee;
-    background-color: #f0f4ff;
+    border-color: var(--brand-primary);
+    background-color: var(--brand-bg-dark);
     border-style: solid;
 }
 
@@ -227,6 +227,6 @@
 }
 
 .marks-table tr.row-drag-over td {
-    border-top: 2px solid #4361ee !important;
+    border-top: 2px solid var(--brand-primary) !important;
 }
 

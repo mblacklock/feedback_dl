@@ -1,0 +1,331 @@
+{% extends "rubric_generator/base.html" %}
+{% load static_helpers %}
+
+{% block title %}Theme Customiser{% endblock %}
+
+{% block extra_css %}
+<style>
+    {% inline_static "core/css/portal_pages.css" %}
+    {% inline_static "core/css/theme_settings.css" %}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row py-4">
+    <div class="col-12 mb-4">
+        <h1 class="fw-bold mb-2">Theme Settings & Customiser</h1>
+        <p class="text-muted">Manage branding colours for downloadable feedback and summary sheets.</p>
+    </div>
+
+    <!-- Left side: Form Controls and Theme Selection -->
+    <div class="col-lg-6 mb-4">
+        <div class="card main-card mb-4 card-bordered">
+            <div class="gradient-header py-3 px-4 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold">Active Theme & Saved Presets</h5>
+                {% if has_custom_active %}
+                <span class="badge bg-secondary rounded-pill">Custom Active</span>
+                {% else %}
+                <span class="badge bg-secondary rounded-pill badge-system-default">System Default</span>
+                {% endif %}
+            </div>
+            
+            <div class="card-body p-4">
+                {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert alert-success rounded-3 mb-3" role="alert">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                {% endif %}
+
+                <!-- Saved Themes List -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold text-secondary small uppercase tracking-wider mb-2">Saved Configurations</label>
+                    <div class="d-flex flex-column gap-2">
+                        <!-- Default Fallback Theme Card -->
+                        <div class="p-3 border rounded-3 d-flex justify-content-between align-items-center {% if not has_custom_active %}border-primary bg-light{% endif %} default-theme-card">
+                            <div>
+                                <h6 class="fw-bold mb-1">System Default Theme</h6>
+                                <div class="d-flex gap-1 mt-1">
+                                    <span class="theme-color-dot" style="background-color: #1a1a2e;" title="Primary"></span>
+                                    <span class="theme-color-dot" style="background-color: #c8a951;" title="Accent"></span>
+                                    <span class="text-muted small ms-1 text-meta">Navy & Gold</span>
+                                </div>
+                            </div>
+                            {% if has_custom_active %}
+                            <form method="POST" class="m-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="deactivate">
+                                <button type="submit" class="btn btn-sm btn-outline-primary rounded-pill px-3">Activate Default</button>
+                            </form>
+                            {% else %}
+                            <span class="badge bg-success rounded-pill px-3 py-1">Active</span>
+                            {% endif %}
+                        </div>
+
+                        {% for t in themes %}
+                        <div class="p-3 border rounded-3 d-flex justify-content-between align-items-center {% if t.is_active %}border-primary bg-light{% endif %}">
+                            <div>
+                                <h6 class="fw-bold mb-1">{{ t.name }}</h6>
+                                <div class="d-flex gap-1 mt-1">
+                                    <span class="theme-color-dot" style="background-color: {{ t.brand_primary }};" title="Primary"></span>
+                                    <span class="theme-color-dot" style="background-color: {{ t.brand_accent }};" title="Accent"></span>
+                                    <span class="text-muted small ms-1 text-meta">{{ t.brand_primary }} / {{ t.brand_accent }}</span>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                {% if not t.is_active %}
+                                <form method="POST" class="m-0">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="activate">
+                                    <input type="hidden" name="theme_id" value="{{ t.id }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-primary rounded-pill px-2 btn-sm-theme">Activate</button>
+                                </form>
+                                {% else %}
+                                <span class="badge bg-success rounded-pill px-3 py-2 align-self-center">Active</span>
+                                {% endif %}
+                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2 btn-sm-theme" 
+                                        onclick="loadThemeToForm('{{ t.id }}', '{{ t.name }}', '{{ t.brand_primary }}', '{{ t.brand_primary_dark }}', '{{ t.brand_primary_light }}', '{{ t.brand_accent }}')">Edit</button>
+                                <form method="POST" class="m-0" onsubmit="return confirm('Delete theme \'{{ t.name }}\'?');">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="delete">
+                                    <input type="hidden" name="theme_id" value="{{ t.id }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2 btn-sm-theme">Delete</button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create / Edit Theme Form Card -->
+        <div class="card main-card card-bordered">
+            <div class="gradient-header py-3 px-4">
+                <h5 class="mb-0 fw-bold" id="form-card-title">Create New Custom Theme</h5>
+            </div>
+            
+            <div class="card-body p-4">
+                <form method="POST" id="theme-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" id="form-action" value="create">
+                    <input type="hidden" name="theme_id" id="form-theme-id" value="">
+
+                    <div class="mb-3">
+                        <label for="id_name" class="form-label fw-bold text-dark small">Theme Name</label>
+                        <input type="text" class="form-control rounded-3 shadow-sm" id="id_name" name="name" required placeholder="e.g. Imperial Navy, Emerald Forest" value="">
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-sm-6">
+                            <label for="id_brand_primary" class="form-label fw-bold text-dark small">Primary Color</label>
+                            <div class="input-group">
+                                <input type="color" class="form-control form-control-color rounded-start-3 shadow-sm color-picker-input" id="id_brand_primary" name="brand_primary" value="#1a1a2e" title="Choose primary color">
+                                <input type="text" class="form-control rounded-end-3 shadow-sm color-hex-text" id="id_brand_primary_text" value="#1a1a2e" pattern="^#[0-9a-fA-F]{6}$" title="Hex code format #RRGGBB">
+                            </div>
+                            <div class="form-text small">Used for primary fills & headers.</div>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label for="id_brand_accent" class="form-label fw-bold text-dark small">Accent Color</label>
+                            <div class="input-group">
+                                <input type="color" class="form-control form-control-color rounded-start-3 shadow-sm color-picker-input" id="id_brand_accent" name="brand_accent" value="#c8a951" title="Choose accent color">
+                                <input type="text" class="form-control rounded-end-3 shadow-sm color-hex-text" id="id_brand_accent_text" value="#c8a951" pattern="^#[0-9a-fA-F]{6}$">
+                            </div>
+                            <div class="form-text small">Used for borders & highlights.</div>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label for="id_brand_primary_dark" class="form-label fw-bold text-dark small">Primary Dark</label>
+                            <div class="input-group">
+                                <input type="color" class="form-control form-control-color rounded-start-3 shadow-sm color-picker-input" id="id_brand_primary_dark" name="brand_primary_dark" value="#0f172a" title="Choose primary dark color">
+                                <input type="text" class="form-control rounded-end-3 shadow-sm color-hex-text" id="id_brand_primary_dark_text" value="#0f172a" pattern="^#[0-9a-fA-F]{6}$">
+                            </div>
+                            <div class="form-text small">Dark base gradient color.</div>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label for="id_brand_primary_light" class="form-label fw-bold text-dark small">Primary Light</label>
+                            <div class="input-group">
+                                <input type="color" class="form-control form-control-color rounded-start-3 shadow-sm color-picker-input" id="id_brand_primary_light" name="brand_primary_light" value="#2e2e4a" title="Choose primary light color">
+                                <input type="text" class="form-control rounded-end-3 shadow-sm color-hex-text" id="id_brand_primary_light_text" value="#2e2e4a" pattern="^#[0-9a-fA-F]{6}$">
+                            </div>
+                            <div class="form-text small">Light base gradient color.</div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-premium w-100 py-2 rounded-3 shadow-sm" id="submit-btn">Create Custom Theme</button>
+                        <button type="button" class="btn btn-outline-secondary w-50 py-2 rounded-3 shadow-sm d-none" id="cancel-edit-btn" onclick="resetFormToCreateMode()">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right side: Real-time WYSIWYG Mock Preview -->
+    <div class="col-lg-6 mb-4">
+        <div class="card main-card sticky-top preview-card-sticky">
+            <div class="gradient-header py-3 px-4 d-flex align-items-center gap-2">
+                <span>👁️ Live WYSIWYG Preview</span>
+                <strong class="badge text-bg-light rounded-pill fs-7 badge-rendering">Real-time Rendering</strong>
+            </div>
+            
+            <div class="card-body p-4">
+                <p class="small text-muted mb-3">Below is a live rendering of the portal UI and download components. Changes in color pickers reflect immediately.</p>
+                <div class="preview-container" id="wysiwyg-preview">
+                    <!-- Web UI component: Navbar -->
+                    <div class="fw-bold mb-2 text-secondary small uppercase tracking-wider preview-section-title">1. PORTAL NAVIGATION BAR</div>
+                    <nav class="mini-navbar">
+                        <span class="fw-bold">Feedback Portal</span>
+                        <div class="d-flex gap-2">
+                            <span>Upload</span>
+                            <span>Theme Customiser</span>
+                        </div>
+                    </nav>
+ 
+                    <!-- Web UI component: Main Portal Header Card -->
+                    <div class="fw-bold mb-2 text-secondary small uppercase tracking-wider preview-section-title">2. MAIN HEADER BLOCK</div>
+                    <div class="mini-card">
+                        <div class="mini-gradient-header">
+                            <h6>Assessment Feedback Builder</h6>
+                            <p>Design bespoke marking sheets, configure weights, and download templates.</p>
+                        </div>
+                        <div class="mini-card-body">
+                            <p class="mb-3">This card container acts as the primary web module header. Notice the gradient shift and accent border underneath.</p>
+                            <span class="mini-btn-premium">Download Template</span>
+                        </div>
+                    </div>
+ 
+                    <!-- Excel Header preview -->
+                    <div class="fw-bold mb-2 text-secondary small uppercase tracking-wider preview-section-title">3. EXCEL SPREADSHEET HEADER ROWS</div>
+                    <div class="mini-excel-sheet mb-2">
+                        <div class="excel-header-row">
+                            <div class="excel-cell-header preview-col-id">Student ID</div>
+                            <div class="excel-cell-header preview-col-name">Student Name</div>
+                            <div class="excel-cell-header">Numeric (50)</div>
+                            <div class="excel-cell-header">Rubric (50)</div>
+                        </div>
+                        <div class="excel-data-row">
+                            <div class="excel-cell-data preview-col-id">S0012948</div>
+                            <div class="excel-cell-data preview-col-name">John Doe</div>
+                            <div class="excel-cell-data">42.5</div>
+                            <div class="excel-cell-data">2:1</div>
+                        </div>
+                        <div class="excel-data-row">
+                            <div class="excel-cell-data preview-col-id">S0084321</div>
+                            <div class="excel-cell-data preview-col-name">Alice Smith</div>
+                            <div class="excel-cell-data">48.0</div>
+                            <div class="excel-cell-data">First</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Live preview variables synchronization
+    const previewContainer = document.getElementById('wysiwyg-preview');
+    const colorPickers = document.querySelectorAll('.color-picker-input');
+    const hexTexts = document.querySelectorAll('.color-hex-text');
+
+    function syncHexToPicker(textInput) {
+        const pickerId = textInput.id.replace('_text', '');
+        const picker = document.getElementById(pickerId);
+        if (picker && /^#[0-9a-fA-F]{6}$/.test(textInput.value)) {
+            picker.value = textInput.value;
+            updateLivePreview();
+        }
+    }
+
+    function syncPickerToHex(picker) {
+        const textInputId = picker.id + '_text';
+        const textInput = document.getElementById(textInputId);
+        if (textInput) {
+            textInput.value = picker.value.toUpperCase();
+            updateLivePreview();
+        }
+    }
+
+    function updateLivePreview() {
+        const primary = document.getElementById('id_brand_primary').value;
+        const primaryDark = document.getElementById('id_brand_primary_dark').value;
+        const primaryLight = document.getElementById('id_brand_primary_light').value;
+        const accent = document.getElementById('id_brand_accent').value;
+
+        previewContainer.style.setProperty('--brand-primary', primary);
+        previewContainer.style.setProperty('--brand-primary-dark', primaryDark);
+        previewContainer.style.setProperty('--brand-primary-light', primaryLight);
+        previewContainer.style.setProperty('--brand-accent', accent);
+    }
+
+    // Attach sync event listeners
+    colorPickers.forEach(picker => {
+        picker.addEventListener('input', () => syncPickerToHex(picker));
+        picker.addEventListener('change', () => syncPickerToHex(picker));
+    });
+
+    hexTexts.forEach(txt => {
+        txt.addEventListener('input', () => syncHexToPicker(txt));
+        txt.addEventListener('change', () => syncHexToPicker(txt));
+    });
+
+    // Load theme values into the form fields
+    function loadThemeToForm(id, name, primary, primaryDark, primaryLight, accent) {
+        document.getElementById('form-card-title').innerText = "Edit Custom Theme: " + name;
+        document.getElementById('form-action').value = "edit";
+        document.getElementById('form-theme-id').value = id;
+        document.getElementById('submit-btn').innerText = "Save Theme Modifications";
+        document.getElementById('cancel-edit-btn').classList.remove('d-none');
+
+        const nameInput = document.getElementById('id_name');
+        nameInput.value = name;
+
+        // Set picker color fields
+        document.getElementById('id_brand_primary').value = primary;
+        document.getElementById('id_brand_primary_dark').value = primaryDark;
+        document.getElementById('id_brand_primary_light').value = primaryLight;
+        document.getElementById('id_brand_accent').value = accent;
+
+        // Set text hexadecimal fields
+        document.getElementById('id_brand_primary_text').value = primary.toUpperCase();
+        document.getElementById('id_brand_primary_dark_text').value = primaryDark.toUpperCase();
+        document.getElementById('id_brand_primary_light_text').value = primaryLight.toUpperCase();
+        document.getElementById('id_brand_accent_text').value = accent.toUpperCase();
+
+        updateLivePreview();
+        
+        // Scroll to form nicely
+        document.getElementById('theme-form').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function resetFormToCreateMode() {
+        document.getElementById('form-card-title').innerText = "Create New Custom Theme";
+        document.getElementById('form-action').value = "create";
+        document.getElementById('form-theme-id').value = "";
+        document.getElementById('submit-btn').innerText = "Create Custom Theme";
+        document.getElementById('cancel-edit-btn').classList.add('d-none');
+
+        document.getElementById('id_name').value = "";
+        
+        // Defaults loading
+        document.getElementById('id_brand_primary').value = "#1a1a2e";
+        document.getElementById('id_brand_primary_dark').value = "#0f172a";
+        document.getElementById('id_brand_primary_light').value = "#2e2e4a";
+        document.getElementById('id_brand_accent').value = "#c8a951";
+
+        document.getElementById('id_brand_primary_text').value = "#1A1A2E";
+        document.getElementById('id_brand_primary_dark_text').value = "#0F172A";
+        document.getElementById('id_brand_primary_light_text').value = "#2E2E4A";
+        document.getElementById('id_brand_accent_text').value = "#C8A951";
+
+        updateLivePreview();
+    }
+
+    // Initialize rendering on load
+    updateLivePreview();
+</script>
+{% endblock %}

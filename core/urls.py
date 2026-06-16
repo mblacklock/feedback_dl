@@ -23,6 +23,7 @@ from . import views
 
 urlpatterns = [
     path("", views.portal_home, name="portal_home"),
+    path("settings/theme/", views.theme_settings, name="theme_settings"),
     path('admin/', admin.site.urls),
     path("rubric-generator/", include("rubric_generator.urls")),
     path("comments-generator/", include("comments_generator.urls")),

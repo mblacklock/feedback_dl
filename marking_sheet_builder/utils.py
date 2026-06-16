@@ -178,7 +178,7 @@ def build_marking_workbook(config):
         sheet.append([""] * total_columns)
 
     _write_calculated_result_formulas(sheet, config, data_rows, total_columns)
-    _style_marking_sheet(sheet, headers, data_rows)
+    _style_marking_sheet(sheet, headers, data_rows, config)
     _apply_validations(sheet, config, data_rows)
 
     output = io.BytesIO()
@@ -230,8 +230,9 @@ def _apply_validations(sheet, config, data_rows):
             validation.add(cell_range)
 
 
-def _style_marking_sheet(sheet, headers, data_rows):
-    header_fill = PatternFill("solid", fgColor="1F4E79")
+def _style_marking_sheet(sheet, headers, data_rows, config):
+    primary_color = config.get("theme_primary", "#1a1a2e").lstrip("#")
+    header_fill = PatternFill("solid", fgColor=primary_color)
     header_font = Font(bold=True, color="FFFFFF")
     thin = Side(style="thin", color="D9E2F3")
     border = Border(left=thin, right=thin, top=thin, bottom=thin)
@@ -339,12 +340,13 @@ def _write_rubric_boundaries(sheet, config):
         marks_excel_col = get_column_letter(marks_col_index)
         sheet.cell(row=1, column=label_col_index, value=column["title"])
         sheet.cell(row=1, column=marks_col_index, value=f"{column['title']} marks")
+        primary_color = config.get("theme_primary", "#1a1a2e").lstrip("#")
         for header_cell in (
             sheet.cell(row=1, column=label_col_index),
             sheet.cell(row=1, column=marks_col_index),
         ):
             header_cell.font = Font(bold=True, color="FFFFFF")
-            header_cell.fill = PatternFill("solid", fgColor="1F4E79")
+            header_cell.fill = PatternFill("solid", fgColor=primary_color)
 
         bands = get_custom_grade_bands(
             column["max_mark"],

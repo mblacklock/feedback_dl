@@ -344,7 +344,7 @@ def download_cohort_report(request):
         return redirect("cohort_report_upload")
 
     # Render the self-contained download template with embedded charts and CSS
-    rendered_html = render_to_string("cohort_report/report_download.html", context)
+    rendered_html = render_to_string("cohort_report/report_download.html", context, request=request)
 
     filename = f"cohort_report_{context['module_code'].replace(' ', '_')}.html"
     response = HttpResponse(rendered_html, content_type="text/html")

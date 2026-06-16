@@ -10,6 +10,16 @@
     {% inline_static "core/css/sheet_layout.css" %}
     {% inline_static "core/css/layout_designer.css" %}
 </style>
+{% if active_theme %}
+<style>
+    :root {
+        --brand-primary: {{ active_theme.brand_primary }};
+        --brand-primary-dark: {{ active_theme.brand_primary_dark }};
+        --brand-primary-light: {{ active_theme.brand_primary_light }};
+        --brand-accent: {{ active_theme.brand_accent }};
+    }
+</style>
+{% endif %}
 <style>
     .simulated-sheet {
         position: relative;
@@ -34,15 +44,15 @@
         right: 8px;
         height: 2px;
         background: transparent;
-        border-top: 1.5px dashed #4361ee;
+        border-top: 1.5px dashed var(--brand-primary);
         z-index: 1;
     }
 
     .floating-divider-btn {
         pointer-events: auto;
         background: #ffffff;
-        color: #4361ee;
-        border: 1.5px solid #4361ee;
+        color: var(--brand-primary);
+        border: 1.5px solid var(--brand-primary);
         font-size: 0.75rem;
         font-weight: 600;
         padding: 2px 12px;
@@ -54,7 +64,7 @@
     }
 
     .floating-divider-btn:hover {
-        background: #4361ee;
+        background: var(--brand-primary);
         color: #ffffff;
         transform: scale(1.05);
     }
@@ -97,9 +107,9 @@
     }
 
     .marks-table tr.marks-section-header .highlight-toggle-badge {
-        background: #4361ee;
+        background: var(--brand-primary);
         color: #ffffff;
-        border-color: #4361ee;
+        border-color: var(--brand-primary);
         opacity: 1;
     }
 </style>

@@ -4,6 +4,9 @@ All notable changes to the Feedback Portal tools will be documented here.
 
 ## [Unreleased]
 
+### Added
+- **Theme Customisation**: Added a database-backed dynamic theme customisation tool allowing users to create, edit, activate, and delete custom branding themes.
+
 ## [1.1.0] - 2026-06-11
 
 ### Added

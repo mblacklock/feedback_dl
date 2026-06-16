@@ -9,6 +9,16 @@
     {% inline_static "core/css/brand_design.css" %}
     {% inline_static "core/css/sheet_builder.css" %}
 </style>
+{% if active_theme %}
+<style>
+    :root {
+        --brand-primary: {{ active_theme.brand_primary }};
+        --brand-primary-dark: {{ active_theme.brand_primary_dark }};
+        --brand-primary-light: {{ active_theme.brand_primary_light }};
+        --brand-accent: {{ active_theme.brand_accent }};
+    }
+</style>
+{% endif %}
 {% endblock %}
 
 {% block content %}

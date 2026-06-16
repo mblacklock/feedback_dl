@@ -15,6 +15,7 @@
     <style>
         {% inline_static "core/css/brand_design.css" %}
     </style>
+
     {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -26,6 +27,11 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'theme_settings' %}">
+                            Theme Customizer
+                        </a>
+                    </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'user_guide' %}" target="_blank" rel="noopener noreferrer">
                             User Guide

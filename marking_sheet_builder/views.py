@@ -25,7 +25,11 @@ def grade_bands_json(request):
 
 def builder(request):
     if request.method == "POST":
+        from core.models import ThemeConfig
+        theme = ThemeConfig.get_active()
         config = parse_builder_payload(request.POST.get("builder_payload"))
+        config["theme_primary"] = theme.brand_primary
+        config["theme_accent"] = theme.brand_accent
         errors = validate_builder_config(config)
         if errors:
             for error in errors:
