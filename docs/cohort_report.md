@@ -55,7 +55,8 @@ The report is rendered directly in the browser, showing:
 
 #### Overall module
 The same statistics and histogram calculated from each student's **weighted final mark**
-(sum of component marks multiplied by their weights).
+(sum of component marks multiplied by their weights). Each student's mark is rounded to the
+nearest integer, with values ending in 9 rounded up to the next decade (e.g., 59% becomes 60%).
 
 ### Downloading
 

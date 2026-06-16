@@ -6,11 +6,12 @@ from django.template.loader import render_to_string
 
 from core.mcrf_parser import parse_mcrf_workbook
 from core.utils.charts import generate_cohort_histogram
-from module_summary.views import (
-    parse_non_negative_int,
+from module_summary.views import parse_non_negative_int
+from core.utils.marks import (
     module_numeric_mark,
     component_percentage,
-    round_mark_pct
+    round_mark_pct,
+    build_module_cohort_weighted_finals
 )
 
 def upload_cohort_data(request):
@@ -278,19 +279,11 @@ def get_report_context(request):
     
     # Calculate per-component stats & charts
     components_stats = []
-    cohort_weighted_finals = []
-    
-    # Pre-build weighted final marks for the cohort
-    for row in uploaded_data:
-        row_weighted_pct = 0
-        for comp in components:
-            pct = component_percentage(row, comp)
-            row_weighted_pct += (pct * comp["weight"]) / 100
-        cohort_weighted_finals.append(row_weighted_pct)
+    cohort_weighted_finals = build_module_cohort_weighted_finals(uploaded_data, components)
         
     for comp in components:
         col_name = comp["column"]
-        scores = [component_percentage(row, comp) for row in uploaded_data]
+        scores = [round_mark_pct(component_percentage(row, comp)) for row in uploaded_data]
         stats = compute_stats(scores, degree_level=degree_level)
         
         # Generate histogram
