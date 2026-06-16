@@ -10,6 +10,7 @@
 <style>
     {% inline_static "core/css/brand_design.css" %}
     {% inline_static "cohort_report/css/cohort_report.css" %}
+    {% inline_static "core/css/portal_pages.css" %}
 </style>
 {% endblock %}
 
@@ -78,8 +79,8 @@
         if (fileInput.files.length > 0) {
             dropzone.querySelector('h5').innerText = fileInput.files[0].name;
             dropzone.querySelector('p').innerText = "MCRF file ready to upload";
-            dropzone.style.borderColor = "#c8a951";
-            dropzone.style.backgroundColor = "#faf8f5";
+            dropzone.style.borderColor = "#4361ee";
+            dropzone.style.backgroundColor = "#eff6ff";
         }
     });
 
