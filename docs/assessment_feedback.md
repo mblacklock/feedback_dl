@@ -100,7 +100,7 @@ Click **Generate Student Feedback Sheets** to produce the output.
 ### Output
 
 - A **ZIP file** containing one HTML file per student, named `<student_id>_<student_name>.html`
-- A pre-populated **email template** macro workbook (`.xlsm`). This can be used alongside MS Outlook to programmatically send emails to students with the relevant HTML feedback file attached.
+- A pre-populated **email template** macro workbook (`.xlsm`). This can be used alongside MS Outlook to programmatically send emails to students with the relevant HTML feedback file attached. It does not require access to your account information to send emails. It uses the an open MS Outlook instance to send the emails.
 
 Each HTML file is fully self-contained — all CSS, SVG charts, and data are embedded inline.
 
@@ -108,9 +108,10 @@ Each HTML file is fully self-contained — all CSS, SVG charts, and data are emb
 
 ## Tips
 
-- If the wrong column is detected as the student name, correct it on the confirm page before proceeding.
+- If the wrong column is detected as the student name, correct it on the mapping page before proceeding.
 - Columns whose headers contain `/20`, `(30)`, or a trailing integer have their denominator
-  inferred automatically. If no denominator is found, the app checks the data maximum.
+  inferred automatically. If no denominator is found, the app checks the data maximum. 
+  The maximum mark for a category can be edited in the mapping page.
 - Rubric columns (grade strings) must have ≥ 70 % of values matching recognised UK grade strings
   to be detected automatically.
 - For Master's-level modules, select **MEng/MSc** as the degree level — the pass boundary
