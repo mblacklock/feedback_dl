@@ -38,8 +38,8 @@
 
 /* Header Block */
 .report-header {
-    background: var(--brand-navy);
-    border-bottom: 4px solid var(--brand-gold);
+    background: var(--brand-primary);
+    border-bottom: 4px solid var(--brand-accent);
     padding: 30px;
     border-radius: 16px;
     color: white;
@@ -51,7 +51,7 @@
     font-weight: 700;
     letter-spacing: 0.15em;
     text-transform: uppercase;
-    color: var(--brand-gold);
+    color: var(--brand-accent);
     margin-bottom: 8px;
 }
 
@@ -96,7 +96,7 @@
 .card-title-bar h4 {
     font-weight: 700;
     font-size: 15px;
-    color: var(--brand-navy);
+    color: var(--brand-primary);
     margin: 0;
 }
 
@@ -121,7 +121,7 @@
 }
 
 .stat-highlight {
-    border-top: 3px solid var(--brand-gold);
+    border-top: 3px solid var(--brand-accent);
     background: #faf8f5;
 }
 
@@ -140,11 +140,11 @@
 .stat-value {
     font-size: 24px;
     font-weight: 700;
-    color: var(--brand-navy);
+    color: var(--brand-primary);
 }
 
 .stat-highlight .stat-value {
-    color: var(--brand-gold);
+    color: var(--brand-accent);
 }
 
 /* Chart container */
@@ -187,8 +187,8 @@
 .brand-font {
     font-size: 18px;
     font-weight: 700;
-    color: var(--brand-navy);
-    border-bottom: 2px solid var(--brand-gold);
+    color: var(--brand-primary);
+    border-bottom: 2px solid var(--brand-accent);
     padding-bottom: 6px;
     margin-top: 10px;
     margin-bottom: 24px;

@@ -21,7 +21,7 @@
     
     .dropzone-container:hover,
     .dropzone-container.dragover {
-        border-color: var(--brand-gold);
+        border-color: var(--brand-accent);
         background-color: #faf8f5;
     }
     
@@ -33,7 +33,7 @@
     }
     
     .dropzone-container:hover .upload-icon {
-        color: var(--brand-gold);
+        color: var(--brand-accent);
     }
     
     .file-input {
@@ -71,7 +71,7 @@
         </a>
         
         <div class="card main-card" style="border: 1px solid var(--brand-border-light); box-shadow: 0 4px 15px rgba(0,0,0,0.02); border-radius: 16px; overflow: hidden;">
-            <div class="gradient-header text-center text-white" style="background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%); border-bottom: 4px solid var(--brand-gold, #c8a951);">
+            <div class="gradient-header text-center text-white" style="background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%); border-bottom: 4px solid var(--brand-accent, #c8a951);">
                 <h1 class="fw-bold mb-2">Blackboard Gradebook Populator</h1>
                 <p class="mb-0 opacity-75 small">Step 1: Upload your local marks sheet and the Blackboard Gradebook template file.</p>
             </div>
@@ -133,7 +133,7 @@
                 if (fileInput.files.length > 0) {
                     heading.innerText = fileInput.files[0].name;
                     sub.innerText = "File loaded and ready";
-                    dropzone.style.borderColor = "var(--brand-gold)";
+                    dropzone.style.borderColor = "var(--brand-accent)";
                     dropzone.style.backgroundColor = "#faf8f5";
                 }
             });
@@ -142,7 +142,7 @@
                 dropzone.addEventListener(eventName, (e) => {
                     e.preventDefault();
                     dropzone.classList.add('dragover');
-                    dropzone.style.borderColor = "var(--brand-gold)";
+                    dropzone.style.borderColor = "var(--brand-accent)";
                 }, false);
             });
             

@@ -8,9 +8,9 @@
 
 /* ── Base Layout & Envelope ── */
 .header {
-    background: var(--brand-navy);
+    background: var(--brand-primary);
     padding: 24px 32px 20px;
-    border-bottom: 4px solid var(--brand-gold);
+    border-bottom: 4px solid var(--brand-accent);
 }
 
 .header-module {
@@ -18,7 +18,7 @@
     font-weight: 700;
     letter-spacing: 0.15em;
     text-transform: uppercase;
-    color: var(--brand-gold);
+    color: var(--brand-accent);
     margin-bottom: 6px;
 }
 
@@ -50,7 +50,7 @@
     font-family: Georgia, 'Times New Roman', serif;
     font-size: 20px;
     font-weight: bold;
-    color: var(--brand-navy);
+    color: var(--brand-primary);
     margin-bottom: 3px;
 }
 
@@ -60,8 +60,8 @@
 }
 
 .grade-pill {
-    background: var(--brand-navy);
-    border: 1px solid var(--brand-gold);
+    background: var(--brand-primary);
+    border: 1px solid var(--brand-accent);
     padding: 8px 20px;
     text-align: center;
     border-radius: 4px;
@@ -71,12 +71,12 @@
 .grade-pill-score {
     font-size: 16px;
     font-weight: 700;
-    color: var(--brand-gold);
+    color: var(--brand-accent);
     line-height: 1.2;
 }
 
 .numeric-grade-band {
-    color: var(--brand-gold);
+    color: var(--brand-accent);
     font-weight: 700;
 }
 
@@ -101,13 +101,13 @@
 }
 
 .overall-card {
-    background: linear-gradient(135deg, var(--brand-navy) 0%, var(--brand-navy-dark) 100%);
+    background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-dark) 100%);
     color: #ffffff;
     border-radius: 8px;
     padding: 18px 24px;
     margin-top: 20px;
     margin-bottom: 20px;
-    border-bottom: 4px solid var(--brand-gold);
+    border-bottom: 4px solid var(--brand-accent);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -196,7 +196,7 @@
 .marks-table td {
     padding: 8px 12px;
     border-bottom: 1px solid #f0f0f0;
-    color: var(--brand-navy);
+    color: var(--brand-primary);
     background-clip: padding-box !important;
 }
 
@@ -210,7 +210,7 @@
 
 .marks-table td.band {
     font-weight: 700;
-    color: var(--brand-gold);
+    color: var(--brand-accent);
     text-align: right;
 }
 
@@ -220,24 +220,24 @@
 
 .marks-table tr.overall-row td {
     background: #f8fafc !important;
-    border-top: 2px solid var(--brand-navy) !important;
-    border-bottom: 2px solid var(--brand-navy) !important;
+    border-top: 2px solid var(--brand-primary) !important;
+    border-bottom: 2px solid var(--brand-primary) !important;
     font-weight: 700 !important;
     background-clip: padding-box !important;
 }
 
 .marks-table tr.overall-row td.label {
-    color: var(--brand-navy) !important;
+    color: var(--brand-primary) !important;
     font-size: 11px;
     letter-spacing: 0.05em;
 }
 
 .marks-table tr.overall-row td.band {
-    color: var(--brand-gold) !important;
+    color: var(--brand-accent) !important;
 }
 
 .marks-table tr.overall-row td.right {
-    color: var(--brand-navy) !important;
+    color: var(--brand-primary) !important;
 }
 
 .marks-table tr.marks-section-header {
@@ -272,7 +272,7 @@
     padding: 7px 12px;
     font-size: 12px;
     font-weight: 700;
-    color: var(--brand-navy);
+    color: var(--brand-primary);
     border-bottom: 1px solid #ebebeb;
 }
 

@@ -48,7 +48,7 @@
 
 .builder-toolbar select:focus,
 .builder-toolbar input:focus {
-    border-color: var(--brand-navy);
+    border-color: var(--brand-primary);
     box-shadow: 0 0 0 3px rgba(26, 26, 46, 0.1);
     outline: none;
 }
@@ -63,8 +63,8 @@
 }
 
 .builder-actions .btn-outline-primary {
-    color: var(--brand-navy);
-    border-color: var(--brand-navy);
+    color: var(--brand-primary);
+    border-color: var(--brand-primary);
     border-radius: 8px;
     font-weight: 600;
     padding: 0.6rem 1.2rem;
@@ -72,7 +72,7 @@
 }
 
 .builder-actions .btn-outline-primary:hover {
-    background-color: var(--brand-navy);
+    background-color: var(--brand-primary);
     color: #ffffff;
     transform: translateY(-1px);
 }
@@ -138,8 +138,8 @@
     justify-content: space-between;
     align-items: center;
     padding: 1.5rem 2rem;
-    background: linear-gradient(135deg, var(--brand-navy-dark) 0%, #1e293b 100%);
-    border-bottom: 4px solid var(--brand-gold);
+    background: linear-gradient(135deg, var(--brand-primary-dark) 0%, #1e293b 100%);
+    border-bottom: 4px solid var(--brand-accent);
     color: #ffffff;
 }
 
@@ -190,7 +190,7 @@
     font-weight: 700;
     vertical-align: middle;
     text-align: center;
-    color: var(--brand-navy);
+    color: var(--brand-primary);
     border-right: 1px solid var(--brand-border-light);
     border-bottom: 1px solid var(--brand-border-light);
     min-width: 120px;
@@ -205,7 +205,7 @@
     font-weight: 700;
     vertical-align: middle;
     text-align: center;
-    color: var(--brand-navy);
+    color: var(--brand-primary);
     border-right: 1px solid var(--brand-border-light);
     border-bottom: 1px solid var(--brand-border-light);
     min-width: 100px;
@@ -272,7 +272,7 @@
 .sheet-header-editor .form-control:focus,
 .sheet-header-editor .form-select:focus {
     background-color: #ffffff;
-    border-color: var(--brand-navy);
+    border-color: var(--brand-primary);
     box-shadow: 0 0 0 2px rgba(26, 26, 46, 0.1);
     outline: none;
 }
@@ -327,7 +327,7 @@
 }
 
 .preview-table th.drag-over {
-    border-left: 3px solid var(--brand-navy) !important;
+    border-left: 3px solid var(--brand-primary) !important;
     background-color: #f1f5f9 !important;
 }
 

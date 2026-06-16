@@ -19,7 +19,7 @@
 
 .dropzone-container:hover,
 .dropzone-container.dragover {
-    border-color: var(--brand-gold);
+    border-color: var(--brand-accent);
     background-color: #faf8f5;
 }
 
@@ -31,7 +31,7 @@
 }
 
 .dropzone-container:hover .upload-icon {
-    color: var(--brand-gold);
+    color: var(--brand-accent);
 }
 
 .file-input {
@@ -62,9 +62,9 @@
 }
 
 .btn-generate {
-    background: linear-gradient(135deg, var(--brand-navy) 0%, var(--brand-navy-light) 100%);
+    background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-light) 100%);
     color: white;
-    border: 1px solid var(--brand-gold);
+    border: 1px solid var(--brand-accent);
     border-radius: 12px;
     padding: 14px 40px;
     font-weight: 700;
@@ -75,13 +75,13 @@
 .btn-generate:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(200, 169, 81, 0.25);
-    color: var(--brand-gold);
+    color: var(--brand-accent);
 }
 
 /* ── Report Dashboard View ── */
 .report-header {
-    background: var(--brand-navy);
-    border-bottom: 4px solid var(--brand-gold);
+    background: var(--brand-primary);
+    border-bottom: 4px solid var(--brand-accent);
     padding: 30px;
     border-radius: 16px;
     color: white;
@@ -94,7 +94,7 @@
     font-weight: 700;
     letter-spacing: 0.15em;
     text-transform: uppercase;
-    color: var(--brand-gold);
+    color: var(--brand-accent);
     margin-bottom: 8px;
 }
 
@@ -171,16 +171,16 @@
 .stat-value {
     font-size: 22px;
     font-weight: 700;
-    color: var(--brand-navy-dark);
+    color: var(--brand-primary-dark);
 }
 
 .stat-highlight {
-    border-top: 3px solid var(--brand-gold);
+    border-top: 3px solid var(--brand-accent);
     background: #faf8f5;
 }
 
 .stat-highlight .stat-value {
-    color: var(--brand-gold);
+    color: var(--brand-accent);
 }
 
 .chart-container {
@@ -201,7 +201,7 @@
     font-size: 20px;
     font-weight: 700;
     color: var(--brand-slate-dark);
-    border-bottom: 2px solid var(--brand-gold);
+    border-bottom: 2px solid var(--brand-accent);
     padding-bottom: 8px;
     margin-top: 10px;
     margin-bottom: 24px;

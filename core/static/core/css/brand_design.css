@@ -5,10 +5,10 @@
 
 :root {
     /* Color Palette */
-    --brand-navy: #1a1a2e;
-    --brand-navy-dark: #0f172a;
-    --brand-navy-light: #2e2e4a;
-    --brand-gold: #c8a951;
+    --brand-primary: #1a1a2e;
+    --brand-primary-dark: #0f172a;
+    --brand-primary-light: #2e2e4a;
+    --brand-accent: #c8a951;
     --brand-muted: #8892b0;
     --brand-slate: #64748b;
     --brand-slate-light: #94a3b8;
@@ -42,9 +42,9 @@ h1, h2, h3, h4, h5, h6, .brand-font {
 
 /* ── Common Premium Elements ── */
 .btn-premium {
-    background: linear-gradient(135deg, var(--brand-navy) 0%, var(--brand-navy-light) 100%);
+    background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-light) 100%);
     color: white;
-    border: 1px solid var(--brand-gold);
+    border: 1px solid var(--brand-accent);
     border-radius: 12px;
     padding: 12px 30px;
     font-weight: 600;
@@ -55,13 +55,13 @@ h1, h2, h3, h4, h5, h6, .brand-font {
 .btn-premium:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(200, 169, 81, 0.25);
-    color: var(--brand-gold);
+    color: var(--brand-accent);
 }
 
 .btn-premium-action {
-    background: linear-gradient(135deg, var(--brand-navy) 0%, var(--brand-navy-light) 100%);
+    background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-light) 100%);
     color: white;
-    border: 1px solid var(--brand-gold);
+    border: 1px solid var(--brand-accent);
     border-radius: 8px;
     padding: 10px 20px;
     font-weight: 600;
@@ -75,12 +75,12 @@ h1, h2, h3, h4, h5, h6, .brand-font {
 .btn-premium-action:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 15px rgba(200, 169, 81, 0.25);
-    color: var(--brand-gold);
+    color: var(--brand-accent);
 }
 
 .step-badge {
     background-color: #f1ebd9;
-    color: var(--brand-gold);
+    color: var(--brand-accent);
     width: 32px;
     height: 32px;
     border-radius: 50%;
@@ -93,8 +93,8 @@ h1, h2, h3, h4, h5, h6, .brand-font {
 
 .badge.bg-secondary {
     font-size: 11px;
-    background: var(--brand-navy);
-    color: var(--brand-gold);
+    background: var(--brand-primary);
+    color: var(--brand-accent);
     padding: 3px 10px;
     border-radius: 4px;
     font-weight: 600;
@@ -114,11 +114,11 @@ h1, h2, h3, h4, h5, h6, .brand-font {
 }
 
 .gradient-header {
-    background: linear-gradient(135deg, var(--brand-navy-dark) 0%, #1e293b 100%);
+    background: linear-gradient(135deg, var(--brand-primary-dark) 0%, #1e293b 100%);
     border-radius: 20px 20px 0 0;
     padding: 30px;
     color: white;
-    border-bottom: 4px solid var(--brand-gold);
+    border-bottom: 4px solid var(--brand-accent);
 }
 
 .gradient-header h1,
