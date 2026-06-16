@@ -33,8 +33,6 @@ class CohortReportTests(TestCase):
         ]
         self.sample_headers = ["Student ID", "Student Name", "CW1 - Mark", "Exam - Mark"]
         self.sample_mappings = {
-            "col_student_name": "Student Name",
-            "col_student_id": "Student ID",
             "degree_level": "BEng",
             "module_code": "COMP3002",
             "module_title": "Advanced Engineering Software",
@@ -117,10 +115,8 @@ class CohortReportTests(TestCase):
         self.assertEqual(resp.status_code, 302)
         self.assertEqual(resp.url, reverse("cohort_report_results"))
 
-        # Verify session mappings updated, and student columns preserved
+        # Verify session mappings updated
         updated_mappings = self.client.session["cohort_mappings"]
-        self.assertEqual(updated_mappings["col_student_name"], "Student Name")
-        self.assertEqual(updated_mappings["col_student_id"], "Student ID")
         self.assertEqual(updated_mappings["module_code"], "COMP3002-MOD")
         self.assertEqual(updated_mappings["degree_level"], "MEng/MSc")
         self.assertEqual(updated_mappings["components"][0]["weight"], 40)

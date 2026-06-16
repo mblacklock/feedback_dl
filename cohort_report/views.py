@@ -28,8 +28,6 @@ def upload_cohort_data(request):
             headers, data_rows, is_mcrf, module_info = parse_mcrf_workbook(uploaded_file)
             
             inferred_mappings = {
-                "col_student_name": "",
-                "col_student_id": "",
                 "components": [],
                 "degree_level": "BEng",
                 "module_code": module_info.get("module_code", ""),
@@ -40,23 +38,10 @@ def upload_cohort_data(request):
                 "occurrence": module_info.get("occurrence", ""),
             }
             
-            # Infer Name & Student ID
-            for h in headers:
-                hl = h.lower()
-                if ("name" in hl or "student" in hl) and not inferred_mappings["col_student_name"] and "id" not in hl and "no" not in hl:
-                    inferred_mappings["col_student_name"] = h
-                elif ("id" in hl or "number" in hl or "no" in hl or "username" in hl) and not inferred_mappings["col_student_id"]:
-                    inferred_mappings["col_student_id"] = h
-                    
-            if not inferred_mappings["col_student_name"] and len(headers) > 1:
-                inferred_mappings["col_student_name"] = headers[1]  # Default: Column B
-            if not inferred_mappings["col_student_id"] and len(headers) > 1:
-                inferred_mappings["col_student_id"] = headers[1]
-                
             # Infer Component Mark Columns
             for h in headers:
                 hl = h.lower()
-                if h == inferred_mappings["col_student_name"] or h == inferred_mappings["col_student_id"]:
+                if any(keyword in hl for keyword in ["name", "student", "id", "number", "username"]):
                     continue
                 if "total" in hl or "overall" in hl or "average" in hl or "final" in hl or "module" in hl:
                     continue
@@ -126,10 +111,6 @@ def confirm_cohort_mappings(request):
         
     error = None
     if request.method == "POST":
-        if "col_student_name" in request.POST:
-            mappings["col_student_name"] = request.POST.get("col_student_name")
-        if "col_student_id" in request.POST:
-            mappings["col_student_id"] = request.POST.get("col_student_id")
         mappings["module_code"] = request.POST.get("module_code", "").strip()
         mappings["module_title"] = request.POST.get("module_title", "").strip()
         mappings["degree_level"] = request.POST.get("degree_level", "BEng")

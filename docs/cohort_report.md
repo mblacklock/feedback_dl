@@ -16,13 +16,13 @@ the overall module — **no per-student data appears in the output**.
 
 ### Step 1 — Upload
 
-1. Go to **Cohort Report → Upload**.
-2. Select your MCRF `.xls` file and click **Upload**.
-3. The file is parsed in memory — nothing is written to disk.
+1. Go to **Cohort Summary Report → Upload**.
+2. Drag and drop your MCRF spreadheet in the box or click to browse your local files.
+3. Click **Analyse Cohort Data**.
+4. The app reads the file entirely in memory — nothing is saved to disk.
 
 The app automatically detects:
 
-- Student name and ID columns (used for internal processing only, never shown in output)  ****DOES IT NEED TO LOOK AT STUDENT NAME?***
 - Assessment **component mark** columns (headers containing "mark", excluding totals and averages)
 - **Module code**, **module title**, **year**, **period**, and **occurrence** from the MCRF header
 - **Component weights** from column headers (e.g. `CW1 40%`); split evenly if not found
@@ -40,7 +40,7 @@ Review and adjust before generating:
 | **Degree level** | BEng/BSc or MEng/MSc — sets the fail threshold (40 % or 50 %) |
 | **Component weights** | Must sum to exactly 100 % |
 
-Click **Confirm & Continue**.
+Click **Generate Cohort Report**.
 
 ---
 
@@ -49,23 +49,13 @@ Click **Confirm & Continue**.
 The report is rendered directly in the browser, showing:
 
 #### Per component
-| Statistic | Description |
-|-----------|-------------|
-| Mean | Average percentage |
-| Median | Middle value |
-| Std dev | Standard deviation |
-| Max | Highest percentage |
-| n | Number of students |
-| % 1st | Proportion scoring ≥ 70 % |
-| % 2:1 and above | Proportion scoring ≥ 60 % |
-| % 2:2 and above | Proportion scoring ≥ 50 % |
-| % Fail | Proportion below the pass threshold |
-
-Each component also has a **cohort histogram** with UK grade band colours and 10 % bins.
+- **Aggregated statistics**: Mean, median, standard deviation, maximum, and cohort size.
+- **UK grade bands**: Proportion of students scoring 1st (≥ 70%), 2:1 and above (≥ 60%), and Fail (below the pass threshold).
+- **Cohort histogram**: Chart with UK grade band colours and 10% bins.
 
 #### Overall module
 The same statistics and histogram calculated from each student's **weighted final mark**
-(sum of component percentages multiplied by their weights).
+(sum of component marks multiplied by their weights).
 
 ### Downloading
 
