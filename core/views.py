@@ -13,15 +13,21 @@ def portal_home(request):
         },
         {
             "title": "Module Summary",
-            "description": "Generate module summary sheets from a completed MCRF spreadsheet.",
+            "description": "Generate individual module summary sheets from a completed MCRF spreadsheet.",
             "url_name": "module_upload",
             "cta": "Create module summaries",
         },
         {
             "title": "Cohort Summary Report",
-            "description": "Generate dynamic cohort summary reports from a completed MCRF spreadsheet.",
+            "description": "Generate module cohort summary reports from a completed MCRF spreadsheet.",
             "url_name": "cohort_report_upload",
             "cta": "Create cohort report",
+        },
+        {
+            "title": "Programme Analytics",
+            "description": "Aggregate and compare performance metrics across multiple modules and cohorts.",
+            "url_name": "analytics_upload",
+            "cta": "Analyse programme",
         },
         {
             "title": "Rubric Generator",
@@ -37,7 +43,7 @@ def portal_home(request):
         },
         {
             "title": "Marking Sheet Converters",
-            "description": "Merge gradebooks and populate MCRF templates dynamically.",
+            "description": "Convert between different marking sheet formats including your own marking sheet, Blackboard Gradebook and MCRF templates.",
             "url_name": "marking_converters",
             "cta": "Convert and populate",
         },
@@ -46,12 +52,6 @@ def portal_home(request):
             "description": "Build a blank assessment marking spreadsheet with marks, rubric dropdowns, notes, and feedback columns.",
             "url_name": "marking_sheet_builder",
             "cta": "Create marking template",
-        },
-        {
-            "title": "Programme Analytics",
-            "description": "Aggregate and compare performance metrics across multiple modules and cohorts.",
-            "url_name": "analytics_upload",
-            "cta": "Analyse programme",
         },
     ]
     return render(request, "core/home.html", {"tools": tools})

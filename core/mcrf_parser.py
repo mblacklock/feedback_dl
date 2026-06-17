@@ -154,11 +154,13 @@ def parse_mcrf_workbook(file_file):
                     title_clean = clean_component_title(str(row[1]).strip())
                     comp_names_map[code_norm] = title_clean
 
-    # --- Year, Period, Occurrence ---
+    # --- Year, Period, Occurrence, Credits ---
     # Standard MCRF layout: Year=row8/colC, Period=row9/colC, Occurrence=row10/colC (0-indexed: rows 7,8,9)
+    # Credits=row8/colE (0-indexed: row 7, col 4)
     year = ""
     period = ""
     occurrence = ""
+    credits_val = 20
 
     def _cell(row_idx, col_idx):
         if len(rows) > row_idx and len(rows[row_idx]) > col_idx:
@@ -170,10 +172,17 @@ def parse_mcrf_workbook(file_file):
     year_raw = _cell(7, 2)
     period_raw = _cell(8, 2)
     occurrence_raw = _cell(9, 2)
+    credits_raw = _cell(7, 4)
 
     # Validate by checking the labels in col A
     if str(rows[7][0]).strip().lower() == "year" if len(rows) > 7 and rows[7] else False:
         year = year_raw
+    if len(rows) > 7 and len(rows[7]) > 3 and str(rows[7][3]).strip().lower() == "credits":
+        try:
+            credits_val = int(float(credits_raw)) if credits_raw else 20
+        except ValueError:
+            credits_val = 20
+
     if str(rows[8][0]).strip().lower() == "period" if len(rows) > 8 and rows[8] else False:
         period = period_raw
     if str(rows[9][0]).strip().lower() == "occurrence" if len(rows) > 9 and rows[9] else False:
@@ -183,12 +192,14 @@ def parse_mcrf_workbook(file_file):
         occurrence = occ_match.group(1).upper() if occ_match else occurrence_raw_val
 
     # Fallback: scan pre-header rows for labelled cells if not found
-    if not year or not period or not occurrence:
-        for row in rows[:header_row_idx]:
-            if not row:
+    for row in rows[:header_row_idx]:
+        if not row:
+            continue
+        for col_idx, cell in enumerate(row):
+            if not cell:
                 continue
-            label = str(row[0]).strip().lower() if row[0] else ""
-            val = str(row[2]).strip() if len(row) > 2 and row[2] else ""
+            label = str(cell).strip().lower()
+            val = str(row[col_idx + 1]).strip() if col_idx + 1 < len(row) and row[col_idx + 1] is not None else ""
             if label == "year" and not year:
                 year = val
             elif label == "period" and not period:
@@ -196,6 +207,13 @@ def parse_mcrf_workbook(file_file):
             elif label == "occurrence" and not occurrence:
                 occ_match = re.match(r'^([A-Z]{1,4}NN)\b', val, re.IGNORECASE)
                 occurrence = occ_match.group(1).upper() if occ_match else val
+            elif label == "credits":
+                if val:
+                    try:
+                        val_clean = re.sub(r'[^\d.]', '', val)
+                        credits_val = int(float(val_clean))
+                    except ValueError:
+                        pass
 
     return headers, data_rows, is_mcrf, {
         "module_code": module_code,
@@ -204,4 +222,6 @@ def parse_mcrf_workbook(file_file):
         "year": year,
         "period": period,
         "occurrence": occurrence,
+        "credits": credits_val,
+        "detected_credits": credits_val,
     }

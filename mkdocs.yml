@@ -18,6 +18,7 @@ nav:
     - Marking Converters: marking_converters.md
     - Marking Sheet Builder: marking_sheet_builder.md
     - Rubric Generator: rubric_generator.md
+    - Programme Analytics: programme_analytics.md
   - Changelog: changelog.md
 
 theme:

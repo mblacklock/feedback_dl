@@ -9,6 +9,16 @@
     {% inline_static "programme_analytics/css/analytics.css" %}
     {% inline_static "core/css/portal_pages.css" %}
 </style>
+{% if active_theme %}
+<style>
+    :root {
+        --brand-primary: {{ active_theme.brand_primary }};
+        --brand-primary-dark: {{ active_theme.brand_primary_dark }};
+        --brand-primary-light: {{ active_theme.brand_primary_light }};
+        --brand-accent: {{ active_theme.brand_accent }};
+    }
+</style>
+{% endif %}
 {% endblock %}
 
 {% block content %}

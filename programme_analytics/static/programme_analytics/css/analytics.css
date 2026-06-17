@@ -248,4 +248,89 @@
     text-decoration: none;
 }
 
+/* ── Heatmap Table Styles ── */
+.heatmap-table th {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 12px;
+    vertical-align: middle;
+}
+
+.heatmap-cell {
+    padding: 16px 12px;
+    font-size: 0.9rem;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.heatmap-cell:hover:not(.cell-empty) {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    z-index: 10;
+    position: relative;
+}
+
+.cell-fail {
+    background-color: #fee2e2 !important; /* Soft red */
+    color: #b91c1c !important;
+    border-color: #fecaca !important;
+}
+
+.cell-3rd {
+    background-color: #fef3c7 !important; /* Soft amber */
+    color: #b45309 !important;
+    border-color: #fde68a !important;
+}
+
+.cell-22 {
+    background-color: #f3e8ff !important; /* Soft purple / lavender */
+    color: #6b21a8 !important;
+    border-color: #e9d5ff !important;
+}
+
+.cell-21 {
+    background-color: #dbeafe !important; /* Soft blue */
+    color: #1d4ed8 !important;
+    border-color: #bfdbfe !important;
+}
+
+.cell-1st {
+    background-color: #dcfce7 !important; /* Soft green */
+    color: #15803d !important;
+    border-color: #bbf7d0 !important;
+}
+
+.cell-empty {
+    background-color: #f8fafc !important;
+    color: #94a3b8 !important;
+}
+
+/* ── Tab Bar Styling Customisation ── */
+#analyticsTabs {
+    border-bottom: 2px solid #e2e8f0 !important;
+    margin-bottom: 0px !important;
+}
+
+#analyticsTabs .nav-link {
+    color: #64748b;
+    border: none;
+    border-bottom: 3px solid transparent;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 12px 20px;
+    transition: all 0.2s ease;
+}
+
+#analyticsTabs .nav-link:hover {
+    color: var(--brand-primary);
+    background-color: transparent;
+}
+
+#analyticsTabs .nav-link.active {
+    color: var(--brand-primary);
+    background-color: transparent;
+    border-bottom-color: var(--brand-primary);
+}
+
 

@@ -1,77 +1,63 @@
-# TODO
+# Project To-Do List
 
-## Production Safety (Skipped For Now)
-
+## 🔒 Production Safety
 - [ ] Move `SECRET_KEY` to an environment variable in production settings.
 - [ ] Rotate the deployed production secret key after removing the committed one.
 - [ ] Add basic upload limits or row-count guardrails for large spreadsheets.
 - [ ] Review whether parsed spreadsheet data should be stored in Django sessions for large cohorts.
 
-## Documentation 
+## 📝 Documentation
+- [ ] Read through and check all generated docs.
 
-- [ ] Read through and check 
+## 🚀 Future Enhancements
+- [ ] **Rubric Generator**: Review overall application.
+- [ ] **Comment Generator**: 
+  - [ ] Allow option to upload pool comments.
+  - [ ] Allow option to create categories.
+- [x] Move row in layout.
+- [x] Half category on own row.
 
-## Future Enhancements
+---
 
- - [ ] Rubric generator - Review app
- - [ ] Comment generator - Allow option to upload pool comments.  Allow option to create categories 
- - [x] Move row in layout
- - [x] Half category on own row
+## 📊 Feature: Programme Analytics Django App
 
- ## New Feature
+A programme-level analytics app that aggregates data across multiple modules to reveal patterns invisible at the module level. Designed to be stateless (using Django sessions) and easily extendable to a persistent database later.
 
-Task: Create programme_analytics Django App
-Overview
-A programme-level analytics app that aggregates data across multiple modules to reveal patterns invisible at module level. Stateless for now — no student database. Designed to extend to persistence later without rearchitecting.
+### ⚙️ App Setup & Integration
+- [x] Create app: `python manage.py startapp programme_analytics`
+- [x] Register `programme_analytics` in `INSTALLED_APPS` and core `urls.py` at `/programme-analytics/`
+- [x] Add card to landing page linking to `/programme-analytics/`
 
-Create the App
-bash
-python manage.py startapp programme_analytics
-Register in INSTALLED_APPS and project urls.py at /programme-analytics/.
+### 📥 Data Input & Parsing
+- [x] Accept multiple MCRF `.xls`/`.xlsx` files, a `.zip` archive, or a mix of both in the backend
+- [x] Parse uploaded files in memory using `core.mcrf_parser.py` (one file per module)
 
-Data Input
-Accept multiple MCRF .xls files (batch upload via drag-and-drop or file picker), a single .zip containing MCRF files, or a mix. Handle all cases on the backend
-Same MCRF format as module_summary and cohort_report — use core.mcrf_parser.py
-One file per module
-User Flow
-Upload files → module mapping confirmation → view analytics dashboard → download snapshot
+### 🗺️ Module Mapping & Confirmation
+- [x] Show confirmation page listing each detected module:
+  - [x] Display module code and source filename
+  - [x] Auto-detect academic level from code prefix (e.g. KB4001 → Level 4, EE5034 → Level 5)
+  - [x] Provide editable level field for corrections
+  - [x] Provide Programme Name and Academic Year fields (saved in session)
 
-Module Mapping
-After upload, show a confirmation page listing each detected module with:
+### 📈 Phase 1: Module Aggregates (Stateless)
+- [x] Compute per-module statistics: mean, median, std dev, cohort size
+- [x] Compute per-module grade distribution (% 1st, 2:1, 2:2, 3rd, fail)
+- [x] Side-by-side module comparison chart (mean marks & grade bands) using Matplotlib SVG rendering
+- [x] Outlier module flags (High Fail rate >20%, High 1st Class rate >20%) matching `cohort_report`
+- [x] Transition static histogram list to interactive inline report views (toggled via row click)
+- [x] DRY template partial refactoring (`_overall_performance_card.html`, `_components_breakdown_partial.html`)
+- [x] Interactive mouseover SVG tooltips using post-processed Matplotlib links
 
-Module code (parsed from filename or spreadsheet)
-Auto-detected level — inferred from the first digit of the numeric part of the module code (e.g. KB4001 → level 4, KB5034 → level 5). Handles variable subject prefixes (KB, EE, ME etc.)
-Editable level field in case auto-detection is wrong
-Programme and year fields (manual entry for now)
-Auto-detection rule: strip non-numeric prefix, take first digit of remainder.
+### 🔄 Phase 2: Student Trajectories (Anonymised)
+- [x] Hash student IDs at upload using SHA-256 with a server-side salt:
+  - `hashlib.sha256((ANALYTICS_SALT + student_id).encode()).hexdigest()`
+- [x] Store only the hashed ID (never raw student IDs or PII) to ensure GDPR compliance
+- [x] Store `ANALYTICS_SALT` securely in environment variables/settings
+- [ ] Calculate and display cross-module performance per anonymised student
+- [ ] Flag student underperformance and sudden drops relative to their own average
 
-Features — Build in This Order
-Phase 1 — Module aggregates (no student IDs)
-
-Per-module: mean, median, std dev, grade distribution (% 1st, 2:1, 2:2, 3rd, fail)
-Module comparison — means and distributions side by side
-Outlier module flags — reuse the same thresholds as cohort_report (check cohort_report for defined values)
-Phase 2 — Student trajectories (anonymised)
-
-Hash student IDs at upload using SHA-256 with a server-side salt: hashlib.sha256((ANALYTICS_SALT + student_id).encode()).hexdigest()
-Store only the hash — never the raw student ID
-ANALYTICS_SALT stored in .env and Django settings, never committed to git
-Cross-module performance per anonymised student
-Flag underperformance and sudden drops relative to that student's own average
-Phase 3 — Year-on-year trends
-
-After processing a cohort, user downloads a snapshot JSON containing module-level aggregates only (no student data)
-On future visits, user re-uploads previous snapshots alongside new data
-App compares current cohort against historical snapshots
-Snapshot format: { programme, year, modules: [{ code, level, mean, std_dev, grade_dist, n }] }
-Future Fields
-Include programme and year identifiers in all data structures from the start, even if not used in Phase 1, to avoid rearchitecting later.
-
-Key Constraints
-Session-based — no student data persisted
-Anonymised IDs (hashed) for trajectory features
-Aggregates only in snapshots — GDPR-safe
-Consistent styling with existing apps
-Reuse core.charts.generate_cohort_histogram for distributions
-Reuse core.mcrf_parser for MCRF parsing
-Add card to landing page linking to /programme-analytics/
+### 📅 Phase 3: Year-on-Year Trends
+- [x] Downloadable snapshot JSON containing module-level aggregates only (no student data)
+  - Snapshot format: `{ programme, year, modules: [{ code, level, mean, std_dev, grade_dist, n }] }`
+- [ ] Allow uploading previous snapshots alongside new data to compare current cohort against historical trends
+- [x] Include programme and year identifiers in all data structures

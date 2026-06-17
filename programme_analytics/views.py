@@ -3,12 +3,14 @@ import re
 import math
 import zipfile
 import json
+import hashlib
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
+from django.conf import settings
 
 from core.mcrf_parser import parse_mcrf_workbook
 from core.utils.marks import build_module_cohort_weighted_finals, component_percentage, round_mark_pct
-from core.utils.charts import generate_cohort_histogram
+from core.utils.charts import generate_cohort_histogram, inject_svg_tooltips
 
 import matplotlib
 # Use non-interactive Agg backend to avoid GUI threads/issues
@@ -28,6 +30,31 @@ def clean_svg(svg_str):
     return svg_str
 
 
+COMPONENT_CATEGORIES = [
+    "Individual CW",
+    "Exam",
+    "Presentation",
+    "Group CW",
+    "Portfolio"
+]
+
+
+def auto_detect_component_category(column_name):
+    """Auto-detects component category based on keywords in Excel column header."""
+    if not column_name:
+        return "Individual CW"
+    col_lower = column_name.lower()
+    if re.search(r'\bexam(s|inations?)?\b|\bex\d?\b|\btest(s)?\b|\bquiz(zes)?\b', col_lower):
+        return "Exam"
+    if re.search(r'\bpresentations?\b|\bpres\b|\bvivas?\b|\btalks?\b', col_lower):
+        return "Presentation"
+    if re.search(r'\bgroups?\b|\bgp\b|\bteams?\b', col_lower):
+        return "Group CW"
+    if re.search(r'\bportfolios?\b|\bport\b', col_lower):
+        return "Portfolio"
+    return "Individual CW"
+
+
 def infer_module_level(module_code):
     """Infers module level from the first digit of the numeric part of code."""
     if not module_code:
@@ -44,6 +71,21 @@ def infer_module_level(module_code):
             except ValueError:
                 pass
     return 4
+
+
+def extract_student_id(row):
+    """Finds the student ID / Username column value in an Excel row."""
+    for key, val in row.items():
+        key_lower = str(key).lower()
+        if any(kw in key_lower for kw in ["student id", "student number", "student no", "username"]):
+            if val is not None and str(val).strip():
+                return str(val).strip()
+    for key, val in row.items():
+        key_lower = str(key).lower()
+        if "student" in key_lower or "id" in key_lower:
+            if val is not None and str(val).strip():
+                return str(val).strip()
+    return None
 
 
 def calculate_module_analytics(scores, level):
@@ -136,13 +178,40 @@ def generate_programme_comparison_chart(modules_data):
     codes = [m["module_code"] for m in modules_data]
     means = [m["mean"] for m in modules_data]
     
-    # Calculate chart width dynamically (0.5 inches per module code, minimum 8.0)
-    chart_width = max(8.0, 0.5 * len(codes))
+    # Calculate chart width dynamically (0.6 inches per module code, minimum 12.0)
+    chart_width = max(12.0, 0.6 * len(codes))
     fig, ax = plt.subplots(figsize=(chart_width, 4.0))
-    bar_color = '#7bafd4'  # Standard theme blue
+    
+    level_colors = {
+        3: '#cbd5e1',
+        4: '#10b981',
+        5: '#3b82f6',
+        6: '#8b5cf6',
+        7: '#f59e0b',
+    }
+    colors_list = [level_colors.get(m.get("level", 4), '#3b82f6') for m in modules_data]
     
     x = np.arange(len(codes))
-    bars = ax.bar(x, means, width=0.4, color=bar_color, alpha=0.9, edgecolor='none', zorder=3)
+    bars = ax.bar(x, means, width=0.4, color=colors_list, alpha=0.9, edgecolor='none', zorder=3)
+    
+    # Add level legend
+    import matplotlib.patches as mpatches
+    present_levels = sorted(list(set(m.get("level", 4) for m in modules_data)))
+    level_labels = {
+        3: 'Level 3',
+        4: 'Level 4',
+        5: 'Level 5',
+        6: 'Level 6',
+        7: 'Level 7',
+    }
+    legend_handles = []
+    for lvl in present_levels:
+        color = level_colors.get(lvl, '#3b82f6')
+        label = level_labels.get(lvl, f'Level {lvl}')
+        legend_handles.append(mpatches.Patch(color=color, label=label))
+    
+    if legend_handles:
+        ax.legend(handles=legend_handles, loc='upper right', frameon=True, facecolor='white', edgecolor='#e2e8f0', fontsize=9.0)
     
     # Set tooltips for each bar
     for bar, code, mean_val in zip(bars, codes, means):
@@ -267,18 +336,48 @@ def analytics_upload(request):
                         else:
                             comp["weight"] = even_weight
 
+            student_scores = {}
             if components and data_rows:
                 scores = build_module_cohort_weighted_finals(data_rows, components)
                 # Store component scores
                 components_data = []
+                comp_names_map = module_info.get("comp_names_map", {})
                 for comp in components:
                     col_name = comp["column"]
                     comp_scores = [round_mark_pct(component_percentage(row, comp)) for row in data_rows]
+                    
+                    # Extract component code and look up descriptive name
+                    description = ""
+                    code_match = re.search(r'\b(\d{1,3}|CW\d|EX\d|EXAM\d?)\b', col_name, re.IGNORECASE)
+                    if code_match:
+                        code = code_match.group(1)
+                        s = str(code).strip().split('.')[0]
+                        code_norm = f"{int(s):03d}" if s.isdigit() else s.upper()
+                        description = comp_names_map.get(code_norm, "")
+                    
+                    # Scan both column header and MCRF header description
+                    search_str = f"{col_name} - {description}" if description else col_name
+                    
                     components_data.append({
                         "column": col_name,
                         "weight": comp["weight"],
-                        "scores": comp_scores
+                        "scores": comp_scores,
+                        "detected_category": auto_detect_component_category(search_str)
                     })
+                
+                # Extract raw student IDs, normalize, hash and map to final scores
+                salt = getattr(settings, "ANALYTICS_SALT", "default_programme_analytics_salt_for_gdpr_compliance")
+                for row in data_rows:
+                    student_id = extract_student_id(row)
+                    if student_id:
+                        row_weighted_pct = 0
+                        for comp in components:
+                            pct = component_percentage(row, comp)
+                            row_weighted_pct += (pct * comp["weight"]) / 100
+                        final_score = round_mark_pct(row_weighted_pct)
+                        norm_id = student_id.strip().lower()
+                        hashed_id = hashlib.sha256((salt + norm_id).encode()).hexdigest()
+                        student_scores[hashed_id] = final_score
             else:
                 scores = []
                 components_data = []
@@ -304,6 +403,8 @@ def analytics_upload(request):
                 'module_code': code,
                 'module_title': title,
                 'detected_level': detected_level,
+                'detected_credits': module_info.get("detected_credits", 20),
+                'student_scores': student_scores,
                 'scores': scores,
                 'year': module_info.get("year", ""),
                 'period': module_info.get("period", ""),
@@ -351,6 +452,11 @@ def analytics_confirm(request):
                 except (ValueError, TypeError):
                     level = 4
 
+                try:
+                    credits = int(request.POST.get(f"credits_{idx}", 20))
+                except (ValueError, TypeError):
+                    credits = 20
+
                 if not code or not title:
                     error = "Module Code and Module Title cannot be empty."
                     break
@@ -358,11 +464,27 @@ def analytics_confirm(request):
                 scores = m.get('scores', [])
                 stats = calculate_module_analytics(scores, level)
 
+                # Process components and their selected normalized categories
+                processed_components = []
+                for comp_idx, comp in enumerate(m.get('components', [])):
+                    cat = request.POST.get(f"comp_cat_{idx}_{comp_idx}", comp.get("detected_category", "Individual CW")).strip()
+                    if cat not in COMPONENT_CATEGORIES:
+                        cat = "Individual CW"
+                    processed_components.append({
+                        "column": comp["column"],
+                        "weight": comp["weight"],
+                        "scores": comp.get("scores", []),
+                        "category": cat
+                    })
+
                 confirmed_modules.append({
                     'filename': m['filename'],
                     'module_code': code,
                     'module_title': title,
                     'level': level,
+                    'credits': credits,
+                    'detected_credits': credits,
+                    'student_scores': m.get('student_scores', {}),
                     'scores': scores,
                     'mean': stats['mean'],
                     'median': stats['median'],
@@ -373,7 +495,7 @@ def analytics_confirm(request):
                     'pct_21_above': stats['pct_21_above'],
                     'pct_fail': stats['pct_fail'],
                     'cohort_size': stats['cohort_size'],
-                    'components': m.get('components', []),
+                    'components': processed_components,
                     'comp_names_map': m.get('comp_names_map', {}),
                 })
 
@@ -393,6 +515,134 @@ def analytics_confirm(request):
         "default_year": default_year,
         "error": error
     })
+
+
+def generate_normalised_overlay_chart(modules_list):
+    """
+    Generates an SVG line chart overlaying module grade distributions.
+    Normalises cohort count to percentages.
+    """
+    if not modules_list:
+        return ""
+
+    bin_labels = ['AB', '0-9%', '10-19%', '20-29%', '30-39%', '40-49%', '50-59%', '60-69%', '70-79%', '80-89%', '90-100%']
+    x = np.arange(len(bin_labels))
+
+    fig, ax = plt.subplots(figsize=(10.0, 5.0))
+
+    colors = ['#4361ee', '#ff006e', '#3a0ca3', '#7209b7', '#4cc9f0', '#ff7a59', '#10b981', '#f59e0b', '#64748b']
+
+    for idx, m in enumerate(modules_list):
+        scores = m.get('scores', [])
+        if not scores:
+            continue
+        stats = calculate_module_analytics(scores, m.get('level', 4))
+        n = stats['cohort_size']
+        if n == 0:
+            continue
+
+        sb = stats['score_bins']
+        y_vals = []
+        y_vals.append((sb['absent'] / n) * 100.0)
+        for b_count in sb['bins']:
+            y_vals.append((b_count / n) * 100.0)
+
+        color = colors[idx % len(colors)]
+        lines = ax.plot(x, y_vals, label=m['module_code'], color=color, linewidth=2.0, marker='o', markersize=6, alpha=0.85, zorder=4)
+        for line in lines:
+            line.set_url(f"tooltip:{m['module_code']} - {m['module_title']}")
+
+        for xi, yi, bl in zip(x, y_vals, bin_labels):
+            point = ax.scatter(xi, yi, color=color, s=35, zorder=5)
+            point.set_url(f"tooltip:{m['module_code']} - {bl}: {yi:.1f}% of cohort")
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(bin_labels, rotation=15, ha='right', fontsize=9.5)
+    ax.set_xlabel('Score Band / Status', color='#475569', size=12, fontweight='semibold')
+    ax.set_ylabel('% of Cohort', color='#475569', size=12, fontweight='semibold')
+    ax.set_ylim(-2, 105)
+
+    ax.grid(True, axis='y', color='#e2e8f0', linestyle='--', linewidth=0.8, zorder=0)
+    ax.set_axisbelow(True)
+
+    for spine in ax.spines.values():
+        spine.set_color('#cbd5e1')
+
+    ax.tick_params(axis='both', which='both', length=0, colors='#475569', labelsize=9.5)
+    ax.legend(loc='upper right', fontsize=9.5, frameon=True, facecolor='white', edgecolor='#e2e8f0')
+
+    buf = io.BytesIO()
+    plt.savefig(buf, format='svg', bbox_inches='tight', transparent=False)
+    plt.close(fig)
+
+    svg_str = buf.getvalue().decode('utf-8')
+    return inject_svg_tooltips(svg_str)
+
+
+def generate_level_cohort_chart(level_data):
+    """
+    Generates an SVG bar chart comparing grade distributions across academic levels.
+    """
+    if not level_data:
+        return ""
+
+    level_data = sorted(level_data, key=lambda x: x['level'])
+
+    levels = [f"Level {item['level']}" for item in level_data]
+    pct_fail = [item.get('pct_fail', 0.0) for item in level_data]
+    pct_3rd = [item.get('pct_3rd', 0.0) for item in level_data]
+    pct_22 = [item.get('pct_22', 0.0) for item in level_data]
+    pct_21 = [item.get('pct_21', 0.0) for item in level_data]
+    pct_1st = [item.get('pct_1st', 0.0) for item in level_data]
+
+    x = np.arange(len(levels))
+    width = 0.15
+
+    fig, ax = plt.subplots(figsize=(8.0, 4.5))
+
+    fail_color = '#ef4444'
+    third_color = '#f59e0b'
+    two_two_color = '#8b5cf6'
+    two_one_color = '#3b82f6'
+    first_color = '#10b981'
+
+    rects1 = ax.bar(x - 2 * width, pct_fail, width, label='Fail', color=fail_color, alpha=0.9, zorder=3)
+    rects2 = ax.bar(x - width, pct_3rd, width, label='3rd Class', color=third_color, alpha=0.9, zorder=3)
+    rects3 = ax.bar(x, pct_22, width, label='2:2 Class', color=two_two_color, alpha=0.9, zorder=3)
+    rects4 = ax.bar(x + width, pct_21, width, label='2:1 Class', color=two_one_color, alpha=0.9, zorder=3)
+    rects5 = ax.bar(x + 2 * width, pct_1st, width, label='1st Class', color=first_color, alpha=0.9, zorder=3)
+
+    for bar, lvl in zip(rects1, levels):
+        bar.set_url(f"tooltip:{lvl} Fail: {bar.get_height():.1f}%")
+    for bar, lvl in zip(rects2, levels):
+        bar.set_url(f"tooltip:{lvl} 3rd Class: {bar.get_height():.1f}%")
+    for bar, lvl in zip(rects3, levels):
+        bar.set_url(f"tooltip:{lvl} 2:2 Class: {bar.get_height():.1f}%")
+    for bar, lvl in zip(rects4, levels):
+        bar.set_url(f"tooltip:{lvl} 2:1 Class: {bar.get_height():.1f}%")
+    for bar, lvl in zip(rects5, levels):
+        bar.set_url(f"tooltip:{lvl} 1st Class: {bar.get_height():.1f}%")
+
+    ax.set_ylabel('Percentage (%)', color='#475569', size=11, fontweight='semibold')
+    ax.set_xticks(x)
+    ax.set_xticklabels(levels, fontsize=10, fontweight='semibold')
+    ax.set_ylim(0, 105)
+
+    ax.grid(True, axis='y', color='#e2e8f0', linestyle='--', linewidth=0.8, zorder=0)
+    ax.set_axisbelow(True)
+
+    for spine in ax.spines.values():
+        spine.set_color('#cbd5e1')
+
+    ax.tick_params(axis='both', which='both', length=0, colors='#475569', labelsize=10)
+    ax.legend(loc='upper right', fontsize=9.5, frameon=True, facecolor='white', edgecolor='#e2e8f0')
+
+    buf = io.BytesIO()
+    plt.savefig(buf, format='svg', bbox_inches='tight', transparent=False)
+    plt.close(fig)
+
+    svg_str = buf.getvalue().decode('utf-8')
+    return inject_svg_tooltips(svg_str)
 
 
 def analytics_dashboard(request):
@@ -450,18 +700,92 @@ def analytics_dashboard(request):
                     "header_formatted": header_formatted,
                     "stats": comp_stats,
                     "chart_svg": comp_chart_svg_clean,
-                    "weight": comp["weight"]
+                    "weight": comp["weight"],
+                    "category": comp.get("category", "Individual CW")
                 })
         m['components_stats'] = components_stats
 
-    # Comparison chart of module means
+        # Calculate heatmap cells for this module
+        m['heatmap_cells'] = []
+        for cat in COMPONENT_CATEGORIES:
+            comp_means = []
+            for comp in m.get('components', []):
+                if comp.get('category') == cat:
+                    comp_scores = comp.get('scores', [])
+                    if comp_scores:
+                        comp_means.append(sum(comp_scores) / len(comp_scores))
+            mean_val = sum(comp_means) / len(comp_means) if comp_means else None
+            m['heatmap_cells'].append({
+                'category': cat,
+                'val': mean_val
+            })
+
+    # Group and aggregate stats by academic level (4, 5, 6, 7)
+    level_aggregates = []
+    for lvl in [4, 5, 6, 7]:
+        modules_at_level = [m for m in modules_list if m.get('level') == lvl]
+        lvl_modules_count = len(modules_at_level)
+        
+        student_module_marks = {}
+        for m in modules_at_level:
+            m_credits = m.get('credits', 20)
+            m_student_scores = m.get('student_scores', {})
+            if not m_student_scores and m.get('scores'):
+                m_student_scores = {f"dummy_{m['module_code']}_{i}": score for i, score in enumerate(m['scores'])}
+            for stud_hash, mark in m_student_scores.items():
+                if stud_hash not in student_module_marks:
+                    student_module_marks[stud_hash] = []
+                student_module_marks[stud_hash].append((mark, m_credits))
+                
+        lvl_student_marks = []
+        for stud_hash, marks_credits in student_module_marks.items():
+            total_weighted_marks = sum(mark * cred for mark, cred in marks_credits)
+            total_credits = sum(cred for mark, cred in marks_credits)
+            if total_credits > 0:
+                lvl_student_marks.append(total_weighted_marks / total_credits)
+                
+        if lvl_student_marks:
+            stats = calculate_module_analytics(lvl_student_marks, lvl)
+            
+            n_students = len(lvl_student_marks)
+            is_pg = (lvl >= 7)
+            fail_threshold = 50 if is_pg else 40
+            
+            p_fail = (sum(1 for x in lvl_student_marks if x < fail_threshold) / n_students) * 100.0
+            p_3rd = (sum(1 for x in lvl_student_marks if 40 <= x < 50) / n_students) * 100.0 if not is_pg else 0.0
+            p_22 = (sum(1 for x in lvl_student_marks if 50 <= x < 60) / n_students) * 100.0
+            p_21 = (sum(1 for x in lvl_student_marks if 60 <= x < 70) / n_students) * 100.0
+            p_1st = (sum(1 for x in lvl_student_marks if x >= 70) / n_students) * 100.0
+            
+            level_aggregates.append({
+                'level': lvl,
+                'modules_count': lvl_modules_count,
+                'cohort_size': n_students,
+                'mean': stats['mean'],
+                'median': stats['median'],
+                'std_dev': stats['std_dev'],
+                'pct_1st': p_1st,
+                'pct_21': p_21,
+                'pct_22': p_22,
+                'pct_3rd': p_3rd,
+                'pct_fail': p_fail,
+                'pct_21_above': stats['pct_21_above']
+            })
+
+    # Generate charts
     means_chart_svg = generate_programme_comparison_chart(modules_list)
+    overlay_chart_svg = clean_svg(generate_normalised_overlay_chart(modules_list))
+    level_chart_svg = clean_svg(generate_level_cohort_chart(level_aggregates))
 
     return render(request, "programme_analytics/dashboard.html", {
         "programme_name": confirmed_data['programme_name'],
         "academic_year": confirmed_data['academic_year'],
         "modules": modules_list,
         "means_chart_svg": means_chart_svg,
+        "overlay_chart_svg": overlay_chart_svg,
+        "level_chart_svg": level_chart_svg,
+        "level_aggregates": level_aggregates,
+        "component_categories": COMPONENT_CATEGORIES,
         "has_outliers": has_outliers
     })
 
@@ -485,7 +809,9 @@ def download_snapshot(request):
         stats = calculate_module_analytics(m.get('scores', []), m.get('level', 4))
         snapshot['modules'].append({
             'code': m['module_code'],
+            'title': m.get('module_title', ''),
             'level': m.get('level', 4),
+            'credits': m.get('credits', 20),
             'mean': round(stats['mean'], 2),
             'std_dev': round(stats['std_dev'], 2),
             'grade_dist': {

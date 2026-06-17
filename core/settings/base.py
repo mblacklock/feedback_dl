@@ -146,3 +146,7 @@ LOGGING = {
         },
     },
 }
+
+import os
+ANALYTICS_SALT = os.environ.get("ANALYTICS_SALT", "default_programme_analytics_salt_for_gdpr_compliance")
+
