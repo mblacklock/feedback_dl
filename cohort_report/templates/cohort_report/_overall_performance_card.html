@@ -1,0 +1,56 @@
+<div class="row g-4 align-items-center">
+    <div class="col-lg-6 text-start">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0 text-slate-800 brand-font">{% firstof card_title "Module Performance Report" %}</h5>
+            {% if cohort_size %}
+            <span class="badge-secondary-premium">Cohort Size: {{ cohort_size }} students</span>
+            {% endif %}
+        </div>
+        <h6 class="fw-bold mb-2 text-muted uppercase small" style="letter-spacing: 0.05em; font-size: 0.75rem;">Summary Metrics</h6>
+        <div class="stats-grid mb-4" style="grid-template-columns: repeat(4, 1fr); display: grid; gap: 12px;">
+            <div class="stat-box stat-highlight" style="background: #faf8f5; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; text-align: center; border-top: 3px solid var(--brand-accent, #ff7a59);">
+                <div class="stat-label" style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--brand-slate, #64748b); margin-bottom: 4px; letter-spacing: 0.05em;">Mean</div>
+                <div class="stat-value" style="font-size: 18px; font-weight: 700; color: var(--brand-accent, #ff7a59);">{{ mean|floatformat:1 }}%</div>
+            </div>
+            <div class="stat-box" style="background: var(--brand-bg, #ffffff); border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; text-align: center;">
+                <div class="stat-label" style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--brand-slate, #64748b); margin-bottom: 4px; letter-spacing: 0.05em;">Std Dev</div>
+                <div class="stat-value" style="font-size: 18px; font-weight: 700; color: var(--brand-primary-dark, #1e293b);">{{ std_dev|floatformat:1 }}</div>
+            </div>
+            <div class="stat-box" style="background: var(--brand-bg, #ffffff); border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; text-align: center;">
+                <div class="stat-label" style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--brand-slate, #64748b); margin-bottom: 4px; letter-spacing: 0.05em;">Max Mark</div>
+                <div class="stat-value" style="font-size: 18px; font-weight: 700; color: var(--brand-primary-dark, #1e293b);">{{ max|floatformat:0 }}%</div>
+            </div>
+            <div class="stat-box" style="background: var(--brand-bg, #ffffff); border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; text-align: center;">
+                <div class="stat-label" style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--brand-slate, #64748b); margin-bottom: 4px; letter-spacing: 0.05em;">Median</div>
+                <div class="stat-value" style="font-size: 18px; font-weight: 700; color: var(--brand-primary-dark, #1e293b);">{{ median|floatformat:1 }}%</div>
+            </div>
+        </div>
+        
+        <h6 class="fw-bold mb-2 text-muted uppercase small" style="letter-spacing: 0.05em; font-size: 0.75rem;">Grade Classification Distribution</h6>
+        <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr); display: grid; gap: 12px;">
+            <div class="stat-box" style="background: var(--brand-bg, #ffffff); border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; text-align: center; border-top: 3px solid #74c476; position: relative;">
+                {% if pct_1st > 20 %}
+                <span style="position: absolute; top: 6px; right: 6px; background: #fffbeb; border: 1px solid #f59e0b; border-radius: 4px; padding: 1px 6px; font-size: 10px; font-weight: 700; color: #b45309; line-height: 1.5;" title="Over 20% achieved a 1st">&#9873;</span>
+                {% endif %}
+                <div class="stat-label" style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--brand-slate, #64748b); margin-bottom: 4px; letter-spacing: 0.05em;">% 1st</div>
+                <div class="stat-value" style="font-size: 18px; font-weight: 700; color: var(--brand-primary-dark, #1e293b);">{{ pct_1st|floatformat:1 }}%</div>
+            </div>
+            <div class="stat-box" style="background: var(--brand-bg, #ffffff); border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; text-align: center; border-top: 3px solid #4a90d9;">
+                <div class="stat-label" style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--brand-slate, #64748b); margin-bottom: 4px; letter-spacing: 0.05em;">% 2:1 &amp; above</div>
+                <div class="stat-value" style="font-size: 18px; font-weight: 700; color: var(--brand-primary-dark, #1e293b);">{{ pct_21_above|floatformat:1 }}%</div>
+            </div>
+            <div class="stat-box" style="background: var(--brand-bg, #ffffff); border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; text-align: center; border-top: 3px solid #d9534f; position: relative;">
+                {% if pct_fail > 20 %}
+                <span style="position: absolute; top: 6px; right: 6px; background: #fdf2f2; border: 1px solid #d9534f; border-radius: 4px; padding: 1px 6px; font-size: 10px; font-weight: 700; color: #d9534f; line-height: 1.5;" title="Over 20% failed">&#9873;</span>
+                {% endif %}
+                <div class="stat-label" style="font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--brand-slate, #64748b); margin-bottom: 4px; letter-spacing: 0.05em;">% Fail</div>
+                <div class="stat-value" style="font-size: 18px; font-weight: 700; color: var(--brand-primary-dark, #1e293b);">{{ pct_fail|floatformat:1 }}%</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6 text-center">
+        <div class="chart-container" style="text-align: center; padding: 10px; background: white; border-radius: 12px; border: 1px solid #e2e8f0;">
+            {{ chart_svg|safe }}
+        </div>
+    </div>
+</div>

@@ -1,0 +1,251 @@
+/* ============================================================
+   analytics.css
+   Programme-level analytics dashboard styles.
+   Inherits core tokens from brand_design.css.
+   ============================================================ */
+
+/* ── Upload page Dropzone ── */
+.dropzone-container {
+    border: 2.5px dashed var(--brand-slate-light);
+    border-radius: 16px;
+    padding: 50px 20px;
+    text-align: center;
+    background-color: var(--brand-bg);
+    transition: all 0.25s ease-in-out;
+    cursor: pointer;
+    position: relative;
+}
+
+.dropzone-container:hover,
+.dropzone-container.dragover {
+    border-color: var(--brand-accent);
+    background-color: #faf8f5;
+}
+
+.upload-icon {
+    font-size: 3rem;
+    color: var(--brand-slate-light);
+    margin-bottom: 15px;
+    transition: color 0.2s;
+}
+
+.dropzone-container:hover .upload-icon {
+    color: var(--brand-accent);
+}
+
+.file-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+/* ── Mapping Form ── */
+.mapping-table th {
+    background-color: #f1f5f9;
+    font-weight: 600;
+    color: #475569;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    border: none;
+}
+
+.mapping-table td {
+    vertical-align: middle;
+    border-bottom: 1px solid #f1f5f9;
+    padding: 16px 12px;
+}
+
+/* ── Dashboard Layout ── */
+.report-header {
+    background: var(--brand-primary);
+    border-bottom: 4px solid var(--brand-accent);
+    padding: 30px;
+    border-radius: 16px;
+    color: white;
+    margin-bottom: 30px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+}
+
+.header-meta {
+    font-size: 14px;
+    color: var(--brand-muted);
+}
+
+.glass-card {
+    background: var(--brand-card-bg-glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.03);
+    margin-bottom: 30px;
+    overflow: hidden;
+}
+
+.card-title-bar {
+    background: #fafafa;
+    border-bottom: 1px solid var(--brand-border-light);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.card-body-pad {
+    padding: 24px;
+}
+
+/* Outlier Indicators */
+.badge-outlier-high {
+    background-color: #f6fee7;
+    color: #3f6212;
+    border: 1px solid #bef264;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.badge-outlier-low {
+    background-color: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Dashboard Statistics Box */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 12px;
+}
+
+.stat-box {
+    background: var(--brand-bg);
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stat-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.02);
+}
+
+.stat-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--brand-slate);
+    margin-bottom: 4px;
+    letter-spacing: 0.05em;
+}
+
+.stat-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--brand-primary-dark);
+}
+
+.stat-highlight {
+    border-top: 3px solid var(--brand-accent);
+    background: #faf8f5;
+}
+
+.stat-highlight .stat-value {
+    color: var(--brand-accent);
+}
+
+/* SVG Chart wrapper */
+.chart-container {
+    text-align: center;
+    padding: 10px;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.chart-container svg {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+}
+
+/* Means Comparison Chart wrapper */
+.comparison-chart-container {
+    text-align: center;
+    padding: 10px;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.comparison-chart-container svg {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Modules Dashboard Grid */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+}
+
+/* Inline Cohort Report Row */
+.module-row {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.module-row:hover {
+    background-color: #f8fafc !important;
+}
+
+.module-row.expanded {
+    background-color: #f1f5f9 !important;
+    border-bottom: none;
+}
+
+.module-row.expanded .toggle-icon {
+    transform: rotate(180deg);
+}
+
+.toggle-icon {
+    display: inline-block;
+    transition: transform 0.2s ease;
+    font-size: 0.8rem;
+}
+
+/* Premium Light-Slate Badge */
+.badge-secondary-premium {
+    background-color: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 6px;
+    display: inline-block;
+    text-decoration: none;
+}
+
+

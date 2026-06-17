@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+{% load static_helpers %}
+
+{% block title %}Programme Analytics Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    {% inline_static "core/css/brand_design.css" %}
+    {% inline_static "programme_analytics/css/analytics.css" %}
+    {% inline_static "core/css/portal_pages.css" %}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Header Block -->
+<div class="report-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+    <div>
+        <div class="header-code">Programme Analytics Dashboard</div>
+        <h1 class="header-title mb-1">{{ programme_name }}</h1>
+        <div class="header-meta">
+            Academic Year: <strong>{{ academic_year }}</strong> &nbsp;&middot;&nbsp; 
+            Total Modules: <strong>{{ modules|length }}</strong>
+        </div>
+    </div>
+    <div>
+        <a href="{% url 'download_snapshot' %}" class="btn-premium-action">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download" viewBox="0 0 16 16">
+              <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5"/>
+              <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708z"/>
+            </svg>
+            Download Snapshot JSON
+        </a>
+    </div>
+</div>
+
+
+
+<div class="row g-4 mb-4">
+    <!-- Mean Comparison Chart -->
+    <div class="col-lg-8">
+        <div class="card glass-card h-100 mb-0">
+            <div class="card-title-bar">
+                <h4 class="fw-bold mb-0 text-slate-800">Module Means Comparison</h4>
+            </div>
+            <div class="card-body-pad d-flex align-items-center justify-content-center">
+                {% if means_chart_svg %}
+                    <div class="comparison-chart-container w-100">
+                        {{ means_chart_svg|safe }}
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center py-5">No modules to display chart.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Outliers Panel -->
+    <div class="col-lg-4">
+        <div class="card glass-card h-100 mb-0">
+            <div class="card-title-bar">
+                <h4 class="fw-bold mb-0 text-slate-800">Performance Warnings</h4>
+            </div>
+            <div class="card-body-pad" style="max-height: 380px; overflow-y: auto;">
+                <div class="d-flex flex-column gap-3">
+                    {% if has_outliers %}
+                        {% for m in modules %}
+                            {% if m.flag_low_perf %}
+                                <div class="alert alert-danger d-flex align-items-start gap-2 mb-0 py-2 px-3 border-start border-danger border-3 rounded-3">
+                                    <span class="fs-5" style="margin-top:-2px;">&#9873;</span>
+                                    <div class="small">
+                                        <strong class="d-block">{{ m.module_code }} (Level {{ m.level }})</strong>
+                                        Fail rate of <strong>{{ m.pct_fail|floatformat:1 }}%</strong> exceeds the 20% limit.
+                                    </div>
+                                </div>
+                            {% endif %}
+                            {% if m.flag_high_perf %}
+                                <div class="alert alert-warning d-flex align-items-start gap-2 mb-0 py-2 px-3 border-start border-warning border-3 rounded-3" style="background-color: #fffbeb; border-color: #f59e0b; color: #b45309;">
+                                    <span class="fs-5" style="margin-top:-2px; color: #f59e0b;">&#9873;</span>
+                                    <div class="small">
+                                        <strong class="d-block">{{ m.module_code }} (Level {{ m.level }})</strong>
+                                        First-class rate of <strong>{{ m.pct_1st|floatformat:1 }}%</strong> exceeds the 20% limit.
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-5 text-muted">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-shield-check text-success mb-2" viewBox="0 0 16 16">
+                              <path d="M5.338 1.59a61 61 0 0 0-2.837.856.481.481 0 0 0-.328.39c-.554 4.157.726 7.19 2.253 9.188a10.7 10.7 0 0 0 2.287 2.233c.346.244.652.42.893.533q.18.085.293.118a1 1 0 0 0 .101.025 1 1 0 0 0 .1-.025q.114-.033.294-.118c.24-.113.547-.29.893-.533a10.7 10.7 0 0 0 2.287-2.233c1.527-1.997 2.807-5.031 2.253-9.188a.48.48 0 0 0-.328-.39c-.651-.213-1.75-.56-2.837-.855C9.552 1.29 8.531 1.067 8 1.067c-.53 0-1.552.223-2.662.524zM8 0c.66 0 1.921.286 3.11.609 1.189.322 2.372.7 2.76.828a1.482 1.482 0 0 1 .98 1.186c.61 4.59-.877 7.962-2.585 10.19-.924 1.208-2.096 2.16-3.057 2.73a2.9 2.9 0 0 1-1.043.41 2.9 2.9 0 0 1-1.043-.41c-.961-.57-2.133-1.522-3.057-2.73C1.077 10.162-.41 6.79.18 2.203a1.48 1.48 0 0 1 .98-1.186C2.348.697 3.61.42 4.799.097 5.99.373 7.34 0 8 0"/>
+                              <path d="M10.854 5.854a.5.5 0 0 0-.708-.708L7.5 7.793 6.354 6.646a.5.5 0 1 0-.708.708l1.5 1.5a.5.5 0 0 0 .708 0z"/>
+                            </svg>
+                            <p class="small mb-0">No outlier performance warnings detected. All modules fall within normal boundaries.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Metrics Table -->
+<div class="card glass-card">
+    <div class="card-title-bar d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <h4 class="fw-bold mb-0 text-slate-800">Module Performance Summary</h4>
+        <div class="d-flex gap-2 align-items-center flex-wrap">
+            <!-- Filter Dropdown -->
+            <select id="flagFilter" class="form-select form-select-sm rounded-pill px-3" style="width: 180px;">
+                <option value="all">All Modules</option>
+                <option value="high-fail">⚠️ High Fail Rate</option>
+                <option value="high-1st">⭐ High 1st Class</option>
+                <option value="warning">🚩 Any Warning</option>
+            </select>
+            <!-- Search Input -->
+            <div style="width: 250px;">
+                <input type="text" id="moduleSearch" class="form-control form-control-sm rounded-pill px-3" placeholder="🔍 Search code or title...">
+            </div>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table mapping-table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Module</th>
+                    <th class="text-center">Level</th>
+                    <th class="text-center">Cohort Size</th>
+                    <th class="text-center">Mean Mark</th>
+                    <th class="text-center">Median</th>
+                    <th class="text-center">Std Dev</th>
+                    <th class="text-center">% 1st</th>
+                    <th class="text-center">% 2:1 &amp; above</th>
+                    <th class="text-center">% Fail</th>
+                    <th class="text-center">Status Flags</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in modules %}
+                <tr class="module-row" 
+                    data-code="{{ m.module_code }}" 
+                    data-title="{{ m.module_title }}"
+                    data-flag-fail="{% if m.flag_low_perf %}true{% else %}false{% endif %}"
+                    data-flag-first="{% if m.flag_high_perf %}true{% else %}false{% endif %}"
+                    onclick="toggleRowReport('{{ m.module_code|escapejs }}')">
+                    <td>
+                        <strong class="text-slate-800 d-block">{{ m.module_code }}</strong>
+                        <span class="text-muted small">{{ m.module_title }}</span>
+                    </td>
+                    <td class="text-center"><span class="badge-secondary-premium">Level {{ m.level }}</span></td>
+                    <td class="text-center {% if m.cohort_size < 10 %}table-secondary text-muted fw-semibold{% endif %}" {% if m.cohort_size < 10 %}title="Small cohort (size < 10)"{% endif %}>{{ m.cohort_size }}</td>
+                    <td class="text-center fw-bold text-slate-700">{{ m.mean|floatformat:1 }}%</td>
+                    <td class="text-center">{{ m.median|floatformat:1 }}%</td>
+                    <td class="text-center text-muted">{{ m.std_dev|floatformat:1 }}</td>
+                    <td class="text-center {% if m.flag_high_perf %}table-warning fw-semibold{% endif %}">{{ m.pct_1st|floatformat:1 }}%</td>
+                    <td class="text-center">{{ m.pct_21_above|floatformat:1 }}%</td>
+                    <td class="text-center {% if m.flag_low_perf %}table-danger fw-semibold{% endif %}">{{ m.pct_fail|floatformat:1 }}%</td>
+                    <td class="text-center">
+                        {% if m.flag_low_perf %}
+                            <span class="badge-outlier-low" title="High fail rate (>20%)">&#9873; High Fail</span>
+                        {% endif %}
+                        {% if m.flag_high_perf %}
+                            <span class="badge-outlier-high" title="High first-class rate (>20%)">&#9873; High 1st</span>
+                        {% endif %}
+                        {% if not m.flag_low_perf and not m.flag_high_perf %}
+                            <span class="text-success small fw-semibold">&#10004; Normal</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr id="report-row-{{ m.module_code }}" class="report-details-row d-none" 
+                    data-code="{{ m.module_code }}" 
+                    data-title="{{ m.module_title }}"
+                    data-flag-fail="{% if m.flag_low_perf %}true{% else %}false{% endif %}"
+                    data-flag-first="{% if m.flag_high_perf %}true{% else %}false{% endif %}">
+                    <td colspan="10" class="p-0">
+                        <div class="p-4" style="background-color: #f8fafc; border-bottom: 2px solid #cbd5e1;">
+                            {% include "cohort_report/_overall_performance_card.html" with cohort_size=m.cohort_size mean=m.mean std_dev=m.std_dev max=m.max median=m.median pct_1st=m.pct_1st pct_21_above=m.pct_21_above pct_fail=m.pct_fail chart_svg=m.chart_svg %}
+                            {% include "cohort_report/_components_breakdown_partial.html" with components_stats=m.components_stats %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const moduleSearch = document.getElementById('moduleSearch');
+    const flagFilter = document.getElementById('flagFilter');
+
+    function toggleRowReport(moduleCode) {
+        const reportRow = document.getElementById(`report-row-${moduleCode}`);
+        const parentRow = reportRow.previousElementSibling;
+        
+        if (reportRow.classList.contains('d-none')) {
+            reportRow.classList.remove('d-none');
+            parentRow.classList.add('expanded');
+        } else {
+            reportRow.classList.add('d-none');
+            parentRow.classList.remove('expanded');
+        }
+    }
+
+    function applyFilters() {
+        const query = moduleSearch.value.toLowerCase().trim();
+        const flag = flagFilter.value;
+
+        function checkVisibility(el) {
+            // Text Match
+            const code = el.getAttribute('data-code').toLowerCase();
+            const title = el.getAttribute('data-title').toLowerCase();
+            const textMatches = code.includes(query) || title.includes(query);
+
+            // Flag Match
+            const hasFail = el.getAttribute('data-flag-fail') === 'true';
+            const hasFirst = el.getAttribute('data-flag-first') === 'true';
+            let flagMatches = false;
+
+            if (flag === 'all') {
+                flagMatches = true;
+            } else if (flag === 'high-fail') {
+                flagMatches = hasFail;
+            } else if (flag === 'high-1st') {
+                flagMatches = hasFirst;
+            } else if (flag === 'warning') {
+                flagMatches = hasFail || hasFirst;
+            }
+
+            return textMatches && flagMatches;
+        }
+
+        // Filter table rows
+        document.querySelectorAll('.module-row').forEach(row => {
+            const code = row.getAttribute('data-code');
+            const reportRow = document.getElementById(`report-row-${code}`);
+            
+            if (checkVisibility(row)) {
+                row.classList.remove('d-none');
+                if (row.classList.contains('expanded')) {
+                    reportRow.classList.remove('d-none');
+                }
+            } else {
+                row.classList.add('d-none');
+                reportRow.classList.add('d-none');
+            }
+        });
+    }
+
+    moduleSearch.addEventListener('input', applyFilters);
+    flagFilter.addEventListener('change', applyFilters);
+</script>
+{% endblock %}

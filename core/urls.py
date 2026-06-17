@@ -32,6 +32,7 @@ urlpatterns = [
     path("marking-sheet-builder/", include("marking_sheet_builder.urls")),
     path("module-summary/", include("module_summary.urls")),
     path("cohort-report/", include("cohort_report.urls")),
+    path("programme-analytics/", include("programme_analytics.urls")),
     # Redirect /docs/ to the GitHub Pages site
     path("docs/", RedirectView.as_view(url="https://mblacklock.github.io/feedback_dl/", permanent=False), name="user_guide"),
     path("docs/<path:path>", RedirectView.as_view(url="https://mblacklock.github.io/feedback_dl/%(path)s", permanent=False)),

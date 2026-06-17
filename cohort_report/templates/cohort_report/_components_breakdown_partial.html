@@ -1,0 +1,58 @@
+{% if components_stats %}
+<div class="row mt-4">
+    <div class="col-12 text-start">
+        <h5 class="fw-bold mb-3 text-slate-800 brand-font">Assessment Component Breakdowns</h5>
+    </div>
+    {% for comp in components_stats %}
+    <div class="col-12 col-xl-6 mb-4 text-start">
+        <div class="card glass-card mb-0" style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: white;">
+            <div class="card-title-bar" style="background: #fafafa; border-bottom: 1px solid #e2e8f0; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between;">
+                <h6 class="fw-bold mb-0 text-slate-800" style="font-size: 1rem; margin: 0;">{{ comp.header_formatted }}</h6>
+                <span class="badge-secondary-premium" style="font-size: 0.8rem;">Weight: {{ comp.weight }}%</span>
+            </div>
+            <div class="card-body-pad" style="padding: 20px;">
+                <h6 class="fw-bold mb-2 text-muted uppercase small" style="letter-spacing: 0.05em; font-size: 0.7rem; text-transform: uppercase;">Summary Metrics</h6>
+                <div class="stats-grid mb-3" style="grid-template-columns: repeat(4, 1fr); display: grid; gap: 8px;">
+                    <div class="stat-box stat-highlight" style="background: #faf8f5; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; text-align: center; border-top: 3px solid var(--brand-accent, #ff7a59);">
+                        <div class="stat-label" style="font-size: 9px; font-weight: 600; text-transform: uppercase; color: #64748b; margin-bottom: 2px;">Mean</div>
+                        <div class="stat-value" style="font-size: 15px; font-weight: 700; color: var(--brand-accent, #ff7a59);">{{ comp.stats.mean|floatformat:1 }}%</div>
+                    </div>
+                    <div class="stat-box" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; text-align: center;">
+                        <div class="stat-label" style="font-size: 9px; font-weight: 600; text-transform: uppercase; color: #64748b; margin-bottom: 2px;">Std Dev</div>
+                        <div class="stat-value" style="font-size: 15px; font-weight: 700; color: #1e293b;">{{ comp.stats.std_dev|floatformat:1 }}</div>
+                    </div>
+                    <div class="stat-box" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; text-align: center;">
+                        <div class="stat-label" style="font-size: 9px; font-weight: 600; text-transform: uppercase; color: #64748b; margin-bottom: 2px;">Max</div>
+                        <div class="stat-value" style="font-size: 15px; font-weight: 700; color: #1e293b;">{{ comp.stats.max|floatformat:0 }}%</div>
+                    </div>
+                    <div class="stat-box" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; text-align: center;">
+                        <div class="stat-label" style="font-size: 9px; font-weight: 600; text-transform: uppercase; color: #64748b; margin-bottom: 2px;">Median</div>
+                        <div class="stat-value" style="font-size: 15px; font-weight: 700; color: #1e293b;">{{ comp.stats.median|floatformat:1 }}%</div>
+                    </div>
+                </div>
+                
+                <h6 class="fw-bold mb-2 mt-3 text-muted uppercase small" style="letter-spacing: 0.05em; font-size: 0.7rem; text-transform: uppercase;">Grade Distribution</h6>
+                <div class="stats-grid mb-3" style="grid-template-columns: repeat(3, 1fr); display: grid; gap: 8px;">
+                    <div class="stat-box" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; text-align: center; border-top: 3px solid #74c476;">
+                        <div class="stat-label" style="font-size: 9px; font-weight: 600; text-transform: uppercase; color: #64748b; margin-bottom: 2px;">% 1st</div>
+                        <div class="stat-value" style="font-size: 15px; font-weight: 700; color: #1e293b;">{{ comp.stats.pct_1st|floatformat:1 }}%</div>
+                    </div>
+                    <div class="stat-box" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; text-align: center; border-top: 3px solid #4a90d9;">
+                        <div class="stat-label" style="font-size: 9px; font-weight: 600; text-transform: uppercase; color: #64748b; margin-bottom: 2px;">% 2:1 &amp; above</div>
+                        <div class="stat-value" style="font-size: 15px; font-weight: 700; color: #1e293b;">{{ comp.stats.pct_21_above|floatformat:1 }}%</div>
+                    </div>
+                    <div class="stat-box" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px; text-align: center; border-top: 3px solid #d9534f;">
+                        <div class="stat-label" style="font-size: 9px; font-weight: 600; text-transform: uppercase; color: #64748b; margin-bottom: 2px;">% Fail</div>
+                        <div class="stat-value" style="font-size: 15px; font-weight: 700; color: #1e293b;">{{ comp.stats.pct_fail|floatformat:1 }}%</div>
+                    </div>
+                </div>
+
+                <div class="chart-container mt-3" style="text-align: center; padding: 8px; background: white; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    {{ comp.chart_svg|safe }}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}

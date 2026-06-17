@@ -47,6 +47,12 @@ def portal_home(request):
             "url_name": "marking_sheet_builder",
             "cta": "Create marking template",
         },
+        {
+            "title": "Programme Analytics",
+            "description": "Aggregate and compare performance metrics across multiple modules and cohorts.",
+            "url_name": "analytics_upload",
+            "cta": "Analyse programme",
+        },
     ]
     return render(request, "core/home.html", {"tools": tools})
 
