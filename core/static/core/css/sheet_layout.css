@@ -23,9 +23,9 @@
 }
 
 .header-title {
-    font-family: Georgia, 'Times New Roman', serif;
+    font-family: var(--font-brand);
     font-size: 26px;
-    font-weight: normal;
+    font-weight: 600;
     color: #ffffff;
     margin-bottom: 5px;
     line-height: 1.2;
@@ -47,9 +47,9 @@
 }
 
 .student-name {
-    font-family: Georgia, 'Times New Roman', serif;
+    font-family: var(--font-brand);
     font-size: 20px;
-    font-weight: bold;
+    font-weight: 700;
     color: var(--brand-primary);
     margin-bottom: 3px;
 }
