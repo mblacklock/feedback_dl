@@ -34,10 +34,10 @@ A programme-level analytics app that aggregates data across multiple modules to 
 
 ### 🗺️ Module Mapping & Confirmation
 - [x] Show confirmation page listing each detected module:
-  - [x] Display module code and source filename
-  - [x] Auto-detect academic level from code prefix (e.g. KB4001 → Level 4, EE5034 → Level 5)
-  - [x] Provide editable level field for corrections
-  - [x] Provide Programme Name and Academic Year fields (saved in session)
+- [x] Display module code and source filename
+- [x] Auto-detect academic level from code prefix (e.g. KB4001 → Level 4, EE5034 → Level 5)
+- [x] Provide editable level field for corrections
+- [x] Provide Programme Name and Academic Year fields (saved in session)
 
 ### 📈 Phase 1: Module Aggregates (Stateless)
 - [x] Compute per-module statistics: mean, median, std dev, cohort size

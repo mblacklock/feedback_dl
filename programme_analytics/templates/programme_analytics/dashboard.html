@@ -135,6 +135,11 @@
                 🎓 Level Benchmarking
             </button>
         </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="trends-tab" data-bs-toggle="tab" data-bs-target="#trends-panel" type="button" role="tab" aria-controls="trends-panel" aria-selected="false">
+                📈 Year-on-Year Trends
+            </button>
+        </li>
     </ul>
 
     <div class="tab-content" id="analyticsTabsContent">
@@ -348,6 +353,139 @@
                 </div>
             </div>
         </div>
+
+        <!-- Tab 5: Year-on-Year Trends -->
+        <div class="tab-pane fade" id="trends-panel" role="tabpanel" aria-labelledby="trends-tab">
+            <div class="card-body p-4">
+                <h5 class="fw-bold mb-2 text-slate-800">Year-on-Year Trends</h5>
+                
+                {% if trends_error %}
+                    <div class="alert alert-danger mb-4">
+                        {{ trends_error }}
+                    </div>
+                {% endif %}
+
+                {% if not trends_data %}
+                    <form action="{% url 'upload_snapshots' %}" method="post" enctype="multipart/form-data" id="trendsUploadForm">
+                        {% csrf_token %}
+                        <div class="dropzone-container mb-4" id="trendsDropzone">
+                            <div class="upload-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor"
+                                    class="bi bi-cloud-arrow-up-fill" viewBox="0 0 16 16">
+                                    <path
+                                        d="M8 2a5.53 5.53 0 0 0-3.594 1.342c-.766.66-1.321 1.52-1.464 2.383C1.266 6.095 0 7.555 0 9.318 0 11.366 1.708 13 3.781 13h8.906C14.502 13 16 11.57 16 9.773c0-1.636-1.242-2.969-2.834-3.194C12.92 4.1 10.747 2 8 2m.5 4v3h2a.5.5 0 0 1 .354.854l-2.5 2.5a.5.5 0 0 1-.708 0l-2.5-2.5A.5.5 0 0 1 5.5 9h2V6z" />
+                                </svg>
+                            </div>
+                            <h5 class="fw-bold mb-1">Drag and drop your historical snapshots here</h5>
+                            <p class="text-muted small mb-3">or click to browse your JSON snapshot files (you can select multiple files)</p>
+                            <span class="badge bg-secondary p-2 rounded-3">Programme Snapshot JSON files (.json) supported</span>
+                            <input type="file" name="snapshots" class="file-input" required accept=".json" id="trendsFileInput" multiple>
+                        </div>
+
+                        <!-- Staged Files list container -->
+                        <div class="card bg-light border-0 rounded-3 mb-4 d-none" id="trendsFileListCard">
+                            <div class="card-body py-3 px-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                                    <h6 class="fw-bold text-slate-700 mb-0 small text-uppercase">Staged Snapshots for Upload:</h6>
+                                    <button type="button" class="btn btn-link btn-sm text-danger p-0 text-decoration-none small" id="trendsClearAllBtn">Clear All</button>
+                                </div>
+                                <ul class="list-group list-group-flush bg-transparent" id="trendsStagedFilesList"></ul>
+                            </div>
+                        </div>
+
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-premium btn-lg w-100">Upload Snapshots and Calculate Trends</button>
+                        </div>
+                    </form>
+                {% else %}
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <span class="badge bg-success px-3 py-2 rounded-pill" style="font-size: 0.8rem;">
+                                {{ trends_data.raw_snapshots_count }} Historical Snapshot{{ trends_data.raw_snapshots_count|pluralize }} Loaded
+                            </span>
+                        </div>
+                        <form action="{% url 'clear_snapshots' %}" method="post" class="mb-0">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3">
+                                🗑️ Reset Historical Data
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Summary Chart -->
+                    <div class="card bg-white border border-light-subtle rounded-3 mb-4">
+                        <div class="card-body p-3 d-flex justify-content-center align-items-center">
+                            <div class="w-100 text-center" style="max-height: 480px;">
+                                {{ trends_data.programme_trend_svg|safe }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Module Trend Table -->
+                    <div class="table-responsive border border-light-subtle rounded-3">
+                        <table class="table mapping-table align-middle text-center mb-0" style="font-size: 0.85rem;">
+                            <thead>
+                                <tr>
+                                    <th class="text-start px-3" rowspan="2">Module</th>
+                                    <th rowspan="2">Level</th>
+                                    {% for yr in trends_data.years %}
+                                        <th colspan="3" class="border-start border-end" style="background-color: #f8fafc; font-size: 0.75rem;">{{ yr }}</th>
+                                    {% endfor %}
+                                    <th rowspan="2" class="px-3">Mean Trend</th>
+                                </tr>
+                                <tr>
+                                    {% for yr in trends_data.years %}
+                                        <th class="border-start" style="font-size: 0.7rem; font-weight: normal; color: #64748b;">Mean</th>
+                                        <th style="font-size: 0.7rem; font-weight: normal; color: #64748b;">% 1st</th>
+                                        <th class="border-end" style="font-size: 0.7rem; font-weight: normal; color: #64748b;">% Fail</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for m in trends_data.module_trends %}
+                                    <tr class="trend-module-row" style="cursor: pointer;" onclick="toggleTrendDetails('{{ m.code|escapejs }}')">
+                                        <td class="text-start px-3">
+                                            <strong class="text-slate-800 d-block">{{ m.code }}</strong>
+                                            <span class="text-muted small">{{ m.title }}</span>
+                                        </td>
+                                        <td><span class="badge-secondary-premium">Level {{ m.level }}</span></td>
+                                        {% for col in m.year_columns %}
+                                            {% if col.present %}
+                                                <td class="border-start fw-bold text-slate-700">{{ col.mean|floatformat:1 }}%</td>
+                                                <td>{{ col.pct_1st|floatformat:1 }}%</td>
+                                                <td class="border-end">{{ col.pct_fail|floatformat:1 }}%</td>
+                                            {% else %}
+                                                <td class="border-start text-muted">-</td>
+                                                <td class="text-muted">-</td>
+                                                <td class="border-end text-muted">-</td>
+                                            {% endif %}
+                                        {% endfor %}
+                                        <td class="px-3 align-middle">
+                                            {% if m.sparkline_svg %}
+                                                {{ m.sparkline_svg|safe }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% if m.has_history %}
+                                        <tr id="trend-details-{{ m.code }}" class="trend-details-row d-none" style="background-color: #f8fafc;">
+                                            <td colspan="{{ trends_data.colspan }}" class="p-4 border-top-0 border-bottom border-light-subtle">
+                                                <div class="d-flex align-items-center justify-content-center">
+                                                    <div style="max-width: 650px; width: 100%;">
+                                                        {{ m.details_chart_svg|safe }}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
     </div>
 </div>
 
@@ -423,5 +561,119 @@
     moduleSearch.addEventListener('input', applyFilters);
     flagFilter.addEventListener('change', applyFilters);
     levelFilter.addEventListener('change', applyFilters);
+
+    function toggleTrendDetails(moduleCode) {
+        const detailsRow = document.getElementById(`trend-details-${moduleCode}`);
+        if (!detailsRow) return;
+        
+        const parentRow = detailsRow.previousElementSibling;
+        
+        if (detailsRow.classList.contains('d-none')) {
+            detailsRow.classList.remove('d-none');
+            parentRow.classList.add('expanded');
+        } else {
+            detailsRow.classList.add('d-none');
+            parentRow.classList.remove('expanded');
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const hash = window.location.hash;
+        if (hash === '#trends') {
+            const trendsTab = document.getElementById('trends-tab');
+            if (trendsTab) {
+                trendsTab.click();
+            }
+        }
+
+        // Trends Drag and Drop Logic
+        const trendsDropzone = document.getElementById('trendsDropzone');
+        const trendsFileInput = document.getElementById('trendsFileInput');
+        const trendsFileListCard = document.getElementById('trendsFileListCard');
+        const trendsStagedFilesList = document.getElementById('trendsStagedFilesList');
+        const trendsClearAllBtn = document.getElementById('trendsClearAllBtn');
+
+        if (trendsDropzone && trendsFileInput) {
+            let accumulatedTrends = new DataTransfer();
+
+            function updateTrendsUI() {
+                const filesCount = trendsFileInput.files.length;
+                if (filesCount > 0) {
+                    trendsFileListCard.classList.remove('d-none');
+                    trendsStagedFilesList.innerHTML = '';
+                    
+                    for (let i = 0; i < filesCount; i++) {
+                        const file = trendsFileInput.files[i];
+                        const li = document.createElement('li');
+                        li.className = 'list-group-item d-flex justify-content-between align-items-center bg-transparent py-1 px-0 border-0 text-slate-700 small';
+                        li.innerHTML = `
+                            <span>📄 ${file.name}</span>
+                            <span class="text-muted text-xs">(${Math.round(file.size / 1024)} KB)</span>
+                        `;
+                        trendsStagedFilesList.appendChild(li);
+                    }
+
+                    if (filesCount === 1) {
+                        trendsDropzone.querySelector('h5').innerText = trendsFileInput.files[0].name;
+                        trendsDropzone.querySelector('p').innerText = "1 snapshot ready to upload";
+                    } else {
+                        trendsDropzone.querySelector('h5').innerText = `${filesCount} snapshots selected`;
+                        trendsDropzone.querySelector('p').innerText = "Snapshots ready to upload";
+                    }
+                    trendsDropzone.style.borderColor = "#4361ee";
+                    trendsDropzone.style.backgroundColor = "#eff6ff";
+                } else {
+                    trendsFileListCard.classList.add('d-none');
+                    trendsStagedFilesList.innerHTML = '';
+                    trendsDropzone.querySelector('h5').innerText = "Drag and drop your historical snapshots here";
+                    trendsDropzone.querySelector('p').innerText = "or click to browse your JSON snapshot files (you can select multiple files)";
+                    trendsDropzone.style.borderColor = "var(--brand-slate-light)";
+                    trendsDropzone.style.backgroundColor = "var(--brand-bg)";
+                }
+            }
+
+            trendsFileInput.addEventListener('change', (e) => {
+                if (e.detail !== 'manual_update') {
+                    for (let i = 0; i < trendsFileInput.files.length; i++) {
+                        accumulatedTrends.items.add(trendsFileInput.files[i]);
+                    }
+                    trendsFileInput.files = accumulatedTrends.files;
+                }
+                updateTrendsUI();
+            });
+
+            if (trendsClearAllBtn) {
+                trendsClearAllBtn.addEventListener('click', () => {
+                    accumulatedTrends = new DataTransfer();
+                    trendsFileInput.value = '';
+                    updateTrendsUI();
+                });
+            }
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                trendsDropzone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    trendsDropzone.classList.add('dragover');
+                }, false);
+            });
+
+            trendsDropzone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                trendsDropzone.classList.remove('dragover');
+            }, false);
+
+            trendsDropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                trendsDropzone.classList.remove('dragover');
+                if (e.dataTransfer.files.length > 0) {
+                    for (let i = 0; i < e.dataTransfer.files.length; i++) {
+                        accumulatedTrends.items.add(e.dataTransfer.files[i]);
+                    }
+                    trendsFileInput.files = accumulatedTrends.files;
+                    trendsFileInput.dispatchEvent(new CustomEvent('change', { detail: 'manual_update' }));
+                }
+            }, false);
+        }
+    });
 </script>
 {% endblock %}

@@ -401,3 +401,199 @@ class ProgrammeAnalyticsTests(TestCase):
         # student_A weighted avg: 60.0%, student_B: 50.0%
         # Cohort mean: (60.0 + 50.0) / 2 = 55.0%
         self.assertAlmostEqual(lvl5_agg["mean"], 55.0)
+
+    def test_normalize_snapshot(self):
+        """Verify normalize_snapshot standardizes session modules and snapshot JSON formats."""
+        from programme_analytics.views import normalize_snapshot
+        
+        # Test format 1 (snapshot format)
+        snap1 = {
+            'programme': 'CS',
+            'year': '2023/24',
+            'modules': [
+                {
+                    'code': 'CS101',
+                    'title': 'Intro',
+                    'level': 4,
+                    'credits': 20,
+                    'mean': 60.0,
+                    'std_dev': 12.5,
+                    'grade_dist': {'pct_1st': 10.0, 'pct_fail': 5.0, 'pct_21_above': 60.0},
+                    'n': 50
+                }
+            ]
+        }
+        norm1 = normalize_snapshot(snap1)
+        self.assertEqual(norm1['programme'], 'CS')
+        self.assertEqual(norm1['year'], '2023/24')
+        self.assertEqual(len(norm1['modules']), 1)
+        self.assertEqual(norm1['modules'][0]['code'], 'CS101')
+        self.assertEqual(norm1['modules'][0]['std_dev'], 12.5)
+        self.assertEqual(norm1['modules'][0]['pct_1st'], 10.0)
+        self.assertEqual(norm1['modules'][0]['pct_21_above'], 60.0)
+        self.assertEqual(norm1['modules'][0]['pct_fail'], 5.0)
+        self.assertEqual(norm1['modules'][0]['n'], 50)
+        
+        # Test format 2 (session/alternate format)
+        snap2 = {
+            'programme_name': 'CS',
+            'academic_year': '2023/24',
+            'modules': [
+                {
+                    'module_code': 'CS101',
+                    'module_title': 'Intro',
+                    'level': 4,
+                    'detected_credits': 20,
+                    'mean': 60.0,
+                    'std_dev': 12.5,
+                    'pct_1st': 10.0,
+                    'pct_21_above': 60.0,
+                    'pct_fail': 5.0,
+                    'cohort_size': 50
+                }
+            ]
+        }
+        norm2 = normalize_snapshot(snap2)
+        self.assertEqual(norm2['modules'][0]['code'], 'CS101')
+        self.assertEqual(norm2['modules'][0]['std_dev'], 12.5)
+        self.assertEqual(norm2['modules'][0]['pct_1st'], 10.0)
+        self.assertEqual(norm2['modules'][0]['pct_21_above'], 60.0)
+        self.assertEqual(norm2['modules'][0]['pct_fail'], 5.0)
+        self.assertEqual(norm2['modules'][0]['n'], 50)
+
+    def test_upload_snapshots_valid(self):
+        """POST upload_snapshots with a valid JSON snapshot stores normalized snap in session."""
+        snap_data = {
+            'programme': 'BEng Computer Science',
+            'year': '2024/25',
+            'modules': [
+                {
+                    'code': 'CS101',
+                    'title': 'Intro to CS',
+                    'level': 4,
+                    'credits': 20,
+                    'mean': 62.5,
+                    'std_dev': 11.2,
+                    'grade_dist': {'pct_1st': 15.0, 'pct_fail': 8.0, 'pct_21_above': 65.0},
+                    'n': 40
+                }
+            ]
+        }
+        snap_file = SimpleUploadedFile(
+            "snapshot_2024_25.json",
+            json.dumps(snap_data).encode('utf-8'),
+            content_type="application/json"
+        )
+        
+        url = reverse("upload_snapshots")
+        resp = self.client.post(url, {"snapshots": [snap_file]})
+        self.assertEqual(resp.status_code, 302)
+        self.assertTrue(resp.url.endswith("#trends"))
+        
+        session = self.client.session
+        self.assertIn("analytics_historical_snapshots", session)
+        snapshots = session["analytics_historical_snapshots"]
+        self.assertEqual(len(snapshots), 1)
+        self.assertEqual(snapshots[0]['year'], '2024/25')
+        self.assertEqual(snapshots[0]['modules'][0]['code'], 'CS101')
+
+    def test_upload_snapshots_invalid(self):
+        """POST upload_snapshots with an invalid file sets trends_error in session."""
+        bad_file = SimpleUploadedFile(
+            "bad.json",
+            b"invalid json content",
+            content_type="application/json"
+        )
+        
+        url = reverse("upload_snapshots")
+        resp = self.client.post(url, {"snapshots": [bad_file]})
+        self.assertEqual(resp.status_code, 302)
+        
+        session = self.client.session
+        self.assertIn("trends_error", session)
+        self.assertIn("is not a valid JSON file", session["trends_error"])
+
+    def test_clear_snapshots(self):
+        """POST clear_snapshots clears snapshots and errors from session."""
+        session = self.client.session
+        session["analytics_historical_snapshots"] = [{"year": "2024/25"}]
+        session["trends_error"] = "Some error"
+        session.save()
+        
+        url = reverse("clear_snapshots")
+        resp = self.client.post(url)
+        self.assertEqual(resp.status_code, 302)
+        
+        session = self.client.session
+        self.assertNotIn("analytics_historical_snapshots", session)
+        self.assertNotIn("trends_error", session)
+
+    def test_analytics_dashboard_with_trends(self):
+        """GET dashboard with historical snapshots calculates trend data structure."""
+        # 1. Setup confirmed current cohort data in session (Year 2025/26)
+        session = self.client.session
+        session["analytics_confirmed_data"] = {
+            "programme_name": "BEng Computer Science",
+            "academic_year": "2025/26",
+            "modules": [
+                {
+                    'module_code': 'CS101',
+                    'module_title': 'Intro to CS',
+                    'level': 4,
+                    'credits': 20,
+                    'scores': [70, 50],  # Mean = 60%, 1st = 50%, Fail = 0%
+                    'mean': 60.0,
+                    'median': 60.0,
+                    'std_dev': 10.0,
+                    'pct_1st': 50.0,
+                    'pct_21_above': 50.0,
+                    'pct_fail': 0.0,
+                    'cohort_size': 2,
+                    'components': []
+                }
+            ]
+        }
+        
+        # 2. Setup historical snapshot in session (Year 2024/25)
+        session["analytics_historical_snapshots"] = [
+            {
+                'programme': 'BEng Computer Science',
+                'year': '2024/25',
+                'modules': [
+                    {
+                        'code': 'CS101',
+                        'title': 'Intro to CS',
+                        'level': 4,
+                        'credits': 20,
+                        'mean': 55.0,
+                        'std_dev': 8.0,
+                        'pct_1st': 20.0,
+                        'pct_fail': 10.0,
+                        'pct_21_above': 60.0,
+                        'n': 10
+                    }
+                ]
+            }
+        ]
+        session.save()
+        
+        # 3. GET dashboard
+        url = reverse("analytics_dashboard")
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        
+        # Verify trends_data context
+        self.assertIn("trends_data", resp.context)
+        trends_data = resp.context["trends_data"]
+        self.assertEqual(trends_data['years'], ['2024/25', '2025/26'])
+        self.assertEqual(len(trends_data['module_trends']), 1)
+        
+        # Verify combined chart is present
+        self.assertIn('programme_trend_svg', trends_data)
+        
+        # Check module CS101 trend values
+        m_trend = trends_data['module_trends'][0]
+        self.assertEqual(m_trend['code'], 'CS101')
+        self.assertTrue(m_trend['has_history'])
+        self.assertIn('<svg', m_trend['sparkline_svg'])
+        self.assertIn('<svg', m_trend['details_chart_svg'])

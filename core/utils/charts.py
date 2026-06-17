@@ -335,3 +335,545 @@ def generate_module_comparison_chart(labels, student_percentages, average_percen
     
     return buf.getvalue().decode('utf-8')
 
+
+def clean_svg(svg_str):
+    """Strips XML prolog to make Matplotlib's output safe for inline SVG nesting."""
+    import re
+    if not svg_str:
+        return ""
+    match = re.search(r'<svg.*', svg_str, re.DOTALL)
+    if match:
+        return match.group(0)
+    return svg_str
+
+
+def generate_programme_comparison_chart(modules_data):
+    """Generates an SVG bar chart comparing the mean marks of multiple modules."""
+    if not modules_data:
+        return ""
+    
+    codes = [m["module_code"] for m in modules_data]
+    means = [m["mean"] for m in modules_data]
+    
+    # Calculate chart width dynamically (0.6 inches per module code, minimum 12.0)
+    chart_width = max(12.0, 0.6 * len(codes))
+    fig, ax = plt.subplots(figsize=(chart_width, 4.0))
+    
+    level_colors = {
+        3: '#cbd5e1',
+        4: '#10b981',
+        5: '#3b82f6',
+        6: '#8b5cf6',
+        7: '#f59e0b',
+    }
+    colors_list = [level_colors.get(m.get("level", 4), '#3b82f6') for m in modules_data]
+    
+    x = np.arange(len(codes))
+    bars = ax.bar(x, means, width=0.4, color=colors_list, alpha=0.9, edgecolor='none', zorder=3)
+    
+    # Add level legend
+    import matplotlib.patches as mpatches
+    present_levels = sorted(list(set(m.get("level", 4) for m in modules_data)))
+    level_labels = {
+        3: 'Level 3',
+        4: 'Level 4',
+        5: 'Level 5',
+        6: 'Level 6',
+        7: 'Level 7',
+    }
+    legend_handles = []
+    for lvl in present_levels:
+        color = level_colors.get(lvl, '#3b82f6')
+        label = level_labels.get(lvl, f'Level {lvl}')
+        legend_handles.append(mpatches.Patch(color=color, label=label))
+    
+    if legend_handles:
+        ax.legend(handles=legend_handles, loc='upper right', frameon=True, facecolor='white', edgecolor='#e2e8f0', fontsize=9.0)
+    
+    # Set tooltips for each bar
+    for bar, code, mean_val in zip(bars, codes, means):
+        bar.set_url(f"tooltip:{code}: {mean_val:.1f}% mean")
+    
+    ax.set_ylabel('Mean Score (%)', color='#475569', size=11, fontfamily='DejaVu Sans')
+    ax.set_xticks(x)
+    ax.set_xticklabels(codes, color='#475569', size=10, fontfamily='DejaVu Sans', rotation=15, ha='right')
+    ax.set_ylim(0, 100)
+    
+    ax.grid(True, axis='y', color='#e2e8f0', linestyle=':', linewidth=0.8, zorder=0)
+    ax.set_axisbelow(True)
+    
+    for spine in ['top', 'right', 'left']:
+        ax.spines[spine].set_visible(False)
+    ax.spines['bottom'].set_color('#cbd5e1')
+    
+    ax.tick_params(axis='both', which='both', length=0, colors='#475569', labelsize=10)
+    ax.set_facecolor('white')
+    fig.patch.set_facecolor('white')
+    
+    buf = io.BytesIO()
+    plt.savefig(buf, format='svg', bbox_inches='tight', transparent=False)
+    plt.close(fig)
+    
+    return clean_svg(inject_svg_tooltips(buf.getvalue().decode('utf-8')))
+
+
+def generate_line_chart(
+    x_labels,
+    series_list,
+    ylabel,
+    title,
+    figsize=(10.0, 4.5),
+    ylim=None,
+    grid_axis='both',
+    grid_style='--',
+    legend_loc='upper right',
+    legend_ncol=1,
+    legend_bbox_to_anchor=None,
+    rotation=0,
+    ha='center',
+    fontsize_xticks=9.5,
+    fontsize_yticks=9.5,
+    fontsize_ylabel=11.0,
+    fontsize_title=12.0,
+    pad_title=15,
+):
+    """
+    Core generic line chart generator used for all line charts in the application.
+    """
+    fig, ax = plt.subplots(figsize=figsize)
+    x = np.arange(len(x_labels))
+    
+    for s in series_list:
+        y_vals = s['y_values']
+        label = s.get('label')
+        color = s.get('color', '#3b82f6')
+        marker = s.get('marker', 'o')
+        linewidth = s.get('linewidth', 2.0)
+        markersize = s.get('markersize', 5)
+        alpha = s.get('alpha', 1.0)
+        
+        # Plot line
+        lines = ax.plot(
+            x, y_vals,
+            label=label,
+            color=color,
+            linewidth=linewidth,
+            marker=marker,
+            markersize=markersize,
+            alpha=alpha,
+            zorder=4
+        )
+        
+        # Line URL (tooltip)
+        if s.get('url'):
+            for line in lines:
+                line.set_url(s['url'])
+                
+        # Points scatter for individual tooltips
+        point_urls = s.get('point_urls', [])
+        for xi, yi in zip(x, y_vals):
+            if yi is not None:
+                point = ax.scatter(xi, yi, color=color, s=markersize * 5, zorder=5)
+                # If there are point-specific tooltips, apply them
+                if point_urls and xi < len(point_urls) and point_urls[xi]:
+                    point.set_url(point_urls[xi])
+                    
+    ax.set_xticks(x)
+    ax.set_xticklabels(x_labels, rotation=rotation, ha=ha, fontsize=fontsize_xticks)
+    ax.tick_params(axis='y', labelsize=fontsize_yticks)
+    ax.set_ylabel(ylabel, fontsize=fontsize_ylabel, fontweight='semibold', color='#475569')
+    if title:
+        ax.set_title(title, fontsize=fontsize_title, fontweight='bold', pad=pad_title, color='#1e293b')
+        
+    if ylim is not None:
+        ax.set_ylim(ylim)
+        
+    ax.grid(True, axis=grid_axis, color='#e2e8f0', linestyle=grid_style, linewidth=0.8, zorder=0)
+    ax.set_axisbelow(True)
+    
+    # Legend
+    has_labels = any(s.get('label') for s in series_list)
+    if has_labels:
+        ax.legend(
+            loc=legend_loc,
+            bbox_to_anchor=legend_bbox_to_anchor,
+            ncol=legend_ncol,
+            fontsize=fontsize_xticks,
+            frameon=False
+        )
+        
+    # Hide top, right, and left spines to match other charts
+    for spine in ['top', 'right', 'left']:
+        ax.spines[spine].set_visible(False)
+    ax.spines['bottom'].set_color('#cbd5e1')
+    
+    # Disable tick markers
+    ax.tick_params(axis='both', which='both', length=0, colors='#475569')
+    ax.set_facecolor('white')
+    fig.patch.set_facecolor('white')
+    
+    buf = io.BytesIO()
+    plt.savefig(buf, format='svg', bbox_inches='tight', transparent=False)
+    plt.close(fig)
+    return clean_svg(inject_svg_tooltips(buf.getvalue().decode('utf-8')))
+
+
+def generate_normalised_overlay_chart(modules_list):
+    """
+    Generates an SVG line chart overlaying module grade distributions.
+    Normalises cohort count to percentages.
+    """
+    if not modules_list:
+        return ""
+
+    bin_labels = ['AB', '0-9%', '10-19%', '20-29%', '30-39%', '40-49%', '50-59%', '60-69%', '70-79%', '80-89%', '90-100%']
+    colors = ['#4361ee', '#ff006e', '#3a0ca3', '#7209b7', '#4cc9f0', '#ff7a59', '#10b981', '#f59e0b', '#64748b']
+
+    from programme_analytics.views import calculate_module_analytics
+
+    series_list = []
+    for idx, m in enumerate(modules_list):
+        scores = m.get('scores', [])
+        if not scores:
+            continue
+        stats = calculate_module_analytics(scores, m.get('level', 4))
+        n = stats['cohort_size']
+        if n == 0:
+            continue
+
+        sb = stats['score_bins']
+        y_vals = []
+        y_vals.append((sb['absent'] / n) * 100.0)
+        for b_count in sb['bins']:
+            y_vals.append((b_count / n) * 100.0)
+
+        color = colors[idx % len(colors)]
+        point_urls = [
+            f"tooltip:{m['module_code']} - {bl}: {y:.1f}% of cohort"
+            for bl, y in zip(bin_labels, y_vals)
+        ]
+        series_list.append({
+            'y_values': y_vals,
+            'label': m['module_code'],
+            'color': color,
+            'marker': 'o',
+            'linewidth': 2.0,
+            'markersize': 6,
+            'alpha': 0.85,
+            'url': f"tooltip:{m['module_code']} - {m['module_title']}",
+            'point_urls': point_urls
+        })
+
+    return generate_line_chart(
+        x_labels=bin_labels,
+        series_list=series_list,
+        ylabel='% of Cohort',
+        title=None,
+        figsize=(10.0, 5.0),
+        ylim=(-2, 105),
+        grid_axis='y',
+        grid_style='--',
+        legend_loc='upper right',
+        rotation=15,
+        ha='right',
+        fontsize_xticks=9.5,
+        fontsize_yticks=9.5,
+        fontsize_ylabel=12
+    )
+
+
+def generate_level_cohort_chart(level_data):
+    """
+    Generates an SVG bar chart comparing grade distributions across academic levels.
+    """
+    if not level_data:
+        return ""
+
+    level_data = sorted(level_data, key=lambda x: x['level'])
+
+    levels = [f"Level {item['level']}" for item in level_data]
+    pct_fail = [item.get('pct_fail', 0.0) for item in level_data]
+    pct_3rd = [item.get('pct_3rd', 0.0) for item in level_data]
+    pct_22 = [item.get('pct_22', 0.0) for item in level_data]
+    pct_21 = [item.get('pct_21', 0.0) for item in level_data]
+    pct_1st = [item.get('pct_1st', 0.0) for item in level_data]
+
+    x = np.arange(len(levels))
+    width = 0.15
+
+    fig, ax = plt.subplots(figsize=(8.0, 4.5))
+
+    fail_color = '#ef4444'
+    third_color = '#f59e0b'
+    two_two_color = '#8b5cf6'
+    two_one_color = '#3b82f6'
+    first_color = '#10b981'
+
+    rects1 = ax.bar(x - 2 * width, pct_fail, width, label='Fail', color=fail_color, alpha=0.9, zorder=3)
+    rects2 = ax.bar(x - width, pct_3rd, width, label='3rd Class', color=third_color, alpha=0.9, zorder=3)
+    rects3 = ax.bar(x, pct_22, width, label='2:2 Class', color=two_two_color, alpha=0.9, zorder=3)
+    rects4 = ax.bar(x + width, pct_21, width, label='2:1 Class', color=two_one_color, alpha=0.9, zorder=3)
+    rects5 = ax.bar(x + 2 * width, pct_1st, width, label='1st Class', color=first_color, alpha=0.9, zorder=3)
+
+    for bar, lvl in zip(rects1, levels):
+        bar.set_url(f"tooltip:{lvl} Fail: {bar.get_height():.1f}%")
+    for bar, lvl in zip(rects2, levels):
+        bar.set_url(f"tooltip:{lvl} 3rd Class: {bar.get_height():.1f}%")
+    for bar, lvl in zip(rects3, levels):
+        bar.set_url(f"tooltip:{lvl} 2:2 Class: {bar.get_height():.1f}%")
+    for bar, lvl in zip(rects4, levels):
+        bar.set_url(f"tooltip:{lvl} 2:1 Class: {bar.get_height():.1f}%")
+    for bar, lvl in zip(rects5, levels):
+        bar.set_url(f"tooltip:{lvl} 1st Class: {bar.get_height():.1f}%")
+
+    ax.set_ylabel('Percentage (%)', color='#475569', size=11, fontweight='semibold')
+    ax.set_xticks(x)
+    ax.set_xticklabels(levels, fontsize=10, fontweight='semibold')
+    ax.set_ylim(0, 105)
+
+    ax.grid(True, axis='y', color='#e2e8f0', linestyle='--', linewidth=0.8, zorder=0)
+    ax.set_axisbelow(True)
+
+    # Hide top, right, and left spines to match other charts
+    for spine in ['top', 'right', 'left']:
+        ax.spines[spine].set_visible(False)
+    ax.spines['bottom'].set_color('#cbd5e1')
+
+    # Disable tick markers to be consistent
+    ax.tick_params(axis='both', which='both', length=0, colors='#475569', labelsize=10)
+    ax.set_facecolor('white')
+    fig.patch.set_facecolor('white')
+    ax.legend(loc='upper right', fontsize=9.5, frameon=True, facecolor='white', edgecolor='#e2e8f0')
+
+    buf = io.BytesIO()
+    plt.savefig(buf, format='svg', bbox_inches='tight', transparent=False)
+    plt.close(fig)
+
+    svg_str = buf.getvalue().decode('utf-8')
+    return inject_svg_tooltips(svg_str)
+
+
+def generate_trend_line_chart(years, values, ylabel, title, color='#3b82f6'):
+    """Generates a simple line chart with years on the x-axis."""
+    point_urls = [f"tooltip:{yr}: {yi:.1f}" if yi is not None else "" for yr, yi in zip(years, values)]
+    series = {
+        'y_values': values,
+        'color': color,
+        'marker': 'o',
+        'linewidth': 2.0,
+        'markersize': 5,
+        'point_urls': point_urls
+    }
+    
+    ylim = None
+    if values:
+        min_v = min(values)
+        max_v = max(values)
+        if min_v == max_v:
+            ylim = (max(0, min_v - 10), min_v + 10)
+        else:
+            padding = (max_v - min_v) * 0.15
+            ylim = (max(0, min_v - padding), min_v + padding)
+
+    return generate_line_chart(
+        x_labels=years,
+        series_list=[series],
+        ylabel=ylabel,
+        title=title,
+        figsize=(4.5, 2.8),
+        ylim=ylim,
+        legend_loc='upper right',
+        fontsize_xticks=8.5,
+        fontsize_yticks=8.5,
+        fontsize_ylabel=9.5,
+        fontsize_title=10.5,
+        pad_title=10
+    )
+
+
+def generate_sparkline_svg(values):
+    """Generates a simple inline SVG sparkline line path."""
+    if not values or len(values) < 2:
+        return ""
+    valid_vals = [v for v in values if v is not None]
+    if len(valid_vals) < 2:
+        return ""
+    
+    # SVG size: width=80, height=20
+    w = 80
+    h = 20
+    
+    # Add horizontal and vertical padding to prevent markers/lines from clipping
+    pad_x = 4
+    pad_y = 3
+    
+    min_v = min(valid_vals)
+    max_v = max(valid_vals)
+    span = max_v - min_v
+    if span == 0:
+        span = 1
+        
+    points = []
+    dx = (w - 2 * pad_x) / (len(values) - 1)
+    for i, val in enumerate(values):
+        if val is None:
+            continue
+        cx = pad_x + i * dx
+        cy = h - pad_y - ((val - min_v) / span) * (h - 2 * pad_y)
+        points.append(f"{cx:.1f},{cy:.1f}")
+        
+    path_data = "M " + " L ".join(points)
+    
+    svg_str = f'<svg width="{w}" height="{h}" style="vertical-align: middle; overflow: visible;">'
+    svg_str += f'<path d="{path_data}" fill="none" stroke="#3b82f6" stroke-width="2" />'
+    
+    # Highlight the last point (latest trend value)
+    last_x = pad_x + (len(values) - 1) * dx
+    last_val = values[-1]
+    if last_val is not None:
+        last_y = h - pad_y - ((last_val - min_v) / span) * (h - 2 * pad_y)
+        svg_str += f'<circle cx="{last_x:.1f}" cy="{last_y:.1f}" r="3" fill="#ef4444" />'
+    svg_str += '</svg>'
+    return svg_str
+
+
+def generate_module_trend_chart(code, years, history):
+    """Generates a line chart for a single module showing Mean, Std. Dev., % 1st, % 2:1 & above, and % Fail."""
+    means = [history[yr]['mean'] if yr in history else None for yr in years]
+    std_devs = [history[yr]['std_dev'] if yr in history else None for yr in years]
+    pct_1st = [history[yr]['pct_1st'] if yr in history else None for yr in years]
+    pct_21 = [history[yr]['pct_21_above'] if yr in history else None for yr in years]
+    pct_fail = [history[yr]['pct_fail'] if yr in history else None for yr in years]
+
+    series_list = [
+        {
+            'y_values': means,
+            'label': 'Mean Mark (%)',
+            'color': '#3b82f6',
+            'marker': 'o',
+            'linewidth': 2.0,
+            'markersize': 5,
+            'point_urls': [f"tooltip:{yr} Mean: {val:.1f}%" if val is not None else "" for yr, val in zip(years, means)]
+        },
+        {
+            'y_values': std_devs,
+            'label': 'Std. Dev.',
+            'color': '#f59e0b',
+            'marker': 'd',
+            'linewidth': 2.0,
+            'markersize': 5,
+            'point_urls': [f"tooltip:{yr} Std. Dev.: {val:.1f}" if val is not None else "" for yr, val in zip(years, std_devs)]
+        },
+        {
+            'y_values': pct_1st,
+            'label': '% 1st Class',
+            'color': '#10b981',
+            'marker': 's',
+            'linewidth': 2.0,
+            'markersize': 5,
+            'point_urls': [f"tooltip:{yr} % 1st: {val:.1f}%" if val is not None else "" for yr, val in zip(years, pct_1st)]
+        },
+        {
+            'y_values': pct_21,
+            'label': '% 2:1 & above',
+            'color': '#8b5cf6',
+            'marker': 'p',
+            'linewidth': 2.0,
+            'markersize': 5,
+            'point_urls': [f"tooltip:{yr} % 2:1 & Above: {val:.1f}%" if val is not None else "" for yr, val in zip(years, pct_21)]
+        },
+        {
+            'y_values': pct_fail,
+            'label': '% Fail',
+            'color': '#ef4444',
+            'marker': '^',
+            'linewidth': 2.0,
+            'markersize': 5,
+            'point_urls': [f"tooltip:{yr} % Fail: {val:.1f}%" if val is not None else "" for yr, val in zip(years, pct_fail)]
+        },
+    ]
+
+    return generate_line_chart(
+        x_labels=years,
+        series_list=series_list,
+        ylabel='Percentage / Value',
+        title=f"Performance Trends for {code}",
+        figsize=(8.0, 3.8),
+        ylim=(-5, 105),
+        legend_loc='lower center',
+        legend_bbox_to_anchor=(0.5, 1.02),
+        legend_ncol=5,
+        fontsize_xticks=9,
+        fontsize_yticks=9,
+        fontsize_ylabel=10,
+        fontsize_title=11,
+        pad_title=35
+    )
+
+
+def generate_programme_trend_chart(years, means, std_devs, pct_1sts, pct_21s, pct_fails):
+    """Generates a single line chart showing all 5 programme-level performance trends across years."""
+    series_list = [
+        {
+            'y_values': means,
+            'label': 'Mean Mark (%)',
+            'color': '#3b82f6',
+            'marker': 'o',
+            'linewidth': 2.5,
+            'markersize': 6,
+            'point_urls': [f"tooltip:{yr} Mean: {val:.1f}%" if val is not None else "" for yr, val in zip(years, means)]
+        },
+        {
+            'y_values': std_devs,
+            'label': 'Std. Dev.',
+            'color': '#f59e0b',
+            'marker': 'd',
+            'linewidth': 2.5,
+            'markersize': 6,
+            'point_urls': [f"tooltip:{yr} Std. Dev.: {val:.1f}" if val is not None else "" for yr, val in zip(years, std_devs)]
+        },
+        {
+            'y_values': pct_1sts,
+            'label': '% 1st Class',
+            'color': '#10b981',
+            'marker': 's',
+            'linewidth': 2.5,
+            'markersize': 6,
+            'point_urls': [f"tooltip:{yr} % 1st: {val:.1f}%" if val is not None else "" for yr, val in zip(years, pct_1sts)]
+        },
+        {
+            'y_values': pct_21s,
+            'label': '% 2:1 & above',
+            'color': '#8b5cf6',
+            'marker': 'p',
+            'linewidth': 2.5,
+            'markersize': 6,
+            'point_urls': [f"tooltip:{yr} % 2:1 & Above: {val:.1f}%" if val is not None else "" for yr, val in zip(years, pct_21s)]
+        },
+        {
+            'y_values': pct_fails,
+            'label': '% Fail',
+            'color': '#ef4444',
+            'marker': '^',
+            'linewidth': 2.5,
+            'markersize': 6,
+            'point_urls': [f"tooltip:{yr} % Fail: {val:.1f}%" if val is not None else "" for yr, val in zip(years, pct_fails)]
+        },
+    ]
+
+    return generate_line_chart(
+        x_labels=years,
+        series_list=series_list,
+        ylabel='Percentage / Value',
+        title='Programme Performance Trends',
+        figsize=(10.0, 4.5),
+        ylim=(-5, 105),
+        legend_loc='lower center',
+        legend_bbox_to_anchor=(0.5, 1.02),
+        legend_ncol=5,
+        fontsize_xticks=10,
+        fontsize_yticks=10,
+        fontsize_ylabel=11,
+        fontsize_title=12,
+        pad_title=35
+    )

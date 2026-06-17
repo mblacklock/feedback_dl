@@ -6,28 +6,22 @@ import json
 import hashlib
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
+from django.urls import reverse
 from django.conf import settings
 
 from core.mcrf_parser import parse_mcrf_workbook
 from core.utils.marks import build_module_cohort_weighted_finals, component_percentage, round_mark_pct
-from core.utils.charts import generate_cohort_histogram, inject_svg_tooltips
-
-import matplotlib
-# Use non-interactive Agg backend to avoid GUI threads/issues
-matplotlib.use('Agg')
-matplotlib.rcParams['svg.fonttype'] = 'none'
-import matplotlib.pyplot as plt
-import numpy as np
-
-
-def clean_svg(svg_str):
-    """Strips XML prolog to make Matplotlib's output safe for inline SVG nesting."""
-    if not svg_str:
-        return ""
-    match = re.search(r'<svg.*', svg_str, re.DOTALL)
-    if match:
-        return match.group(0)
-    return svg_str
+from core.utils.charts import (
+    generate_cohort_histogram,
+    inject_svg_tooltips,
+    clean_svg,
+    generate_programme_comparison_chart,
+    generate_normalised_overlay_chart,
+    generate_level_cohort_chart,
+    generate_sparkline_svg,
+    generate_module_trend_chart,
+    generate_programme_trend_chart,
+)
 
 
 COMPONENT_CATEGORIES = [
@@ -170,75 +164,7 @@ def calculate_module_analytics(scores, level):
     }
 
 
-def generate_programme_comparison_chart(modules_data):
-    """Generates an SVG bar chart comparing the mean marks of multiple modules."""
-    if not modules_data:
-        return ""
-    
-    codes = [m["module_code"] for m in modules_data]
-    means = [m["mean"] for m in modules_data]
-    
-    # Calculate chart width dynamically (0.6 inches per module code, minimum 12.0)
-    chart_width = max(12.0, 0.6 * len(codes))
-    fig, ax = plt.subplots(figsize=(chart_width, 4.0))
-    
-    level_colors = {
-        3: '#cbd5e1',
-        4: '#10b981',
-        5: '#3b82f6',
-        6: '#8b5cf6',
-        7: '#f59e0b',
-    }
-    colors_list = [level_colors.get(m.get("level", 4), '#3b82f6') for m in modules_data]
-    
-    x = np.arange(len(codes))
-    bars = ax.bar(x, means, width=0.4, color=colors_list, alpha=0.9, edgecolor='none', zorder=3)
-    
-    # Add level legend
-    import matplotlib.patches as mpatches
-    present_levels = sorted(list(set(m.get("level", 4) for m in modules_data)))
-    level_labels = {
-        3: 'Level 3',
-        4: 'Level 4',
-        5: 'Level 5',
-        6: 'Level 6',
-        7: 'Level 7',
-    }
-    legend_handles = []
-    for lvl in present_levels:
-        color = level_colors.get(lvl, '#3b82f6')
-        label = level_labels.get(lvl, f'Level {lvl}')
-        legend_handles.append(mpatches.Patch(color=color, label=label))
-    
-    if legend_handles:
-        ax.legend(handles=legend_handles, loc='upper right', frameon=True, facecolor='white', edgecolor='#e2e8f0', fontsize=9.0)
-    
-    # Set tooltips for each bar
-    for bar, code, mean_val in zip(bars, codes, means):
-        bar.set_url(f"tooltip:{code}: {mean_val:.1f}% mean")
-    
-    ax.set_ylabel('Mean Score (%)', color='#475569', size=11, fontfamily='DejaVu Sans')
-    ax.set_xticks(x)
-    ax.set_xticklabels(codes, color='#475569', size=10, fontfamily='DejaVu Sans', rotation=15, ha='right')
-    ax.set_ylim(0, 100)
-    
-    ax.grid(True, axis='y', color='#e2e8f0', linestyle=':', linewidth=0.8, zorder=0)
-    ax.set_axisbelow(True)
-    
-    for spine in ['top', 'right', 'left']:
-        ax.spines[spine].set_visible(False)
-    ax.spines['bottom'].set_color('#cbd5e1')
-    
-    ax.tick_params(axis='both', which='both', length=0, colors='#475569', labelsize=10)
-    ax.set_facecolor('white')
-    fig.patch.set_facecolor('white')
-    
-    buf = io.BytesIO()
-    plt.savefig(buf, format='svg', bbox_inches='tight', transparent=False)
-    plt.close(fig)
-    
-    from core.utils.charts import inject_svg_tooltips
-    return clean_svg(inject_svg_tooltips(buf.getvalue().decode('utf-8')))
+
 
 
 def analytics_upload(request):
@@ -517,132 +443,47 @@ def analytics_confirm(request):
     })
 
 
-def generate_normalised_overlay_chart(modules_list):
-    """
-    Generates an SVG line chart overlaying module grade distributions.
-    Normalises cohort count to percentages.
-    """
-    if not modules_list:
-        return ""
-
-    bin_labels = ['AB', '0-9%', '10-19%', '20-29%', '30-39%', '40-49%', '50-59%', '60-69%', '70-79%', '80-89%', '90-100%']
-    x = np.arange(len(bin_labels))
-
-    fig, ax = plt.subplots(figsize=(10.0, 5.0))
-
-    colors = ['#4361ee', '#ff006e', '#3a0ca3', '#7209b7', '#4cc9f0', '#ff7a59', '#10b981', '#f59e0b', '#64748b']
-
-    for idx, m in enumerate(modules_list):
-        scores = m.get('scores', [])
-        if not scores:
-            continue
-        stats = calculate_module_analytics(scores, m.get('level', 4))
-        n = stats['cohort_size']
-        if n == 0:
-            continue
-
-        sb = stats['score_bins']
-        y_vals = []
-        y_vals.append((sb['absent'] / n) * 100.0)
-        for b_count in sb['bins']:
-            y_vals.append((b_count / n) * 100.0)
-
-        color = colors[idx % len(colors)]
-        lines = ax.plot(x, y_vals, label=m['module_code'], color=color, linewidth=2.0, marker='o', markersize=6, alpha=0.85, zorder=4)
-        for line in lines:
-            line.set_url(f"tooltip:{m['module_code']} - {m['module_title']}")
-
-        for xi, yi, bl in zip(x, y_vals, bin_labels):
-            point = ax.scatter(xi, yi, color=color, s=35, zorder=5)
-            point.set_url(f"tooltip:{m['module_code']} - {bl}: {yi:.1f}% of cohort")
-
-    ax.set_xticks(x)
-    ax.set_xticklabels(bin_labels, rotation=15, ha='right', fontsize=9.5)
-    ax.set_xlabel('Score Band / Status', color='#475569', size=12, fontweight='semibold')
-    ax.set_ylabel('% of Cohort', color='#475569', size=12, fontweight='semibold')
-    ax.set_ylim(-2, 105)
-
-    ax.grid(True, axis='y', color='#e2e8f0', linestyle='--', linewidth=0.8, zorder=0)
-    ax.set_axisbelow(True)
-
-    for spine in ax.spines.values():
-        spine.set_color('#cbd5e1')
-
-    ax.tick_params(axis='both', which='both', length=0, colors='#475569', labelsize=9.5)
-    ax.legend(loc='upper right', fontsize=9.5, frameon=True, facecolor='white', edgecolor='#e2e8f0')
-
-    buf = io.BytesIO()
-    plt.savefig(buf, format='svg', bbox_inches='tight', transparent=False)
-    plt.close(fig)
-
-    svg_str = buf.getvalue().decode('utf-8')
-    return inject_svg_tooltips(svg_str)
 
 
-def generate_level_cohort_chart(level_data):
-    """
-    Generates an SVG bar chart comparing grade distributions across academic levels.
-    """
-    if not level_data:
-        return ""
 
-    level_data = sorted(level_data, key=lambda x: x['level'])
+def normalize_snapshot(snap):
+    """Standardizes keys between session modules and snapshot JSON files."""
+    normalized_modules = []
+    for m in snap.get('modules', []):
+        code = m.get('code') or m.get('module_code', '')
+        title = m.get('title') or m.get('module_title', '')
+        level = m.get('level', 4)
+        credits = m.get('credits') or m.get('detected_credits', 20)
+        mean = m.get('mean', 0.0)
+        std_dev = m.get('std_dev') if m.get('std_dev') is not None else m.get('std_dev', 0.0)
+        
+        n_val = m.get('n') if m.get('n') is not None else m.get('cohort_size', 0)
+        
+        grade_dist = m.get('grade_dist', {})
+        pct_1st = grade_dist.get('pct_1st') if grade_dist.get('pct_1st') is not None else m.get('pct_1st', 0.0)
+        pct_fail = grade_dist.get('pct_fail') if grade_dist.get('pct_fail') is not None else m.get('pct_fail', 0.0)
+        pct_21_above = grade_dist.get('pct_21_above') if grade_dist.get('pct_21_above') is not None else m.get('pct_21_above', 0.0)
+        
+        normalized_modules.append({
+            'code': code,
+            'title': title,
+            'level': level,
+            'credits': credits,
+            'mean': mean,
+            'std_dev': std_dev,
+            'pct_1st': pct_1st,
+            'pct_fail': pct_fail,
+            'pct_21_above': pct_21_above,
+            'n': n_val
+        })
+    return {
+        'programme': snap.get('programme', '') or snap.get('programme_name', ''),
+        'year': snap.get('year', '') or snap.get('academic_year', ''),
+        'modules': normalized_modules
+    }
 
-    levels = [f"Level {item['level']}" for item in level_data]
-    pct_fail = [item.get('pct_fail', 0.0) for item in level_data]
-    pct_3rd = [item.get('pct_3rd', 0.0) for item in level_data]
-    pct_22 = [item.get('pct_22', 0.0) for item in level_data]
-    pct_21 = [item.get('pct_21', 0.0) for item in level_data]
-    pct_1st = [item.get('pct_1st', 0.0) for item in level_data]
 
-    x = np.arange(len(levels))
-    width = 0.15
 
-    fig, ax = plt.subplots(figsize=(8.0, 4.5))
-
-    fail_color = '#ef4444'
-    third_color = '#f59e0b'
-    two_two_color = '#8b5cf6'
-    two_one_color = '#3b82f6'
-    first_color = '#10b981'
-
-    rects1 = ax.bar(x - 2 * width, pct_fail, width, label='Fail', color=fail_color, alpha=0.9, zorder=3)
-    rects2 = ax.bar(x - width, pct_3rd, width, label='3rd Class', color=third_color, alpha=0.9, zorder=3)
-    rects3 = ax.bar(x, pct_22, width, label='2:2 Class', color=two_two_color, alpha=0.9, zorder=3)
-    rects4 = ax.bar(x + width, pct_21, width, label='2:1 Class', color=two_one_color, alpha=0.9, zorder=3)
-    rects5 = ax.bar(x + 2 * width, pct_1st, width, label='1st Class', color=first_color, alpha=0.9, zorder=3)
-
-    for bar, lvl in zip(rects1, levels):
-        bar.set_url(f"tooltip:{lvl} Fail: {bar.get_height():.1f}%")
-    for bar, lvl in zip(rects2, levels):
-        bar.set_url(f"tooltip:{lvl} 3rd Class: {bar.get_height():.1f}%")
-    for bar, lvl in zip(rects3, levels):
-        bar.set_url(f"tooltip:{lvl} 2:2 Class: {bar.get_height():.1f}%")
-    for bar, lvl in zip(rects4, levels):
-        bar.set_url(f"tooltip:{lvl} 2:1 Class: {bar.get_height():.1f}%")
-    for bar, lvl in zip(rects5, levels):
-        bar.set_url(f"tooltip:{lvl} 1st Class: {bar.get_height():.1f}%")
-
-    ax.set_ylabel('Percentage (%)', color='#475569', size=11, fontweight='semibold')
-    ax.set_xticks(x)
-    ax.set_xticklabels(levels, fontsize=10, fontweight='semibold')
-    ax.set_ylim(0, 105)
-
-    ax.grid(True, axis='y', color='#e2e8f0', linestyle='--', linewidth=0.8, zorder=0)
-    ax.set_axisbelow(True)
-
-    for spine in ax.spines.values():
-        spine.set_color('#cbd5e1')
-
-    ax.tick_params(axis='both', which='both', length=0, colors='#475569', labelsize=10)
-    ax.legend(loc='upper right', fontsize=9.5, frameon=True, facecolor='white', edgecolor='#e2e8f0')
-
-    buf = io.BytesIO()
-    plt.savefig(buf, format='svg', bbox_inches='tight', transparent=False)
-    plt.close(fig)
-
-    svg_str = buf.getvalue().decode('utf-8')
-    return inject_svg_tooltips(svg_str)
 
 
 def analytics_dashboard(request):
@@ -772,6 +613,161 @@ def analytics_dashboard(request):
                 'pct_21_above': stats['pct_21_above']
             })
 
+    # Historical Trends Processing
+    historical_snapshots = request.session.get('analytics_historical_snapshots', [])
+    trends_error = request.session.pop('trends_error', None)
+    
+    trends_data = None
+    if historical_snapshots:
+        # Create virtual snapshot for current cohort
+        current_modules = []
+        for m in modules_list:
+            stats = calculate_module_analytics(m.get('scores', []), m.get('level', 4))
+            current_modules.append({
+                'code': m['module_code'],
+                'title': m.get('module_title', ''),
+                'level': m.get('level', 4),
+                'credits': m.get('credits', 20),
+                'mean': stats['mean'],
+                'std_dev': stats['std_dev'],
+                'pct_1st': stats['pct_1st'],
+                'pct_fail': stats['pct_fail'],
+                'pct_21_above': stats['pct_21_above'],
+                'n': stats['cohort_size']
+            })
+        
+        current_snap = {
+            'programme': confirmed_data['programme_name'],
+            'year': confirmed_data['academic_year'],
+            'modules': current_modules
+        }
+        
+        all_snapshots = []
+        all_snapshots.append(normalize_snapshot(current_snap))
+        for snap in historical_snapshots:
+            all_snapshots.append(normalize_snapshot(snap))
+            
+        snap_by_year = {}
+        for snap in all_snapshots:
+            snap_by_year[snap['year']] = snap
+        
+        sorted_years = sorted(list(snap_by_year.keys()))
+        sorted_snapshots = [snap_by_year[yr] for yr in sorted_years]
+        
+        # 1. Programme-level summary metrics across years
+        years_list = []
+        overall_mean_list = []
+        overall_std_dev_list = []
+        overall_pct_1st_list = []
+        overall_pct_21_list = []
+        overall_pct_fail_list = []
+        
+        for snap in sorted_snapshots:
+            yr = snap['year']
+            snap_modules = snap['modules']
+            
+            total_n = sum(m['n'] for m in snap_modules)
+            if total_n > 0:
+                weighted_mean = sum(m['mean'] * m['n'] for m in snap_modules) / total_n
+                weighted_1st = sum(m['pct_1st'] * m['n'] for m in snap_modules) / total_n
+                weighted_21 = sum(m['pct_21_above'] * m['n'] for m in snap_modules) / total_n
+                weighted_fail = sum(m['pct_fail'] * m['n'] for m in snap_modules) / total_n
+                
+                pooled_variance = sum(m['n'] * ((m['std_dev'] ** 2) + ((m['mean'] - weighted_mean) ** 2)) for m in snap_modules) / total_n
+                weighted_std_dev = math.sqrt(pooled_variance)
+            else:
+                weighted_mean = 0.0
+                weighted_1st = 0.0
+                weighted_21 = 0.0
+                weighted_fail = 0.0
+                weighted_std_dev = 0.0
+                
+            years_list.append(yr)
+            overall_mean_list.append(weighted_mean)
+            overall_std_dev_list.append(weighted_std_dev)
+            overall_pct_1st_list.append(weighted_1st)
+            overall_pct_21_list.append(weighted_21)
+            overall_pct_fail_list.append(weighted_fail)
+            
+        programme_trend_svg = generate_programme_trend_chart(
+            years_list,
+            overall_mean_list,
+            overall_std_dev_list,
+            overall_pct_1st_list,
+            overall_pct_21_list,
+            overall_pct_fail_list
+        )
+        
+        # 2. Module trend table metrics
+        all_module_codes = set()
+        for snap in sorted_snapshots:
+            for m in snap['modules']:
+                if m['code']:
+                    all_module_codes.add(m['code'])
+                    
+        module_trends = []
+        for code in sorted(list(all_module_codes)):
+            history = {}
+            latest_title = ""
+            latest_level = 4
+            
+            for snap in sorted_snapshots:
+                yr = snap['year']
+                for m in snap['modules']:
+                    if m['code'] == code:
+                        history[yr] = {
+                            'mean': m['mean'],
+                            'std_dev': m['std_dev'],
+                            'pct_1st': m['pct_1st'],
+                            'pct_21_above': m['pct_21_above'],
+                            'pct_fail': m['pct_fail'],
+                            'n': m['n']
+                        }
+                        latest_title = m['title'] or latest_title
+                        latest_level = m.get('level', latest_level)
+            
+            mean_vals = [history[yr]['mean'] if yr in history else None for yr in sorted_years]
+            sparkline_svg = generate_sparkline_svg(mean_vals)
+            
+            details_chart_svg = ""
+            if len(history) >= 2:
+                details_chart_svg = generate_module_trend_chart(code, sorted_years, history)
+                
+            year_columns = []
+            for yr in sorted_years:
+                if yr in history:
+                    year_columns.append({
+                        'year': yr,
+                        'mean': history[yr]['mean'],
+                        'pct_1st': history[yr]['pct_1st'],
+                        'pct_fail': history[yr]['pct_fail'],
+                        'n': history[yr]['n'],
+                        'present': True
+                    })
+                else:
+                    year_columns.append({
+                        'year': yr,
+                        'present': False
+                    })
+                    
+            module_trends.append({
+                'code': code,
+                'title': latest_title,
+                'level': latest_level,
+                'year_columns': year_columns,
+                'sparkline_svg': sparkline_svg,
+                'details_chart_svg': details_chart_svg,
+                'has_history': len(history) >= 2
+            })
+            
+        trends_data = {
+            'years': sorted_years,
+            'programme_trend_svg': programme_trend_svg,
+            'module_trends': module_trends,
+            'raw_snapshots_count': len(historical_snapshots),
+            'colspan': len(sorted_years) * 3 + 3
+        }
+
     # Generate charts
     means_chart_svg = generate_programme_comparison_chart(modules_list)
     overlay_chart_svg = clean_svg(generate_normalised_overlay_chart(modules_list))
@@ -786,7 +782,9 @@ def analytics_dashboard(request):
         "level_chart_svg": level_chart_svg,
         "level_aggregates": level_aggregates,
         "component_categories": COMPONENT_CATEGORIES,
-        "has_outliers": has_outliers
+        "has_outliers": has_outliers,
+        "trends_data": trends_data,
+        "trends_error": trends_error
     })
 
 
@@ -827,3 +825,67 @@ def download_snapshot(request):
     filename = f"snapshot_{confirmed_data['programme_name'].replace(' ', '_')}_{confirmed_data['academic_year'].replace('/', '-')}.json"
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
+
+
+def upload_snapshots(request):
+    """Handles uploading of one or more historical snapshot JSON files."""
+    if request.method == "POST":
+        uploaded_files = request.FILES.getlist("snapshots")
+        if not uploaded_files:
+            request.session['trends_error'] = "No snapshot files were selected."
+            return redirect(f"{reverse('analytics_dashboard')}#trends")
+            
+        snapshots = request.session.get('analytics_historical_snapshots', [])
+        
+        errors = []
+        for f in uploaded_files:
+            try:
+                data = json.load(f)
+            except Exception as e:
+                errors.append(f"'{f.name}' is not a valid JSON file: {str(e)}")
+                continue
+                
+            if not isinstance(data, dict):
+                errors.append(f"'{f.name}' must be a JSON object.")
+                continue
+                
+            programme = data.get('programme') or data.get('programme_name')
+            year = data.get('year') or data.get('academic_year')
+            modules = data.get('modules')
+            
+            if not programme or not year or modules is None:
+                errors.append(f"'{f.name}' is missing required snapshot fields ('programme', 'year', 'modules').")
+                continue
+                
+            if not isinstance(modules, list):
+                errors.append(f"'{f.name}' modules field must be a list.")
+                continue
+                
+            try:
+                norm_snap = normalize_snapshot(data)
+                # Avoid inserting duplicate years if already exists in list
+                snapshots = [s for s in snapshots if s.get('year') != norm_snap['year']]
+                snapshots.append(norm_snap)
+            except Exception as e:
+                errors.append(f"Failed to normalize snapshot '{f.name}': {str(e)}")
+                
+        if errors:
+            request.session['trends_error'] = " ".join(errors)
+        else:
+            if 'trends_error' in request.session:
+                del request.session['trends_error']
+                
+        request.session['analytics_historical_snapshots'] = snapshots
+        request.session.modified = True
+        
+    return redirect(f"{reverse('analytics_dashboard')}#trends")
+
+
+def clear_snapshots(request):
+    """Clears all historical snapshots from the session."""
+    if 'analytics_historical_snapshots' in request.session:
+        del request.session['analytics_historical_snapshots']
+    if 'trends_error' in request.session:
+        del request.session['trends_error']
+    request.session.modified = True
+    return redirect(f"{reverse('analytics_dashboard')}#trends")
