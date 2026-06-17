@@ -4,11 +4,11 @@ class ThemeConfig(models.Model):
     name = models.CharField(max_length=100, default="Default Theme", unique=True)
     is_active = models.BooleanField(default=False)
     
-    # CSS Custom Property Variables (storing hex colors like #1a1a2e)
-    brand_primary = models.CharField(max_length=7, default="#1a1a2e", help_text="Hex color code (e.g. #1a1a2e)")
-    brand_primary_dark = models.CharField(max_length=7, default="#0f172a", help_text="Hex color code (e.g. #0f172a)")
-    brand_primary_light = models.CharField(max_length=7, default="#2e2e4a", help_text="Hex color code (e.g. #2e2e4a)")
-    brand_accent = models.CharField(max_length=7, default="#c8a951", help_text="Hex color code (e.g. #c8a951)")
+    # CSS Custom Property Variables (storing hex colours like #1a1a2e)
+    brand_primary = models.CharField(max_length=7, default="#1a1a2e", help_text="Hex colour code (e.g. #1a1a2e)")
+    brand_primary_dark = models.CharField(max_length=7, default="#0f172a", help_text="Hex colour code (e.g. #0f172a)")
+    brand_primary_light = models.CharField(max_length=7, default="#2e2e4a", help_text="Hex colour code (e.g. #2e2e4a)")
+    brand_accent = models.CharField(max_length=7, default="#c8a951", help_text="Hex colour code (e.g. #c8a951)")
 
     def save(self, *args, **kwargs):
         if self.is_active:

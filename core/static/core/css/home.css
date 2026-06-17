@@ -1,0 +1,56 @@
+/* ============================================================
+   home.css
+   Page-specific styles for the Feedback Portal Home dashboard.
+   ============================================================ */
+
+.portal-header {
+    margin: 0 auto 1.5rem;
+    max-width: 760px;
+    text-align: center;
+}
+
+.portal-header h1 {
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+}
+
+.portal-header p {
+    color: #5b6578;
+    font-size: 1.08rem;
+    margin-bottom: 0;
+}
+
+.tool-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    margin: 2rem 0;
+}
+
+.tool-card {
+    background: #fff;
+    border: 1px solid #dde4ef;
+    border-radius: 8px;
+    box-shadow: 0 8px 22px rgba(23, 32, 51, 0.06);
+    display: flex;
+    flex-direction: column;
+    min-height: 210px;
+    padding: 1.25rem;
+}
+
+.tool-card h2 {
+    font-size: 1.18rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+}
+
+.tool-card p {
+    color: #5b6578;
+    flex: 1;
+    margin-bottom: 1.25rem;
+}
+
+.tool-card .btn {
+    align-self: flex-start;
+}

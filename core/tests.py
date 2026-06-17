@@ -44,7 +44,7 @@ class ThemeConfigViewTests(TestCase):
     def test_get_settings_page(self):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Theme Settings & Customizer")
+        self.assertContains(response, "Theme Settings & Customiser")
         self.assertContains(response, "System Default Theme")
 
     def test_post_create_theme(self):

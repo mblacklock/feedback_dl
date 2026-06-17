@@ -6,114 +6,7 @@
 {% block extra_css %}
 <style>
     {% inline_static "core/css/brand_design.css" %}
-    
-    .mapping-card {
-        background: #ffffff;
-        border-radius: 16px;
-        padding: 30px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.02);
-        border: 1px solid var(--brand-border-light);
-    }
-    
-    .mapping-grid {
-        display: grid;
-        grid-template-columns: 1fr auto 1fr auto;
-        gap: 1.5rem;
-        align-items: end;
-        margin-bottom: 1.5rem;
-        padding-bottom: 1.5rem;
-        border-bottom: 1px dashed var(--brand-border-light);
-    }
-    
-    .mapping-arrow {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 48px;
-        padding: 0 0.5rem;
-        color: var(--brand-muted);
-    }
-    
-    .mapping-group {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-    
-    .mapping-group label {
-        font-size: 0.85rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-    
-    .label-marks {
-        color: #10b981;
-    }
-    
-    .label-bb {
-        color: #3b82f6;
-    }
-    
-    select {
-        padding: 0.75rem;
-        border-radius: 8px;
-        border: 1px solid var(--brand-border);
-        background-color: #f8fafc;
-        font-family: inherit;
-        font-size: 0.875rem;
-        color: var(--brand-slate-dark);
-        cursor: pointer;
-        outline: none;
-        transition: border-color 0.2s, box-shadow 0.2s;
-        appearance: none;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: right 0.75rem center;
-        background-size: 1rem;
-        padding-right: 2.5rem;
-    }
-    
-    select:focus {
-        border-color: var(--brand-primary);
-        box-shadow: 0 0 0 3px rgba(26, 26, 46, 0.1);
-    }
-    
-    .btn-icon {
-        background: none;
-        border: none;
-        cursor: pointer;
-        font-size: 1.125rem;
-        padding: 0.75rem;
-        color: #ef4444;
-        transition: opacity 0.2s, background-color 0.2s;
-        opacity: 0.7;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 48px;
-    }
-    
-    .btn-icon:hover {
-        opacity: 1;
-        background-color: #fef2f2;
-    }
-    
-    .btn-blue {
-        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-        border-color: #3b82f6;
-    }
-    
-    .btn-blue:hover {
-        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.25);
-        color: #eff6ff;
-    }
-    
-    .gradient-header h1, 
-    .gradient-header p {
-        color: white !important;
-    }
+    {% inline_static "marking_converters/css/converters.css" %}
 </style>
 {% endblock %}
  
@@ -148,7 +41,7 @@
                         <div class="row align-items-end g-4">
                             <div class="col-md-5">
                                 <div class="mapping-group">
-                                    <label for="local_id_col" class="label-marks">Local Marks Student ID Column</label>
+                                    <label for="local_id_col" class="label-marks-emerald">Local Marks Student ID Column</label>
                                     <select id="local_id_col" name="local_id_col" required>
                                         <option value="">Select a column...</option>
                                         {% for h in local_headers %}
@@ -188,7 +81,7 @@
                         <div id="grades-mapping-container">
                             <div class="mapping-grid mapping-row" data-index="0">
                                 <div class="mapping-group">
-                                    <label class="label-marks">Local Marks Column to Copy</label>
+                                    <label class="label-marks-emerald">Local Marks Column to Copy</label>
                                     <select class="marks-grade-select" name="map_local_0" required>
                                         <option value="">Select a column...</option>
                                         {% for h in local_headers %}

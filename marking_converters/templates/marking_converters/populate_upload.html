@@ -6,60 +6,7 @@
 {% block extra_css %}
 <style>
     {% inline_static "core/css/brand_design.css" %}
-    
-    .dropzone-container {
-        border: 2.5px dashed var(--brand-slate-light);
-        border-radius: 16px;
-        padding: 30px 20px;
-        text-align: center;
-        background-color: var(--brand-bg);
-        transition: all 0.25s ease-in-out;
-        cursor: pointer;
-        position: relative;
-        margin-bottom: 20px;
-    }
-    
-    .dropzone-container:hover,
-    .dropzone-container.dragover {
-        border-color: #10b981;
-        background-color: #f0fdf4;
-    }
-    
-    .upload-icon {
-        font-size: 2.5rem;
-        color: var(--brand-slate-light);
-        margin-bottom: 10px;
-        transition: color 0.2s;
-    }
-    
-    .dropzone-container:hover .upload-icon {
-        color: #10b981;
-    }
-    
-    .file-input {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        opacity: 0;
-        cursor: pointer;
-    }
-    
-    .btn-emerald {
-        background: linear-gradient(135deg, #047857 0%, #10b981 100%);
-        border-color: #10b981;
-    }
-    
-    .btn-emerald:hover {
-        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.25);
-        color: #f0fdf4;
-    }
-    
-    .gradient-header h1, 
-    .gradient-header p {
-        color: white !important;
-    }
+    {% inline_static "marking_converters/css/converters.css" %}
 </style>
 {% endblock %}
  
@@ -91,7 +38,7 @@
                     <div class="row mb-4">
                         <div class="col-md-6">
                             <h5 class="fw-bold mb-3 text-secondary small">1. LOCAL MARKS SPREADSHEET</h5>
-                            <div class="dropzone-container" id="dropzone-marks">
+                            <div class="dropzone-container dropzone-emerald" id="dropzone-marks">
                                 <div class="upload-icon">📝</div>
                                 <h6 class="fw-bold mb-1 file-heading">Drag and drop marks spreadsheet</h6>
                                 <p class="text-muted small mb-2 file-sub">or click to browse (.csv, .xlsx, .xls)</p>
@@ -101,7 +48,7 @@
                         
                         <div class="col-md-6">
                             <h5 class="fw-bold mb-3 text-secondary small">2. BLANK MCRF TEMPLATE</h5>
-                            <div class="dropzone-container" id="dropzone-mcrf">
+                            <div class="dropzone-container dropzone-emerald" id="dropzone-mcrf">
                                 <div class="upload-icon">🏫</div>
                                 <h6 class="fw-bold mb-1 file-heading">Drag and drop MCRF Template</h6>
                                 <p class="text-muted small mb-2 file-sub">or click to browse (.xlsx, .xls)</p>

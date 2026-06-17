@@ -1,0 +1,91 @@
+.simulated-sheet {
+    position: relative;
+}
+
+/* __ Floating Divider Hover Toggle __ */
+#floating-divider-handler {
+    position: absolute;
+    z-index: 100;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 20px;
+    margin-top: -10px;
+    transition: opacity 0.15s ease;
+}
+
+.floating-divider-line {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    height: 2px;
+    background: transparent;
+    border-top: 1.5px dashed var(--brand-primary);
+    z-index: 1;
+}
+
+.floating-divider-btn {
+    pointer-events: auto;
+    background: #ffffff;
+    color: var(--brand-primary);
+    border: 1.5px solid var(--brand-primary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 2px 12px;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    cursor: pointer;
+    z-index: 2;
+    transition: all 0.15s ease;
+}
+
+.floating-divider-btn:hover {
+    background: var(--brand-primary);
+    color: #ffffff;
+    transform: scale(1.05);
+}
+
+.floating-divider-btn.active {
+    background: #ef4444;
+    color: #ffffff;
+    border-color: #ef4444;
+}
+
+.floating-divider-btn.active:hover {
+    background: #dc2626;
+    border-color: #dc2626;
+}
+
+#floating-divider-handler.active .floating-divider-line {
+    border-top: 1.5px solid #cbd5e1;
+}
+
+/* __ Thick Border when Divider is On __ */
+.marks-table tr.has-divider-below td {
+    border-bottom: 2px solid #cbd5e1 !important;
+}
+
+
+
+/* __ Highlight Toggle Badge __ */
+.highlight-toggle-badge {
+    cursor: pointer;
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #cbd5e1;
+    font-size: 0.65rem;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.marks-table tr:hover .highlight-toggle-badge {
+    opacity: 1;
+}
+
+.marks-table tr.marks-section-header .highlight-toggle-badge {
+    background: var(--brand-primary);
+    color: #ffffff;
+    border-color: var(--brand-primary);
+    opacity: 1;
+}

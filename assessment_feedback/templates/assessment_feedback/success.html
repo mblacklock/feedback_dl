@@ -1,63 +1,11 @@
 {% extends "base.html" %}
+{% load static_helpers %}
 
 {% block title %}Generation Successful{% endblock %}
 
 {% block extra_css %}
 <style>
-    .success-card {
-        border-radius: 20px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
-        background: rgba(255, 255, 255, 0.9);
-        border: 1px solid rgba(255, 255, 255, 0.4);
-        overflow: hidden;
-    }
-    .gradient-header {
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        border-bottom: 4px solid #c8a951;
-        padding: 40px;
-        color: white;
-    }
-    .btn-premium-download {
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        color: white;
-        border: 1px solid #c8a951;
-        border-radius: 12px;
-        font-weight: 700;
-        transition: all 0.25s ease;
-        box-shadow: 0 4px 15px rgba(15, 23, 42, 0.2);
-    }
-    .btn-premium-download:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(200, 169, 81, 0.35);
-        color: #c8a951;
-        border-color: #c8a951;
-    }
-    .btn-secondary-download {
-        background: white;
-        color: #1e293b;
-        border: 2px solid #cbd5e1;
-        border-radius: 12px;
-        font-weight: 700;
-        transition: all 0.25s ease;
-    }
-    .btn-secondary-download:hover {
-        transform: translateY(-2px);
-        background: #f8fafc;
-        border-color: #94a3b8;
-        color: #0f172a;
-    }
-    .icon-wrapper {
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        background: rgba(116, 196, 118, 0.15);
-        color: #74c476;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 24px;
-        font-size: 40px;
-    }
+    {% inline_static "assessment_feedback/css/success.css" %}
 </style>
 {% endblock %}
 

@@ -9,28 +9,13 @@
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap"
         rel="stylesheet">
     <style>
-        /* Base Resets & Layout Envelope */
-        *,
-        *::before,
-        *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        {% inline_static "core/css/offline_sheet_base.css" %}
 
+        /* Report specific base overrides */
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            color: #1a1a2e;
-            font-size: 14px;
-            line-height: 1.5;
             background: #f0f2f5;
-            padding: 32px 16px;
         }
-
         .page {
-            max-width: 1100px;
-            margin: 0 auto;
-            background: #ffffff;
             border-radius: 16px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             overflow: hidden;
