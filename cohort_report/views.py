@@ -328,7 +328,7 @@ def render_cohort_report(request):
     if not context:
         return redirect("cohort_report_upload")
         
-    context["base_template"] = "rubric_generator/base.html"
+    context["base_template"] = "base.html"
     context["is_download"] = False
     context["show_download_button"] = True
     return render(request, "cohort_report/report.html", context)
