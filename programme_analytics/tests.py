@@ -597,3 +597,61 @@ class ProgrammeAnalyticsTests(TestCase):
         self.assertTrue(m_trend['has_history'])
         self.assertIn('<svg', m_trend['sparkline_svg'])
         self.assertIn('<svg', m_trend['details_chart_svg'])
+
+    def test_pass_fail_component_exclusion(self):
+        """Verify that components with 0% weight are excluded from components_stats and heatmap_cells."""
+        session = self.client.session
+        session["analytics_confirmed_data"] = {
+            "programme_name": "BEng Computer Science",
+            "academic_year": "2025/26",
+            "modules": [
+                {
+                    'module_code': 'COMP5034',
+                    'module_title': 'Object Oriented Programming',
+                    'level': 5,
+                    'scores': [80, 50, 30],
+                    'mean': 53.33,
+                    'median': 50.0,
+                    'std_dev': 20.5,
+                    'pct_1st': 33.3,
+                    'pct_21_above': 33.3,
+                    'pct_fail': 33.3,
+                    'cohort_size': 3,
+                    'components': [
+                        {
+                            'column': 'CW1 (100%)',
+                            'weight': 100,
+                            'scores': [80, 50, 30],
+                            'category': 'Individual CW'
+                        },
+                        {
+                            'column': 'PassFail (0%)',
+                            'weight': 0,
+                            'scores': [100, 100, 100],
+                            'category': 'Exam'
+                        }
+                    ]
+                }
+            ]
+        }
+        session.save()
+
+        url = reverse("analytics_dashboard")
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+
+        # Retrieve processed modules from the context
+        modules = resp.context["modules"]
+        self.assertEqual(len(modules), 1)
+        m = modules[0]
+
+        # 0% weight component should not be in components_stats
+        self.assertEqual(len(m['components_stats']), 1)
+        self.assertEqual(m['components_stats'][0]['column'], 'CW1 (100%)')
+
+        # 0% weight component should not contribute to heatmap cells (Exam category should be empty/None)
+        exam_cell = next(cell for cell in m['heatmap_cells'] if cell['category'] == 'Exam')
+        self.assertIsNone(exam_cell['val'])
+
+        cw_cell = next(cell for cell in m['heatmap_cells'] if cell['category'] == 'Individual CW')
+        self.assertIsNotNone(cw_cell['val'])

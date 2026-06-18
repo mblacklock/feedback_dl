@@ -58,6 +58,5 @@ A programme-level analytics app that aggregates data across multiple modules to 
 
 ### 📅 Phase 3: Year-on-Year Trends
 - [x] Downloadable snapshot JSON containing module-level aggregates only (no student data)
-  - Snapshot format: `{ programme, year, modules: [{ code, level, mean, std_dev, grade_dist, n }] }`
-- [ ] Allow uploading previous snapshots alongside new data to compare current cohort against historical trends
+- [x] Allow uploading previous snapshots alongside new data to compare current cohort against historical trends
 - [x] Include programme and year identifiers in all data structures

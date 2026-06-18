@@ -523,6 +523,8 @@ def analytics_dashboard(request):
         components_stats = []
         comp_names_map = m.get('comp_names_map', {})
         for comp in m.get('components', []):
+            if comp.get("weight", 0) == 0:
+                continue
             comp_scores = comp.get('scores', [])
             if comp_scores:
                 comp_stats = calculate_module_analytics(comp_scores, m['level'])
@@ -551,7 +553,7 @@ def analytics_dashboard(request):
         for cat in COMPONENT_CATEGORIES:
             comp_means = []
             for comp in m.get('components', []):
-                if comp.get('category') == cat:
+                if comp.get('category') == cat and comp.get("weight", 0) > 0:
                     comp_scores = comp.get('scores', [])
                     if comp_scores:
                         comp_means.append(sum(comp_scores) / len(comp_scores))

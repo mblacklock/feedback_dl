@@ -282,6 +282,8 @@ def get_report_context(request):
     cohort_weighted_finals = build_module_cohort_weighted_finals(uploaded_data, components)
         
     for comp in components:
+        if comp.get("weight", 0) == 0:
+            continue
         col_name = comp["column"]
         scores = [round_mark_pct(component_percentage(row, comp)) for row in uploaded_data]
         stats = compute_stats(scores, degree_level=degree_level)

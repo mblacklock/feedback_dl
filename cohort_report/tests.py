@@ -255,3 +255,31 @@ class CohortReportTests(TestCase):
             "Timed online examination"
         )
 
+    def test_pass_fail_component_exclusion(self):
+        """Verify that components with 0% weight are excluded from the cohort report's components_stats."""
+        session = self.client.session
+        session["cohort_headers"] = ["Student ID", "Student Name", "CW1 - Mark", "PassFail - Mark"]
+        session["cohort_uploaded_data"] = [
+            {"Student ID": "w12345678", "Student Name": "Alice Smith", "CW1 - Mark": 75, "PassFail - Mark": 100},
+            {"Student ID": "12345679/2", "Student Name": "Bob Jones", "CW1 - Mark": 45, "PassFail - Mark": 100},
+        ]
+        session["cohort_mappings"] = {
+            "degree_level": "BEng",
+            "module_code": "COMP3002",
+            "module_title": "Advanced Engineering Software",
+            "components": [
+                {"column": "CW1 - Mark", "max_marks": 100, "weight": 100, "type": "numeric"},
+                {"column": "PassFail - Mark", "max_marks": 100, "weight": 0, "type": "numeric"}
+            ]
+        }
+        session.save()
+
+        url = reverse("cohort_report_results")
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+
+        components_stats = resp.context["components_stats"]
+        # The 0% weight component should be excluded from components_stats
+        self.assertEqual(len(components_stats), 1)
+        self.assertEqual(components_stats[0]["column"], "CW1 - Mark")
+
