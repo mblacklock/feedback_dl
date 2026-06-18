@@ -283,3 +283,37 @@ class CohortReportTests(TestCase):
         self.assertEqual(len(components_stats), 1)
         self.assertEqual(components_stats[0]["column"], "CW1 - Mark")
 
+    def test_pdf_mcrf_cohort_report(self):
+        """Verify that a PDF MCRF file can be uploaded and processed in the cohort report app."""
+        import os
+        from django.conf import settings
+        
+        pdf_path = os.path.join(settings.BASE_DIR, "sample_mcrf.pdf")
+        self.assertTrue(os.path.exists(pdf_path), f"PDF file not found at: {pdf_path}")
+        
+        with open(pdf_path, "rb") as f:
+            pdf_bytes = f.read()
+            
+        uploaded_file = SimpleUploadedFile(
+            "sample_mcrf.pdf",
+            pdf_bytes,
+            content_type="application/pdf"
+        )
+        
+        url = reverse("cohort_report_upload")
+        # Post the PDF file
+        resp = self.client.post(url, {"file": uploaded_file})
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(resp.url, reverse("cohort_report_confirm"))
+        
+        # Verify session mappings populated
+        session = self.client.session
+        self.assertIn("cohort_headers", session)
+        self.assertIn("cohort_uploaded_data", session)
+        self.assertIn("cohort_mappings", session)
+        self.assertEqual(session["cohort_mappings"]["module_code"], "KB7071")
+        self.assertEqual(session["cohort_mappings"]["module_title"], "Wind, Photovoltaic and Hybrid Renewable Energy Systems")
+        self.assertEqual(session["cohort_mappings"]["year"], "2025/26")
+        self.assertEqual(session["cohort_mappings"]["period"], "SEM1")
+        self.assertEqual(session["cohort_mappings"]["occurrence"], "BNN/FNN")
+

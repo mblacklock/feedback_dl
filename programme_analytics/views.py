@@ -183,7 +183,7 @@ def analytics_upload(request):
                 try:
                     with zipfile.ZipFile(uploaded_file) as z:
                         for name in z.namelist():
-                            if name.endswith(('.xls', '.xlsx')) and not name.startswith('__MACOSX/') and not name.split('/')[-1].startswith('.'):
+                            if name.endswith(('.xls', '.xlsx', '.pdf')) and not name.startswith('__MACOSX/') and not name.split('/')[-1].startswith('.'):
                                 try:
                                     with z.open(name) as f:
                                         file_content = f.read()
@@ -200,7 +200,7 @@ def analytics_upload(request):
                                     errors.append(f"Failed to parse '{name}' inside zip: {str(e)}")
                 except Exception as e:
                     errors.append(f"Failed to extract zip file '{filename}': {str(e)}")
-            elif filename.endswith(('.xls', '.xlsx')):
+            elif filename.endswith(('.xls', '.xlsx', '.pdf')):
                 try:
                     headers, data_rows, is_mcrf, module_info = parse_mcrf_workbook(uploaded_file)
                     parsed_modules.append({
@@ -212,7 +212,7 @@ def analytics_upload(request):
                 except Exception as e:
                     errors.append(f"Failed to parse '{filename}': {str(e)}")
             else:
-                errors.append(f"Unsupported file format for '{filename}'. Only .xls, .xlsx, and .zip files are supported.")
+                errors.append(f"Unsupported file format for '{filename}'. Only .xls, .xlsx, .pdf, and .zip files are supported.")
 
         if errors:
             return render(request, "programme_analytics/upload.html", {
@@ -221,7 +221,7 @@ def analytics_upload(request):
 
         if not parsed_modules:
             return render(request, "programme_analytics/upload.html", {
-                "error": "No valid MCRF spreadsheets were found in the uploaded files."
+                "error": "No valid MCRF spreadsheets or PDFs were found in the uploaded files."
             })
 
         modules_data = []

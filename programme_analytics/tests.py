@@ -655,3 +655,50 @@ class ProgrammeAnalyticsTests(TestCase):
 
         cw_cell = next(cell for cell in m['heatmap_cells'] if cell['category'] == 'Individual CW')
         self.assertIsNotNone(cw_cell['val'])
+
+    def test_pdf_mcrf_upload_and_parse(self):
+        """Verify that a PDF MCRF file can be uploaded and parsed successfully."""
+        import os
+        from django.conf import settings
+        
+        pdf_path = os.path.join(settings.BASE_DIR, "sample_mcrf.pdf")
+        self.assertTrue(os.path.exists(pdf_path), f"PDF file not found at: {pdf_path}")
+        
+        with open(pdf_path, "rb") as f:
+            pdf_bytes = f.read()
+            
+        uploaded_file = SimpleUploadedFile(
+            "sample_mcrf.pdf",
+            pdf_bytes,
+            content_type="application/pdf"
+        )
+        
+        url = reverse("analytics_upload")
+        # Post the PDF file
+        resp = self.client.post(url, {"files": [uploaded_file]})
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(resp.url, reverse("analytics_confirm"))
+        
+        # Verify uploaded modules session data
+        session = self.client.session
+        self.assertIn("analytics_uploaded_modules", session)
+        uploaded = session["analytics_uploaded_modules"]
+        self.assertEqual(len(uploaded), 1)
+        
+        m = uploaded[0]
+        self.assertEqual(m["module_code"], "KB7071")
+        self.assertEqual(m["module_title"], "Wind, Photovoltaic and Hybrid Renewable Energy Systems")
+        self.assertEqual(m["year"], "2025/26")
+        self.assertEqual(m["period"], "SEM1")
+        self.assertEqual(m["detected_level"], 7)
+        self.assertEqual(m["detected_credits"], 20)
+        
+        # Verify student scores were parsed
+        self.assertEqual(len(m["student_scores"]), 10)
+        
+        # Verify components
+        self.assertEqual(len(m["components"]), 2)
+        self.assertEqual(m["components"][0]["column"], "001 - 30% - Mark")
+        self.assertEqual(m["components"][0]["weight"], 30)
+        self.assertEqual(m["components"][1]["column"], "002 - 70% - Mark")
+        self.assertEqual(m["components"][1]["weight"], 70)
