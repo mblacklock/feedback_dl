@@ -43,7 +43,7 @@ class ProgrammeAnalyticsTests(TestCase):
                 'components': [
                     {
                         'column': 'CW1 (50%)',
-                        'weight': 50,
+                        'weight': 100,
                         'scores': [75, 45, 35],
                         'detected_category': 'Individual CW'
                     }
@@ -760,3 +760,129 @@ class ProgrammeAnalyticsTests(TestCase):
         self.assertNotIn("CW1 Grade", detected_columns)
         self.assertNotIn("Overall Total", detected_columns)
         self.assertEqual(len(detected_columns), 2)
+
+    def test_analytics_confirm_custom_weights_success(self):
+        """Verify that confirmation page successfully saves custom weights for non-MCRF modules and recalculates student scores/stats."""
+        session = self.client.session
+        session["analytics_uploaded_modules"] = [
+            {
+                'filename': 'generic_module.xlsx',
+                'module_code': 'COMP5001',
+                'module_title': 'Generic Programming',
+                'is_mcrf': False,
+                'detected_level': 5,
+                'scores': [60, 40],
+                'year': '2025/26',
+                'period': 'SEM1',
+                'occurrence': 'BNN',
+                'components': [
+                    {
+                        'column': 'CW1',
+                        'weight': 50,
+                        'scores': [80, 20],
+                        'detected_category': 'Individual CW'
+                    },
+                    {
+                        'column': 'CW2',
+                        'weight': 50,
+                        'scores': [40, 60],
+                        'detected_category': 'Individual CW'
+                    }
+                ],
+                'row_data_summary': [
+                    {
+                        'hashed_id': 'stud_1_hash',
+                        'component_scores': {'CW1': 80.0, 'CW2': 40.0}
+                    },
+                    {
+                        'hashed_id': 'stud_2_hash',
+                        'component_scores': {'CW1': 20.0, 'CW2': 60.0}
+                    }
+                ]
+            }
+        ]
+        session.save()
+
+        # Submit custom weights: CW1 = 30%, CW2 = 70%
+        # New expected student 1 score: 80 * 0.3 + 40 * 0.7 = 24 + 28 = 52.0% -> rounded 52
+        # New expected student 2 score: 20 * 0.3 + 60 * 0.7 = 6 + 42 = 48.0% -> rounded 48
+        url = reverse("analytics_confirm")
+        resp = self.client.post(url, {
+            "programme_name": "BEng Computer Science",
+            "academic_year": "2025/26",
+            "code_0": "COMP5001",
+            "title_0": "Generic Programming",
+            "level_0": "5",
+            "comp_weight_0_0": "30",
+            "comp_cat_0_0": "Individual CW",
+            "comp_weight_0_1": "70",
+            "comp_cat_0_1": "Individual CW"
+        })
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(resp.url, reverse("analytics_dashboard"))
+
+        confirmed = self.client.session["analytics_confirmed_data"]
+        self.assertEqual(confirmed["modules"][0]["components"][0]["weight"], 30)
+        self.assertEqual(confirmed["modules"][0]["components"][1]["weight"], 70)
+        self.assertEqual(confirmed["modules"][0]["student_scores"]["stud_1_hash"], 52)
+        self.assertEqual(confirmed["modules"][0]["student_scores"]["stud_2_hash"], 48)
+        self.assertEqual(confirmed["modules"][0]["mean"], 50.0) # (52 + 48) / 2 = 50.0
+
+    def test_analytics_confirm_custom_weights_validation_error(self):
+        """Verify that confirmation page shows error and returns 200 if weights do not sum to 100%."""
+        session = self.client.session
+        session["analytics_uploaded_modules"] = [
+            {
+                'filename': 'generic_module.xlsx',
+                'module_code': 'COMP5001',
+                'module_title': 'Generic Programming',
+                'is_mcrf': False,
+                'detected_level': 5,
+                'scores': [60, 40],
+                'year': '2025/26',
+                'period': 'SEM1',
+                'occurrence': 'BNN',
+                'components': [
+                    {
+                        'column': 'CW1',
+                        'weight': 50,
+                        'scores': [80, 20],
+                        'detected_category': 'Individual CW'
+                    },
+                    {
+                        'column': 'CW2',
+                        'weight': 50,
+                        'scores': [40, 60],
+                        'detected_category': 'Individual CW'
+                    }
+                ],
+                'row_data_summary': [
+                    {
+                        'hashed_id': 'stud_1_hash',
+                        'component_scores': {'CW1': 80.0, 'CW2': 40.0}
+                    }
+                ]
+            }
+        ]
+        session.save()
+
+        # Submit invalid weights: CW1 = 40%, CW2 = 50% (total = 90%)
+        url = reverse("analytics_confirm")
+        resp = self.client.post(url, {
+            "programme_name": "BEng Computer Science",
+            "academic_year": "2025/26",
+            "code_0": "COMP5001",
+            "title_0": "Generic Programming",
+            "level_0": "5",
+            "comp_weight_0_0": "40",
+            "comp_cat_0_0": "Individual CW",
+            "comp_weight_0_1": "50",
+            "comp_cat_0_1": "Individual CW"
+        })
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn("Total component weight for module", resp.context["error"])
+        
+        # Verify weight is updated/preserved in the session
+        uploaded = self.client.session["analytics_uploaded_modules"]
+        self.assertEqual(uploaded[0]["components"][0]["weight"], 40)
+        self.assertEqual(uploaded[0]["components"][1]["weight"], 50)

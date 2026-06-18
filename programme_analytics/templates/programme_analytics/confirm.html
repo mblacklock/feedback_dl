@@ -102,20 +102,31 @@
                                         <div class="p-3 rounded-3" style="background-color: #f8fafc; border: 1px solid #e2e8f0;">
                                             <div class="fw-bold text-slate-700 small mb-2">Assessment Component Mapping for {{ m.module_code }}:</div>
                                             <div class="row g-3">
-                                                {% for c in m.components %}
-                                                <div class="col-md-6">
-                                                    <div class="d-flex align-items-center justify-content-between p-2 rounded bg-white border border-light-subtle">
-                                                        <span class="text-slate-600 small fw-semibold text-truncate me-2" style="max-width: 60%;" title="{{ c.column }}">{{ c.column }} ({{ c.weight }}%)</span>
-                                                        <select name="comp_cat_{{ forloop.parentloop.counter0 }}_{{ forloop.counter0 }}" class="form-select form-select-sm rounded-pill px-3" style="width: 160px;" required>
-                                                            <option value="Individual CW" {% if c.detected_category == "Individual CW" %}selected{% endif %}>Individual CW</option>
-                                                            <option value="Exam" {% if c.detected_category == "Exam" %}selected{% endif %}>Exam</option>
-                                                            <option value="Presentation" {% if c.detected_category == "Presentation" %}selected{% endif %}>Presentation</option>
-                                                            <option value="Group CW" {% if c.detected_category == "Group CW" %}selected{% endif %}>Group CW</option>
-                                                            <option value="Portfolio" {% if c.detected_category == "Portfolio" %}selected{% endif %}>Portfolio</option>
-                                                        </select>
-                                                    </div>
-                                                </div>
-                                                {% endfor %}
+                                                 {% for c in m.components %}
+                                                 <div class="col-md-6">
+                                                     <div class="d-flex align-items-center justify-content-between p-2 rounded bg-white border border-light-subtle">
+                                                         <span class="text-slate-600 small fw-semibold text-truncate me-2" style="max-width: 45%;" title="{{ c.column }}">{{ c.column }}</span>
+                                                         <div class="d-flex align-items-center gap-2">
+                                                             {% if m.is_mcrf %}
+                                                                 <span class="badge bg-secondary px-2 py-1 rounded-pill small me-1">{{ c.weight }}%</span>
+                                                                 <input type="hidden" name="comp_weight_{{ forloop.parentloop.counter0 }}_{{ forloop.counter0 }}" value="{{ c.weight }}">
+                                                             {% else %}
+                                                                 <div class="input-group input-group-sm" style="width: 95px;">
+                                                                     <input type="number" name="comp_weight_{{ forloop.parentloop.counter0 }}_{{ forloop.counter0 }}" class="form-control text-center" value="{{ c.weight }}" min="0" max="100" required>
+                                                                     <span class="input-group-text px-1">%</span>
+                                                                 </div>
+                                                             {% endif %}
+                                                             <select name="comp_cat_{{ forloop.parentloop.counter0 }}_{{ forloop.counter0 }}" class="form-select form-select-sm rounded-pill px-2" style="width: 135px;" required>
+                                                                 <option value="Individual CW" {% if c.category == "Individual CW" or c.detected_category == "Individual CW" %}selected{% endif %}>Individual CW</option>
+                                                                 <option value="Exam" {% if c.category == "Exam" or c.detected_category == "Exam" %}selected{% endif %}>Exam</option>
+                                                                 <option value="Presentation" {% if c.category == "Presentation" or c.detected_category == "Presentation" %}selected{% endif %}>Presentation</option>
+                                                                 <option value="Group CW" {% if c.category == "Group CW" or c.detected_category == "Group CW" %}selected{% endif %}>Group CW</option>
+                                                                 <option value="Portfolio" {% if c.category == "Portfolio" or c.detected_category == "Portfolio" %}selected{% endif %}>Portfolio</option>
+                                                             </select>
+                                                         </div>
+                                                     </div>
+                                                 </div>
+                                                 {% endfor %}
                                             </div>
                                         </div>
                                     </td>

@@ -194,6 +194,7 @@ def analytics_upload(request):
                                             'filename': name.split('/')[-1],
                                             'headers': headers,
                                             'data_rows': data_rows,
+                                            'is_mcrf': is_mcrf,
                                             'module_info': module_info
                                         })
                                 except Exception as e:
@@ -207,6 +208,7 @@ def analytics_upload(request):
                         'filename': filename,
                         'headers': headers,
                         'data_rows': data_rows,
+                        'is_mcrf': is_mcrf,
                         'module_info': module_info
                     })
                 except Exception as e:
@@ -229,6 +231,7 @@ def analytics_upload(request):
             headers = pm['headers']
             data_rows = pm['data_rows']
             module_info = pm['module_info']
+            is_mcrf = pm.get('is_mcrf', False)
             
             components = []
             for h in headers:
@@ -258,6 +261,7 @@ def analytics_upload(request):
                             comp["weight"] = even_weight
 
             student_scores = {}
+            row_data_summary = []
             if components and data_rows:
                 scores = build_module_cohort_weighted_finals(data_rows, components)
                 # Store component scores
@@ -290,15 +294,26 @@ def analytics_upload(request):
                 salt = getattr(settings, "ANALYTICS_SALT", "default_programme_analytics_salt_for_gdpr_compliance")
                 for row in data_rows:
                     student_id = extract_student_id(row)
+                    hashed_id = ""
                     if student_id:
-                        row_weighted_pct = 0
-                        for comp in components:
-                            pct = component_percentage(row, comp)
-                            row_weighted_pct += (pct * comp["weight"]) / 100
-                        final_score = round_mark_pct(row_weighted_pct)
                         norm_id = student_id.strip().lower()
                         hashed_id = hashlib.sha256((salt + norm_id).encode()).hexdigest()
+                    
+                    row_weighted_pct = 0
+                    row_comp_scores = {}
+                    for comp in components:
+                        pct = component_percentage(row, comp)
+                        row_weighted_pct += (pct * comp["weight"]) / 100
+                        row_comp_scores[comp["column"]] = pct
+                    
+                    final_score = round_mark_pct(row_weighted_pct)
+                    if hashed_id:
                         student_scores[hashed_id] = final_score
+                    
+                    row_data_summary.append({
+                        "hashed_id": hashed_id,
+                        "component_scores": row_comp_scores
+                    })
             else:
                 scores = []
                 components_data = []
@@ -323,6 +338,7 @@ def analytics_upload(request):
                 'filename': pm['filename'],
                 'module_code': code,
                 'module_title': title,
+                'is_mcrf': is_mcrf,
                 'detected_level': detected_level,
                 'detected_credits': module_info.get("detected_credits", 20),
                 'student_scores': student_scores,
@@ -332,6 +348,7 @@ def analytics_upload(request):
                 'occurrence': module_info.get("occurrence", ""),
                 'components': components_data,
                 'comp_names_map': module_info.get("comp_names_map", {}),
+                'row_data_summary': row_data_summary,
             })
 
         # Sort modules by code alphabetically
@@ -382,21 +399,56 @@ def analytics_confirm(request):
                     error = "Module Code and Module Title cannot be empty."
                     break
 
-                scores = m.get('scores', [])
-                stats = calculate_module_analytics(scores, level)
-
-                # Process components and their selected normalized categories
+                # Process components and their selected normalized categories and weights
                 processed_components = []
+                total_weight = 0
                 for comp_idx, comp in enumerate(m.get('components', [])):
-                    cat = request.POST.get(f"comp_cat_{idx}_{comp_idx}", comp.get("detected_category", "Individual CW")).strip()
+                    cat = request.POST.get(f"comp_cat_{idx}_{comp_idx}", comp.get("category", comp.get("detected_category", "Individual CW"))).strip()
                     if cat not in COMPONENT_CATEGORIES:
                         cat = "Individual CW"
+                    try:
+                        weight = int(request.POST.get(f"comp_weight_{idx}_{comp_idx}", comp.get("weight", 0)))
+                    except (ValueError, TypeError):
+                        weight = 0
+                    total_weight += weight
                     processed_components.append({
                         "column": comp["column"],
-                        "weight": comp["weight"],
+                        "weight": weight,
                         "scores": comp.get("scores", []),
                         "category": cat
                     })
+
+                # Store the user's edits back into the temporary structure in case validation fails
+                m['components'] = processed_components
+                m['module_code'] = code
+                m['module_title'] = title
+                m['detected_level'] = level
+                m['detected_credits'] = credits
+
+                # Validate total weight sums to 100%
+                if processed_components and total_weight != 100:
+                    error = f"Total component weight for module '{code}' must sum to exactly 100% (currently {total_weight}%)."
+                    break
+
+                # Recalculate student final scores using the new weights
+                new_student_scores = {}
+                new_scores = []
+                row_summary = m.get('row_data_summary', [])
+                if row_summary:
+                    for row in row_summary:
+                        row_weighted_pct = 0
+                        for comp in processed_components:
+                            comp_pct = row["component_scores"].get(comp["column"], 0)
+                            row_weighted_pct += (comp_pct * comp["weight"]) / 100
+                        final_score = round_mark_pct(row_weighted_pct)
+                        new_scores.append(final_score)
+                        if row["hashed_id"]:
+                            new_student_scores[row["hashed_id"]] = final_score
+                else:
+                    new_student_scores = m.get('student_scores', {})
+                    new_scores = m.get('scores', [])
+
+                stats = calculate_module_analytics(new_scores, level)
 
                 confirmed_modules.append({
                     'filename': m['filename'],
@@ -405,8 +457,8 @@ def analytics_confirm(request):
                     'level': level,
                     'credits': credits,
                     'detected_credits': credits,
-                    'student_scores': m.get('student_scores', {}),
-                    'scores': scores,
+                    'student_scores': new_student_scores,
+                    'scores': new_scores,
                     'mean': stats['mean'],
                     'median': stats['median'],
                     'std_dev': stats['std_dev'],
@@ -420,7 +472,11 @@ def analytics_confirm(request):
                     'comp_names_map': m.get('comp_names_map', {}),
                 })
 
-            if not error:
+            if error:
+                # Save modified inputs to the session so they are preserved on re-render
+                request.session['analytics_uploaded_modules'] = uploaded_modules
+                request.session.modified = True
+            else:
                 # Sort confirmed modules by module code in case the user edited the codes
                 confirmed_modules.sort(key=lambda x: x['module_code'])
                 request.session['analytics_confirmed_data'] = {
