@@ -9,7 +9,7 @@ from django.http import HttpResponse
 from django.urls import reverse
 from django.conf import settings
 
-from core.mcrf_parser import parse_mcrf_workbook
+from core.mcrf_parser import parse_mcrf_workbook, is_assessment_component_column
 from core.utils.marks import build_module_cohort_weighted_finals, component_percentage, round_mark_pct
 from core.utils.charts import (
     generate_cohort_histogram,
@@ -232,12 +232,7 @@ def analytics_upload(request):
             
             components = []
             for h in headers:
-                hl = h.lower()
-                if any(kw in hl for kw in ["name", "student", "id", "number", "username"]):
-                    continue
-                if any(kw in hl for kw in ["total", "overall", "average", "final", "module"]):
-                    continue
-                if "mark" in hl:
+                if is_assessment_component_column(h):
                     components.append({
                         "column": h,
                         "max_marks": 100,

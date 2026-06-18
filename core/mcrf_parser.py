@@ -30,6 +30,34 @@ def clean_component_title(title):
     cleaned = re.sub(r'\s*\(\s*equivalent\s*\)', '', cleaned, flags=re.IGNORECASE)
     return cleaned.strip().rstrip(',').strip()
 
+def is_assessment_component_column(header_name):
+    """
+    Detects if a column header represents an assessment component mark.
+    Matches columns containing 'mark', 'score', 'result', 'pct', 'percent',
+    or common assessment keywords/codes (e.g. CW1, Exam, Quiz, Project, Assignment),
+    while excluding student info, grades (letter grades), and overall module totals/averages.
+    """
+    hl = str(header_name).lower()
+    
+    # Exclude student info, occurrences, dates, grades (letter/verbal grades), and overall totals
+    if any(kw in hl for kw in [
+        "name", "student", "id", "number", "username", "email",
+        "total", "overall", "average", "final", "module", "weighted",
+        "occ", "period", "level", "year", "credits", "date", "grade",
+        "gpa", "feedback", "comment", "marker", "tutor", "row"
+    ]):
+        return False
+        
+    # Match standard component headers containing keywords
+    if any(kw in hl for kw in ["mark", "score", "result", "pct", "percent", "pts", "points"]):
+        return True
+        
+    # Match common assessment prefixes/words (e.g. CW, Coursework, Exam, Test, Quiz, Project, Presentation, Portfolio)
+    if re.search(r'\b(?:cw|coursework|exam|test|quiz|proj|project|pres|presentation|port|portfolio|ass|assignment|viva|prac|practical|comp|component)\d*\b', hl):
+        return True
+        
+    return False
+
 def parse_mcrf_pdf(file_file):
     """
     Parses a PDF MCRF file using pypdf's layout-preserving text extraction.

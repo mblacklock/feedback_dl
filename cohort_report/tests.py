@@ -4,6 +4,7 @@ import math
 from django.test import TestCase
 from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
+from unittest.mock import patch
 
 from core.mcrf_parser import parse_mcrf_workbook
 from cohort_report.views import compute_stats
@@ -283,20 +284,41 @@ class CohortReportTests(TestCase):
         self.assertEqual(len(components_stats), 1)
         self.assertEqual(components_stats[0]["column"], "CW1 - Mark")
 
-    def test_pdf_mcrf_cohort_report(self):
+    @patch('core.mcrf_parser.pypdf.PdfReader')
+    def test_pdf_mcrf_cohort_report(self, mock_pdf_reader):
         """Verify that a PDF MCRF file can be uploaded and processed in the cohort report app."""
-        import os
-        from django.conf import settings
+        from unittest.mock import MagicMock
         
-        pdf_path = os.path.join(settings.BASE_DIR, "sample_mcrf.pdf")
-        self.assertTrue(os.path.exists(pdf_path), f"PDF file not found at: {pdf_path}")
+        mock_layout_text = (
+            "                                                   Faculty of Science and Environment\n"
+            "                                                   Module Marks Record Form (MCRF)\n"
+            "                                                                       First Sit\n"
+            "Module           KB7071 - Wind, Photovoltaic and Hybrid                              Tutor        Dr Maryam Bayati\n"
+            "                 Renewable Energy Systems\n"
+            "Year             2025/6                                                              Credits      20\n"
+            "Period           SEM1                                                                Level        7\n"
+            "Occurrence       BNN: September start - Newcastle upon Tyne                          Location     Newcastle upon Tyne\n"
+            "                 FNN: January start - Newcastle upon Tyne\n"
+            "Component                                                                                                                                       Weighting\n"
+            "001           Individual report (2,500 words or equivalent)                                                                                           30%\n"
+            "002           Individual report (3,500 words or equivalent)                                                                                           70%\n"
+            "\n"
+            "                                                                                001 - 30%     002 - 70%        Module\n"
+            "Student ID                                              Occ       Period      Mark  Grade   Mark   Grade   Mark   Grade\n"
+            "\n"
+            "11111111/1    SMITH, ALICE                              FNN       SEM1         60      P      77      P      72      P\n"
+            "\n"
+            "22222222/1    BROWN, ROBERT                             FNN       SEM1         79      P      76     PX      77      P\n"
+            "              WILLIAM JOHN\n"
+        )
         
-        with open(pdf_path, "rb") as f:
-            pdf_bytes = f.read()
-            
+        mock_page = MagicMock()
+        mock_page.extract_text.return_value = mock_layout_text
+        mock_pdf_reader.return_value.pages = [mock_page]
+        
         uploaded_file = SimpleUploadedFile(
             "sample_mcrf.pdf",
-            pdf_bytes,
+            b"%PDF-1.4\n%mocked pdf bytes",
             content_type="application/pdf"
         )
         

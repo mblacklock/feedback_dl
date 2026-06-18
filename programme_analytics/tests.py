@@ -4,6 +4,7 @@ import json
 from django.test import TestCase
 from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
+from unittest.mock import patch
 
 from programme_analytics.views import (
     infer_module_level,
@@ -656,20 +657,41 @@ class ProgrammeAnalyticsTests(TestCase):
         cw_cell = next(cell for cell in m['heatmap_cells'] if cell['category'] == 'Individual CW')
         self.assertIsNotNone(cw_cell['val'])
 
-    def test_pdf_mcrf_upload_and_parse(self):
-        """Verify that a PDF MCRF file can be uploaded and parsed successfully."""
-        import os
-        from django.conf import settings
+    @patch('core.mcrf_parser.pypdf.PdfReader')
+    def test_pdf_mcrf_upload_and_parse(self, mock_pdf_reader):
+        """Verify that a PDF MCRF file can be uploaded and parsed successfully using mocked layout text."""
+        from unittest.mock import MagicMock
         
-        pdf_path = os.path.join(settings.BASE_DIR, "sample_mcrf.pdf")
-        self.assertTrue(os.path.exists(pdf_path), f"PDF file not found at: {pdf_path}")
+        mock_layout_text = (
+            "                                                   Faculty of Science and Environment\n"
+            "                                                   Module Marks Record Form (MCRF)\n"
+            "                                                                       First Sit\n"
+            "Module           KB7071 - Wind, Photovoltaic and Hybrid                              Tutor        Dr John Smith\n"
+            "                 Renewable Energy Systems\n"
+            "Year             2025/6                                                              Credits      20\n"
+            "Period           SEM1                                                                Level        7\n"
+            "Occurrence       BNN: September start - Newcastle upon Tyne                          Location     Newcastle upon Tyne\n"
+            "                 FNN: January start - Newcastle upon Tyne\n"
+            "Component                                                                                                                                       Weighting\n"
+            "001           Individual report (2,500 words or equivalent)                                                                                           30%\n"
+            "002           Individual report (3,500 words or equivalent)                                                                                           70%\n"
+            "\n"
+            "                                                                                001 - 30%     002 - 70%        Module\n"
+            "Student ID                                              Occ       Period      Mark  Grade   Mark   Grade   Mark   Grade\n"
+            "\n"
+            "11111111/1    SMITH, ALICE                              FNN       SEM1         60      P      77      P      72      P\n"
+            "\n"
+            "22222222/1    BROWN, ROBERT                             FNN       SEM1         79      P      76     PX      77      P\n"
+            "              WILLIAM JOHN\n"
+        )
         
-        with open(pdf_path, "rb") as f:
-            pdf_bytes = f.read()
-            
+        mock_page = MagicMock()
+        mock_page.extract_text.return_value = mock_layout_text
+        mock_pdf_reader.return_value.pages = [mock_page]
+        
         uploaded_file = SimpleUploadedFile(
             "sample_mcrf.pdf",
-            pdf_bytes,
+            b"%PDF-1.4\n%mocked pdf bytes",
             content_type="application/pdf"
         )
         
@@ -694,7 +716,7 @@ class ProgrammeAnalyticsTests(TestCase):
         self.assertEqual(m["detected_credits"], 20)
         
         # Verify student scores were parsed
-        self.assertEqual(len(m["student_scores"]), 10)
+        self.assertEqual(len(m["student_scores"]), 2)
         
         # Verify components
         self.assertEqual(len(m["components"]), 2)
@@ -702,3 +724,39 @@ class ProgrammeAnalyticsTests(TestCase):
         self.assertEqual(m["components"][0]["weight"], 30)
         self.assertEqual(m["components"][1]["column"], "002 - 70% - Mark")
         self.assertEqual(m["components"][1]["weight"], 70)
+
+    def test_generic_marking_sheet_detection(self):
+        """Verify that generic marking sheets with headers like 'CW1' and 'Exam' are successfully auto-detected."""
+        # Create an Excel workbook in memory with generic headers
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.append(["Student ID", "Student Name", "CW1", "CW1 Grade", "Exam", "Overall Total"])
+        ws.append(["w12345678", "Alice Smith", 75, "A", 85, 80])
+        ws.append(["12345679/2", "Bob Jones", 45, "C", 55, 50])
+        
+        buf = io.BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+        
+        uploaded_file = SimpleUploadedFile(
+            "generic_marks.xlsx",
+            buf.read(),
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        
+        url = reverse("analytics_upload")
+        resp = self.client.post(url, {"files": [uploaded_file]})
+        self.assertEqual(resp.status_code, 302)
+        
+        # Verify component detection
+        session = self.client.session
+        uploaded = session["analytics_uploaded_modules"][0]
+        components = uploaded["components"]
+        
+        # 'CW1' and 'Exam' should be components, 'CW1 Grade' and 'Overall Total' should be excluded
+        detected_columns = [comp["column"] for comp in components]
+        self.assertIn("CW1", detected_columns)
+        self.assertIn("Exam", detected_columns)
+        self.assertNotIn("CW1 Grade", detected_columns)
+        self.assertNotIn("Overall Total", detected_columns)
+        self.assertEqual(len(detected_columns), 2)

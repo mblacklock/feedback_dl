@@ -4,7 +4,7 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 
-from core.mcrf_parser import parse_mcrf_workbook
+from core.mcrf_parser import parse_mcrf_workbook, is_assessment_component_column
 from core.utils.charts import generate_cohort_histogram
 from module_summary.views import parse_non_negative_int
 from core.utils.marks import (
@@ -41,12 +41,7 @@ def upload_cohort_data(request):
             
             # Infer Component Mark Columns
             for h in headers:
-                hl = h.lower()
-                if any(keyword in hl for keyword in ["name", "student", "id", "number", "username"]):
-                    continue
-                if "total" in hl or "overall" in hl or "average" in hl or "final" in hl or "module" in hl:
-                    continue
-                if "mark" in hl:
+                if is_assessment_component_column(h):
                     inferred_mappings["components"].append({
                         "column": h,
                         "max_marks": 100,

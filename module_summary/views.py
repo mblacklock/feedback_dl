@@ -10,7 +10,7 @@ from django.utils.text import slugify
 from core.utils.grade_bands import calculate_grade_bands, grade_for_percentage
 from core.utils.charts import generate_cohort_histogram
 from assessment_feedback.views import build_feedback_sheet_layout_rows
-from core.mcrf_parser import parse_mcrf_workbook
+from core.mcrf_parser import parse_mcrf_workbook, is_assessment_component_column
 
 
 from core.utils.student_id import format_student_id
@@ -138,15 +138,10 @@ def upload_mcrf(request):
                 
             # Infer Component Mark Columns (e.g. "CW1 - Mark", "Exam - Mark")
             for h in headers:
-                hl = h.lower()
-                # Exclude columns representing overall results, averages, or student identifiers
+                # Exclude columns representing student identifiers
                 if h == inferred_mappings["col_student_name"] or h == inferred_mappings["col_student_id"]:
                     continue
-                if "total" in hl or "overall" in hl or "average" in hl or "final" in hl or "module" in hl:
-                    continue
-                    
-                # Match ONLY columns containing "mark" (ignoring grade columns)
-                if "mark" in hl:
+                if is_assessment_component_column(h):
                     inferred_mappings["components"].append({
                         "column": h,
                         "max_marks": 100,  # Each component is always out of 100
