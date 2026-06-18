@@ -49,13 +49,32 @@
     <!-- Mean Comparison Chart -->
     <div class="col-12">
         <div class="card glass-card mb-0">
-            <div class="card-title-bar">
-                <h4 class="fw-bold mb-0 text-slate-800">Module Means Comparison</h4>
+            <div class="card-title-bar d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                <h4 class="fw-bold mb-0 text-slate-800" id="comparison-chart-title">Module Comparison Charts</h4>
+                <div class="btn-group btn-group-sm" role="group" aria-label="Chart metric selector">
+                    <button type="button" class="btn btn-primary active" id="btn-comp-mean" onclick="switchComparisonChart('mean', 'Module Means Comparison', this)">Mean Mark</button>
+                    <button type="button" class="btn btn-outline-primary" id="btn-comp-std_dev" onclick="switchComparisonChart('std_dev', 'Module Std. Dev. Comparison', this)">Std. Dev.</button>
+                    <button type="button" class="btn btn-outline-primary" id="btn-comp-pct_1st" onclick="switchComparisonChart('pct_1st', 'Module % 1st Class Comparison', this)">% 1st Class</button>
+                    <button type="button" class="btn btn-outline-primary" id="btn-comp-pct_21" onclick="switchComparisonChart('pct_21', 'Module % 2:1 &amp; Above Comparison', this)">% 2:1 &amp; Above</button>
+                    <button type="button" class="btn btn-outline-primary" id="btn-comp-pct_fail" onclick="switchComparisonChart('pct_fail', 'Module % Fail Comparison', this)">% Fail</button>
+                </div>
             </div>
-            <div class="card-body-pad d-flex align-items-center justify-content-center">
+            <div class="card-body-pad d-flex flex-column align-items-center justify-content-center">
                 {% if means_chart_svg %}
-                    <div class="comparison-chart-container w-100">
+                    <div id="comp-chart-mean" class="comp-chart-wrapper w-100 d-flex justify-content-center">
                         {{ means_chart_svg|safe }}
+                    </div>
+                    <div id="comp-chart-std_dev" class="comp-chart-wrapper w-100 d-none d-flex justify-content-center">
+                        {{ std_dev_chart_svg|safe }}
+                    </div>
+                    <div id="comp-chart-pct_1st" class="comp-chart-wrapper w-100 d-none d-flex justify-content-center">
+                        {{ pct_1st_chart_svg|safe }}
+                    </div>
+                    <div id="comp-chart-pct_21" class="comp-chart-wrapper w-100 d-none d-flex justify-content-center">
+                        {{ pct_21_chart_svg|safe }}
+                    </div>
+                    <div id="comp-chart-pct_fail" class="comp-chart-wrapper w-100 d-none d-flex justify-content-center">
+                        {{ pct_fail_chart_svg|safe }}
                     </div>
                 {% else %}
                     <p class="text-muted text-center py-5">No modules to display chart.</p>
@@ -579,6 +598,28 @@
             detailsRow.classList.add('d-none');
             parentRow.classList.remove('expanded');
         }
+    }
+
+    function switchComparisonChart(metric, titleText, btn) {
+        document.querySelectorAll('.comp-chart-wrapper').forEach(el => {
+            el.classList.add('d-none');
+        });
+        const target = document.getElementById('comp-chart-' + metric);
+        if (target) {
+            target.classList.remove('d-none');
+        }
+        const titleEl = document.getElementById('comparison-chart-title');
+        if (titleEl) {
+            titleEl.textContent = titleText;
+        }
+        btn.parentNode.querySelectorAll('.btn').forEach(b => {
+            b.classList.remove('active');
+            b.classList.remove('btn-primary');
+            b.classList.add('btn-outline-primary');
+        });
+        btn.classList.add('active');
+        btn.classList.remove('btn-outline-primary');
+        btn.classList.add('btn-primary');
     }
 
     document.addEventListener("DOMContentLoaded", function() {

@@ -347,13 +347,34 @@ def clean_svg(svg_str):
     return svg_str
 
 
-def generate_programme_comparison_chart(modules_data):
-    """Generates an SVG bar chart comparing the mean marks of multiple modules."""
+def generate_programme_comparison_chart(modules_data, metric='mean'):
+    """Generates an SVG bar chart comparing a specific metric across multiple modules."""
     if not modules_data:
         return ""
     
     codes = [m["module_code"] for m in modules_data]
-    means = [m["mean"] for m in modules_data]
+    
+    # Extract values and labels based on metric
+    if metric == 'std_dev':
+        values = [m.get("std_dev", 0.0) for m in modules_data]
+        ylabel = 'Standard Deviation'
+        tooltip_suffix = 'std dev'
+    elif metric == 'pct_1st':
+        values = [m.get("pct_1st", 0.0) for m in modules_data]
+        ylabel = '1st Class (%)'
+        tooltip_suffix = '% 1st Class'
+    elif metric == 'pct_21_above':
+        values = [m.get("pct_21_above", 0.0) for m in modules_data]
+        ylabel = '2:1 & Above (%)'
+        tooltip_suffix = '% 2:1 & above'
+    elif metric == 'pct_fail':
+        values = [m.get("pct_fail", 0.0) for m in modules_data]
+        ylabel = 'Fail (%)'
+        tooltip_suffix = '% Fail'
+    else:  # default to mean
+        values = [m.get("mean", 0.0) for m in modules_data]
+        ylabel = 'Mean Score (%)'
+        tooltip_suffix = '% mean'
     
     # Calculate chart width dynamically (0.6 inches per module code, minimum 12.0)
     chart_width = max(12.0, 0.6 * len(codes))
@@ -369,16 +390,30 @@ def generate_programme_comparison_chart(modules_data):
     colors_list = [level_colors.get(m.get("level", 4), '#3b82f6') for m in modules_data]
     
     x = np.arange(len(codes))
-    bars = ax.bar(x, means, width=0.4, color=colors_list, alpha=0.9, edgecolor='none', zorder=3)
+    bars = ax.bar(x, values, width=0.4, color=colors_list, alpha=0.9, edgecolor='none', zorder=3)
     
     # Set tooltips for each bar
-    for bar, code, mean_val in zip(bars, codes, means):
-        bar.set_url(f"tooltip:{code}: {mean_val:.1f}% mean")
+    for bar, code, val in zip(bars, codes, values):
+        if metric == 'std_dev':
+            bar.set_url(f"tooltip:{code}: {val:.1f} std dev")
+        elif metric == 'pct_1st':
+            bar.set_url(f"tooltip:{code}: {val:.1f}% 1st Class")
+        elif metric == 'pct_21_above':
+            bar.set_url(f"tooltip:{code}: {val:.1f}% 2:1 & above")
+        elif metric == 'pct_fail':
+            bar.set_url(f"tooltip:{code}: {val:.1f}% Fail")
+        else:
+            bar.set_url(f"tooltip:{code}: {val:.1f}% mean")
     
-    ax.set_ylabel('Mean Score (%)', color='#475569', size=11, fontfamily='DejaVu Sans')
+    ax.set_ylabel(ylabel, color='#475569', size=11, fontfamily='DejaVu Sans')
     ax.set_xticks(x)
     ax.set_xticklabels(codes, color='#475569', size=10, fontfamily='DejaVu Sans', rotation=15, ha='right')
-    ax.set_ylim(0, 100)
+    
+    if metric == 'std_dev':
+        max_v = max(values) if values else 0
+        ax.set_ylim(0, max(25, max_v * 1.15))
+    else:
+        ax.set_ylim(0, 100)
     
     ax.grid(True, axis='y', color='#e2e8f0', linestyle=':', linewidth=0.8, zorder=0)
     ax.set_axisbelow(True)

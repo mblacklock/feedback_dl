@@ -191,6 +191,12 @@ class ProgrammeAnalyticsTests(TestCase):
         self.assertContains(resp, "Component Heatmap")
         self.assertContains(resp, "Level Benchmarking")
         self.assertContains(resp, "<svg")
+        
+        # Verify the new metric charts are in the context
+        self.assertIn("std_dev_chart_svg", resp.context)
+        self.assertIn("pct_1st_chart_svg", resp.context)
+        self.assertIn("pct_21_chart_svg", resp.context)
+        self.assertIn("pct_fail_chart_svg", resp.context)
 
     def test_download_snapshot(self):
         """GET /programme-analytics/download/ exports anonymised JSON snapshot."""

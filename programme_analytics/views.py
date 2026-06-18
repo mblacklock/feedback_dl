@@ -822,7 +822,12 @@ def analytics_dashboard(request):
         }
 
     # Generate charts
-    means_chart_svg = generate_programme_comparison_chart(modules_list)
+    means_chart_svg = generate_programme_comparison_chart(modules_list, 'mean')
+    std_dev_chart_svg = generate_programme_comparison_chart(modules_list, 'std_dev')
+    pct_1st_chart_svg = generate_programme_comparison_chart(modules_list, 'pct_1st')
+    pct_21_chart_svg = generate_programme_comparison_chart(modules_list, 'pct_21_above')
+    pct_fail_chart_svg = generate_programme_comparison_chart(modules_list, 'pct_fail')
+    
     overlay_chart_svg = clean_svg(generate_normalised_overlay_chart(modules_list))
     level_chart_svg = clean_svg(generate_level_cohort_chart(level_aggregates))
 
@@ -831,6 +836,10 @@ def analytics_dashboard(request):
         "academic_year": confirmed_data['academic_year'],
         "modules": modules_list,
         "means_chart_svg": means_chart_svg,
+        "std_dev_chart_svg": std_dev_chart_svg,
+        "pct_1st_chart_svg": pct_1st_chart_svg,
+        "pct_21_chart_svg": pct_21_chart_svg,
+        "pct_fail_chart_svg": pct_fail_chart_svg,
         "overlay_chart_svg": overlay_chart_svg,
         "level_chart_svg": level_chart_svg,
         "level_aggregates": level_aggregates,
