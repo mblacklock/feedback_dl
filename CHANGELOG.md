@@ -6,6 +6,8 @@ All notable changes to the Feedback Portal tools will be documented here.
 
 ### Added
 - **Theme Customisation**: Added a database-backed dynamic theme customisation tool allowing users to create, edit, activate, and delete custom branding themes.
+- **Programme Analytics**: Introduced a new app that aggregates cohort data across multiple modules (via MCRF sheets or zip archives) to analyze programme-level distributions, heatmap module performance component marks, and check progression.
+- **Year-on-Year Trends**: Compare current cohorts against historical performance trends by uploading anonymized JSON snapshots to render multi-year trend charts, expandable module detail plots, and inline SVG sparklines with interactive point tooltips.
 
 ## [1.1.0] - 2026-06-11
 
