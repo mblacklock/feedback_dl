@@ -371,25 +371,6 @@ def generate_programme_comparison_chart(modules_data):
     x = np.arange(len(codes))
     bars = ax.bar(x, means, width=0.4, color=colors_list, alpha=0.9, edgecolor='none', zorder=3)
     
-    # Add level legend
-    import matplotlib.patches as mpatches
-    present_levels = sorted(list(set(m.get("level", 4) for m in modules_data)))
-    level_labels = {
-        3: 'Level 3',
-        4: 'Level 4',
-        5: 'Level 5',
-        6: 'Level 6',
-        7: 'Level 7',
-    }
-    legend_handles = []
-    for lvl in present_levels:
-        color = level_colors.get(lvl, '#3b82f6')
-        label = level_labels.get(lvl, f'Level {lvl}')
-        legend_handles.append(mpatches.Patch(color=color, label=label))
-    
-    if legend_handles:
-        ax.legend(handles=legend_handles, loc='upper right', frameon=True, facecolor='white', edgecolor='#e2e8f0', fontsize=9.0)
-    
     # Set tooltips for each bar
     for bar, code, mean_val in zip(bars, codes, means):
         bar.set_url(f"tooltip:{code}: {mean_val:.1f}% mean")
