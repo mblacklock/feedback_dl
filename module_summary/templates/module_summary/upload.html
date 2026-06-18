@@ -75,38 +75,17 @@
     </div>
 </div>
 
+{% block extra_js %}
+{% load static %}
+<script src="{% static 'core/js/dropzone.js' %}"></script>
 <script>
-    const dropzone = document.getElementById('dropzone');
-    const fileInput = document.getElementById('fileInput');
-
-    fileInput.addEventListener('change', () => {
-        if (fileInput.files.length > 0) {
-            dropzone.querySelector('h5').innerText = fileInput.files[0].name;
-            dropzone.querySelector('p').innerText = "MCRF file ready to upload";
-            dropzone.style.borderColor = "#4361ee";
-            dropzone.style.backgroundColor = "#eff6ff";
-        }
+    document.addEventListener("DOMContentLoaded", function() {
+        initDropzone({
+            dropzoneId: "dropzone",
+            fileInputId: "fileInput",
+            successTextSingle: "MCRF file ready to upload"
+        });
     });
-
-    ['dragenter', 'dragover'].forEach(eventName => {
-        dropzone.addEventListener(eventName, (e) => {
-            e.preventDefault();
-            dropzone.classList.add('dragover');
-        }, false);
-    });
-
-    dropzone.addEventListener('dragleave', (e) => {
-        e.preventDefault();
-        dropzone.classList.remove('dragover');
-    }, false);
-
-    dropzone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropzone.classList.remove('dragover');
-        if (e.dataTransfer.files.length > 0) {
-            fileInput.files = e.dataTransfer.files;
-            fileInput.dispatchEvent(new Event('change'));
-        }
-    }, false);
 </script>
+{% endblock %}
 {% endblock %}

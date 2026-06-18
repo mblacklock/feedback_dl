@@ -89,90 +89,21 @@
     </div>
 </div>
 
+{% block extra_js %}
+{% load static %}
+<script src="{% static 'core/js/dropzone.js' %}"></script>
 <script>
-    const dropzone = document.getElementById('dropzone');
-    const fileInput = document.getElementById('fileInput');
-    const fileListCard = document.getElementById('fileListCard');
-    const stagedFilesList = document.getElementById('stagedFilesList');
-    const clearAllBtn = document.getElementById('clearAllBtn');
-    
-    // Accumulator for multiple drag-and-drops and file inputs
-    let accumulatedFiles = new DataTransfer();
-
-    function updateUI() {
-        const filesCount = fileInput.files.length;
-        if (filesCount > 0) {
-            fileListCard.classList.remove('d-none');
-            stagedFilesList.innerHTML = '';
-            
-            for (let i = 0; i < filesCount; i++) {
-                const file = fileInput.files[i];
-                const li = document.createElement('li');
-                li.className = 'list-group-item d-flex justify-content-between align-items-center bg-transparent py-1 px-0 border-0 text-slate-700 small';
-                li.innerHTML = `
-                    <span>📄 ${file.name}</span>
-                    <span class="text-muted text-xs">(${Math.round(file.size / 1024)} KB)</span>
-                `;
-                stagedFilesList.appendChild(li);
-            }
-
-            if (filesCount === 1) {
-                dropzone.querySelector('h5').innerText = fileInput.files[0].name;
-                dropzone.querySelector('p').innerText = "1 file ready to upload";
-            } else {
-                dropzone.querySelector('h5').innerText = `${filesCount} files selected`;
-                dropzone.querySelector('p').innerText = "MCRF package ready to upload";
-            }
-            dropzone.style.borderColor = "#4361ee";
-            dropzone.style.backgroundColor = "#eff6ff";
-        } else {
-            fileListCard.classList.add('d-none');
-            stagedFilesList.innerHTML = '';
-            dropzone.querySelector('h5').innerText = "Drag and drop your MCRF spreadsheets or zip here";
-            dropzone.querySelector('p').innerText = "or click to browse your local files (you can select multiple files)";
-            dropzone.style.borderColor = "var(--brand-slate-light)";
-            dropzone.style.backgroundColor = "var(--brand-bg)";
-        }
-    }
-
-    fileInput.addEventListener('change', (e) => {
-        if (e.detail !== 'manual_update') {
-            for (let i = 0; i < fileInput.files.length; i++) {
-                accumulatedFiles.items.add(fileInput.files[i]);
-            }
-            fileInput.files = accumulatedFiles.files;
-        }
-        updateUI();
+    document.addEventListener("DOMContentLoaded", function() {
+        initDropzone({
+            dropzoneId: "dropzone",
+            fileInputId: "fileInput",
+            fileListCardId: "fileListCard",
+            stagedFilesListId: "stagedFilesList",
+            clearAllBtnId: "clearAllBtn",
+            successTextSingle: "1 file ready to upload",
+            successTextMultiple: "MCRF package ready to upload"
+        });
     });
-
-    clearAllBtn.addEventListener('click', () => {
-        accumulatedFiles = new DataTransfer();
-        fileInput.value = '';
-        updateUI();
-    });
-
-    ['dragenter', 'dragover'].forEach(eventName => {
-        dropzone.addEventListener(eventName, (e) => {
-            e.preventDefault();
-            dropzone.classList.add('dragover');
-        }, false);
-    });
-
-    dropzone.addEventListener('dragleave', (e) => {
-        e.preventDefault();
-        dropzone.classList.remove('dragover');
-    }, false);
-
-    dropzone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropzone.classList.remove('dragover');
-        if (e.dataTransfer.files.length > 0) {
-            for (let i = 0; i < e.dataTransfer.files.length; i++) {
-                accumulatedFiles.items.add(e.dataTransfer.files[i]);
-            }
-            fileInput.files = accumulatedFiles.files;
-            fileInput.dispatchEvent(new CustomEvent('change', { detail: 'manual_update' }));
-        }
-    }, false);
 </script>
 {% endblock %}
+

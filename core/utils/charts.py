@@ -16,7 +16,7 @@ def inject_svg_tooltips(svg_str):
     and converts them to <g> elements with nested <title> tooltips.
     """
     import re
-    pattern = r'<a\s+(?:xlink:)?href="tooltip:([^"]+)"\s*>\s*(.*?)\s*</a>'
+    pattern = r'<a\s+[^>]*?(?:xlink:)?href="tooltip:([^"]+)"[^>]*?>\s*(.*?)\s*</a>'
     
     def repl(match):
         tooltip_text = match.group(1)
@@ -469,14 +469,23 @@ def generate_line_chart(
             for line in lines:
                 line.set_url(s['url'])
                 
-        # Points scatter for individual tooltips
+        # Points markers for individual tooltips
         point_urls = s.get('point_urls', [])
         for xi, yi in zip(x, y_vals):
             if yi is not None:
-                point = ax.scatter(xi, yi, color=color, s=markersize * 5, zorder=5)
+                # Plot a single marker at (xi, yi) to act as a tooltip target
+                pt_line, = ax.plot(
+                    [xi], [yi],
+                    marker=marker,
+                    color=color,
+                    markersize=markersize,
+                    zorder=5,
+                    markeredgecolor=color,
+                    alpha=alpha
+                )
                 # If there are point-specific tooltips, apply them
                 if point_urls and xi < len(point_urls) and point_urls[xi]:
-                    point.set_url(point_urls[xi])
+                    pt_line.set_url(point_urls[xi])
                     
     ax.set_xticks(x)
     ax.set_xticklabels(x_labels, rotation=rotation, ha=ha, fontsize=fontsize_xticks)

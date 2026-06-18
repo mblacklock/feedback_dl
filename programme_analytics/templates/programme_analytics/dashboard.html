@@ -488,7 +488,11 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block extra_js %}
+{% load static %}
+<script src="{% static 'core/js/dropzone.js' %}"></script>
 <script>
     const moduleSearch = document.getElementById('moduleSearch');
     const flagFilter = document.getElementById('flagFilter');
@@ -589,90 +593,17 @@
         // Trends Drag and Drop Logic
         const trendsDropzone = document.getElementById('trendsDropzone');
         const trendsFileInput = document.getElementById('trendsFileInput');
-        const trendsFileListCard = document.getElementById('trendsFileListCard');
-        const trendsStagedFilesList = document.getElementById('trendsStagedFilesList');
-        const trendsClearAllBtn = document.getElementById('trendsClearAllBtn');
-
         if (trendsDropzone && trendsFileInput) {
-            let accumulatedTrends = new DataTransfer();
-
-            function updateTrendsUI() {
-                const filesCount = trendsFileInput.files.length;
-                if (filesCount > 0) {
-                    trendsFileListCard.classList.remove('d-none');
-                    trendsStagedFilesList.innerHTML = '';
-                    
-                    for (let i = 0; i < filesCount; i++) {
-                        const file = trendsFileInput.files[i];
-                        const li = document.createElement('li');
-                        li.className = 'list-group-item d-flex justify-content-between align-items-center bg-transparent py-1 px-0 border-0 text-slate-700 small';
-                        li.innerHTML = `
-                            <span>📄 ${file.name}</span>
-                            <span class="text-muted text-xs">(${Math.round(file.size / 1024)} KB)</span>
-                        `;
-                        trendsStagedFilesList.appendChild(li);
-                    }
-
-                    if (filesCount === 1) {
-                        trendsDropzone.querySelector('h5').innerText = trendsFileInput.files[0].name;
-                        trendsDropzone.querySelector('p').innerText = "1 snapshot ready to upload";
-                    } else {
-                        trendsDropzone.querySelector('h5').innerText = `${filesCount} snapshots selected`;
-                        trendsDropzone.querySelector('p').innerText = "Snapshots ready to upload";
-                    }
-                    trendsDropzone.style.borderColor = "#4361ee";
-                    trendsDropzone.style.backgroundColor = "#eff6ff";
-                } else {
-                    trendsFileListCard.classList.add('d-none');
-                    trendsStagedFilesList.innerHTML = '';
-                    trendsDropzone.querySelector('h5').innerText = "Drag and drop your historical snapshots here";
-                    trendsDropzone.querySelector('p').innerText = "or click to browse your JSON snapshot files (you can select multiple files)";
-                    trendsDropzone.style.borderColor = "var(--brand-slate-light)";
-                    trendsDropzone.style.backgroundColor = "var(--brand-bg)";
-                }
-            }
-
-            trendsFileInput.addEventListener('change', (e) => {
-                if (e.detail !== 'manual_update') {
-                    for (let i = 0; i < trendsFileInput.files.length; i++) {
-                        accumulatedTrends.items.add(trendsFileInput.files[i]);
-                    }
-                    trendsFileInput.files = accumulatedTrends.files;
-                }
-                updateTrendsUI();
+            initDropzone({
+                dropzoneId: "trendsDropzone",
+                fileInputId: "trendsFileInput",
+                fileListCardId: "trendsFileListCard",
+                stagedFilesListId: "trendsStagedFilesList",
+                clearAllBtnId: "trendsClearAllBtn",
+                pluralNoun: "snapshots",
+                successTextSingle: "1 snapshot ready to upload",
+                successTextMultiple: "Snapshots ready to upload"
             });
-
-            if (trendsClearAllBtn) {
-                trendsClearAllBtn.addEventListener('click', () => {
-                    accumulatedTrends = new DataTransfer();
-                    trendsFileInput.value = '';
-                    updateTrendsUI();
-                });
-            }
-
-            ['dragenter', 'dragover'].forEach(eventName => {
-                trendsDropzone.addEventListener(eventName, (e) => {
-                    e.preventDefault();
-                    trendsDropzone.classList.add('dragover');
-                }, false);
-            });
-
-            trendsDropzone.addEventListener('dragleave', (e) => {
-                e.preventDefault();
-                trendsDropzone.classList.remove('dragover');
-            }, false);
-
-            trendsDropzone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                trendsDropzone.classList.remove('dragover');
-                if (e.dataTransfer.files.length > 0) {
-                    for (let i = 0; i < e.dataTransfer.files.length; i++) {
-                        accumulatedTrends.items.add(e.dataTransfer.files[i]);
-                    }
-                    trendsFileInput.files = accumulatedTrends.files;
-                    trendsFileInput.dispatchEvent(new CustomEvent('change', { detail: 'manual_update' }));
-                }
-            }, false);
         }
     });
 </script>

@@ -68,48 +68,26 @@
     </div>
 </div>
 
+{% block extra_js %}
+{% load static %}
+<script src="{% static 'core/js/dropzone.js' %}"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        function setupDropzone(inputElId, dropzoneElId) {
-            const fileInput = document.getElementById(inputElId);
-            const dropzone = document.getElementById(dropzoneElId);
-            const heading = dropzone.querySelector('.file-heading');
-            const sub = dropzone.querySelector('.file-sub');
-            
-            fileInput.addEventListener('change', () => {
-                if (fileInput.files.length > 0) {
-                    heading.innerText = fileInput.files[0].name;
-                    sub.innerText = "File loaded and ready";
-                    dropzone.style.borderColor = "var(--brand-accent)";
-                    dropzone.style.backgroundColor = "#faf8f5";
-                }
-            });
-            
-            ['dragenter', 'dragover'].forEach(eventName => {
-                dropzone.addEventListener(eventName, (e) => {
-                    e.preventDefault();
-                    dropzone.classList.add('dragover');
-                    dropzone.style.borderColor = "var(--brand-accent)";
-                }, false);
-            });
-            
-            ['dragleave', 'drop'].forEach(eventName => {
-                dropzone.addEventListener(eventName, (e) => {
-                    e.preventDefault();
-                    dropzone.classList.remove('dragover');
-                }, false);
-            });
-            
-            dropzone.addEventListener('drop', (e) => {
-                if (e.dataTransfer.files.length > 0) {
-                    fileInput.files = e.dataTransfer.files;
-                    fileInput.dispatchEvent(new Event('change'));
-                }
-            }, false);
-        }
-        
-        setupDropzone('fileInputMarks', 'dropzone-marks');
-        setupDropzone('fileInputBB', 'dropzone-bb');
+    document.addEventListener("DOMContentLoaded", function() {
+        initDropzone({
+            dropzoneId: "dropzone-marks",
+            fileInputId: "fileInputMarks",
+            successTextSingle: "File loaded and ready",
+            activeBorderColor: "var(--brand-accent)",
+            activeBgColor: "#faf8f5"
+        });
+        initDropzone({
+            dropzoneId: "dropzone-bb",
+            fileInputId: "fileInputBB",
+            successTextSingle: "File loaded and ready",
+            activeBorderColor: "var(--brand-accent)",
+            activeBgColor: "#faf8f5"
+        });
     });
 </script>
+{% endblock %}
 {% endblock %}
