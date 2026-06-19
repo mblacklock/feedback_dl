@@ -305,8 +305,8 @@ class ProgrammeAnalyticsTests(TestCase):
         category = auto_detect_component_category(search_str)
         self.assertEqual(category, "Presentation")
 
-    def test_credits_and_student_scores_in_upload_session(self):
-        """Verify analytics_upload saves detected_credits and student_scores to session."""
+    def test_credits_in_upload_session(self):
+        """Verify analytics_upload saves detected_credits to session."""
         url = reverse("analytics_upload")
         uploaded_file = SimpleUploadedFile(
             "COMP5034.xlsx", 
@@ -318,21 +318,11 @@ class ProgrammeAnalyticsTests(TestCase):
         
         uploaded = self.client.session["analytics_uploaded_modules"][0]
         self.assertEqual(uploaded["detected_credits"], 20)
-        self.assertTrue(len(uploaded["student_scores"]) > 0)
-        
-        # Verify student hashes are 64-character hex strings (SHA-256)
-        first_hash = list(uploaded["student_scores"].keys())[0]
-        self.assertEqual(len(first_hash), 64)
 
     def test_analytics_confirm_saves_credits(self):
-        """Verify that analytics_confirm processes submitted credits and maps student_scores."""
+        """Verify that analytics_confirm processes submitted credits."""
         session = self.client.session
         session["analytics_uploaded_modules"] = self.sample_uploaded_modules
-        # populate simulated student_scores
-        session["analytics_uploaded_modules"][0]["student_scores"] = {
-            "test_hash_1": 80,
-            "test_hash_2": 50,
-        }
         session.save()
 
         url = reverse("analytics_confirm")
@@ -350,20 +340,10 @@ class ProgrammeAnalyticsTests(TestCase):
         confirmed = self.client.session["analytics_confirmed_data"]
         self.assertEqual(confirmed["modules"][0]["credits"], 15)
         self.assertEqual(confirmed["modules"][0]["detected_credits"], 15)
-        self.assertEqual(confirmed["modules"][0]["student_scores"]["test_hash_1"], 80)
 
-    def test_credit_weighted_student_level_aggregation(self):
-        """Verify credit-weighted level aggregates calculations are correct."""
+    def test_level_aggregation(self):
+        """Verify level aggregates calculation correctly pools module scores at that level."""
         session = self.client.session
-        # Setup a student "student_A" taking two modules:
-        # Module 1: 10 credits, score 80
-        # Module 2: 20 credits, score 50
-        # Expected credit-weighted average: (80*10 + 50*20) / (10+20) = 1800 / 30 = 60.0%
-        
-        # Setup student "student_B" taking one module:
-        # Module 2: 20 credits, score 50
-        # Expected credit-weighted average: 50.0%
-        
         session["analytics_confirmed_data"] = {
             "programme_name": "BEng Computer Science",
             "academic_year": "2025/26",
@@ -374,9 +354,6 @@ class ProgrammeAnalyticsTests(TestCase):
                     'level': 5,
                     'credits': 10,
                     'scores': [80],
-                    'student_scores': {
-                        "student_A_hash": 80
-                    },
                     'components': []
                 },
                 {
@@ -385,10 +362,6 @@ class ProgrammeAnalyticsTests(TestCase):
                     'level': 5,
                     'credits': 20,
                     'scores': [50, 50],
-                    'student_scores': {
-                        "student_A_hash": 50,
-                        "student_B_hash": 50
-                    },
                     'components': []
                 }
             ]
@@ -400,14 +373,12 @@ class ProgrammeAnalyticsTests(TestCase):
         self.assertEqual(resp.status_code, 200)
 
         level_aggregates = resp.context["level_aggregates"]
-        # Find level 5 aggregate
         lvl5_agg = next(item for item in level_aggregates if item["level"] == 5)
         
-        # Unique students at level 5: student_A and student_B (cohort size = 2)
-        self.assertEqual(lvl5_agg["cohort_size"], 2)
-        # student_A weighted avg: 60.0%, student_B: 50.0%
-        # Cohort mean: (60.0 + 50.0) / 2 = 55.0%
-        self.assertAlmostEqual(lvl5_agg["mean"], 55.0)
+        # Total scores at level 5: 3 grades
+        self.assertEqual(lvl5_agg["cohort_size"], 3)
+        # Cohort mean: (80 + 50 + 50) / 3 = 60.0%
+        self.assertAlmostEqual(lvl5_agg["mean"], 60.0)
 
     def test_normalize_snapshot(self):
         """Verify normalize_snapshot standardizes session modules and snapshot JSON formats."""
@@ -721,9 +692,6 @@ class ProgrammeAnalyticsTests(TestCase):
         self.assertEqual(m["detected_level"], 7)
         self.assertEqual(m["detected_credits"], 20)
         
-        # Verify student scores were parsed
-        self.assertEqual(len(m["student_scores"]), 2)
-        
         # Verify components
         self.assertEqual(len(m["components"]), 2)
         self.assertEqual(m["components"][0]["column"], "001 - 30% - Mark")
@@ -797,11 +765,9 @@ class ProgrammeAnalyticsTests(TestCase):
                 ],
                 'row_data_summary': [
                     {
-                        'hashed_id': 'stud_1_hash',
                         'component_scores': {'CW1': 80.0, 'CW2': 40.0}
                     },
                     {
-                        'hashed_id': 'stud_2_hash',
                         'component_scores': {'CW1': 20.0, 'CW2': 60.0}
                     }
                 ]
@@ -830,8 +796,6 @@ class ProgrammeAnalyticsTests(TestCase):
         confirmed = self.client.session["analytics_confirmed_data"]
         self.assertEqual(confirmed["modules"][0]["components"][0]["weight"], 30)
         self.assertEqual(confirmed["modules"][0]["components"][1]["weight"], 70)
-        self.assertEqual(confirmed["modules"][0]["student_scores"]["stud_1_hash"], 52)
-        self.assertEqual(confirmed["modules"][0]["student_scores"]["stud_2_hash"], 48)
         self.assertEqual(confirmed["modules"][0]["mean"], 50.0) # (52 + 48) / 2 = 50.0
 
     def test_analytics_confirm_custom_weights_validation_error(self):
@@ -864,7 +828,6 @@ class ProgrammeAnalyticsTests(TestCase):
                 ],
                 'row_data_summary': [
                     {
-                        'hashed_id': 'stud_1_hash',
                         'component_scores': {'CW1': 80.0, 'CW2': 40.0}
                     }
                 ]

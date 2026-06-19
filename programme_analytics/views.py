@@ -260,7 +260,6 @@ def analytics_upload(request):
                         else:
                             comp["weight"] = even_weight
 
-            student_scores = {}
             row_data_summary = []
             if components and data_rows:
                 scores = build_module_cohort_weighted_finals(data_rows, components)
@@ -290,28 +289,13 @@ def analytics_upload(request):
                         "detected_category": auto_detect_component_category(search_str)
                     })
                 
-                # Extract raw student IDs, normalize, hash and map to final scores
-                salt = getattr(settings, "ANALYTICS_SALT", "default_programme_analytics_salt_for_gdpr_compliance")
+                # Gather component percentage scores per row for recalculation on confirmation page
                 for row in data_rows:
-                    student_id = extract_student_id(row)
-                    hashed_id = ""
-                    if student_id:
-                        norm_id = student_id.strip().lower()
-                        hashed_id = hashlib.sha256((salt + norm_id).encode()).hexdigest()
-                    
-                    row_weighted_pct = 0
                     row_comp_scores = {}
                     for comp in components:
-                        pct = component_percentage(row, comp)
-                        row_weighted_pct += (pct * comp["weight"]) / 100
-                        row_comp_scores[comp["column"]] = pct
-                    
-                    final_score = round_mark_pct(row_weighted_pct)
-                    if hashed_id:
-                        student_scores[hashed_id] = final_score
+                        row_comp_scores[comp["column"]] = component_percentage(row, comp)
                     
                     row_data_summary.append({
-                        "hashed_id": hashed_id,
                         "component_scores": row_comp_scores
                     })
             else:
@@ -341,7 +325,6 @@ def analytics_upload(request):
                 'is_mcrf': is_mcrf,
                 'detected_level': detected_level,
                 'detected_credits': module_info.get("detected_credits", 20),
-                'student_scores': student_scores,
                 'scores': scores,
                 'year': module_info.get("year", ""),
                 'period': module_info.get("period", ""),
@@ -430,8 +413,7 @@ def analytics_confirm(request):
                     error = f"Total component weight for module '{code}' must sum to exactly 100% (currently {total_weight}%)."
                     break
 
-                # Recalculate student final scores using the new weights
-                new_student_scores = {}
+                # Recalculate module final scores using the new weights
                 new_scores = []
                 row_summary = m.get('row_data_summary', [])
                 if row_summary:
@@ -442,10 +424,7 @@ def analytics_confirm(request):
                             row_weighted_pct += (comp_pct * comp["weight"]) / 100
                         final_score = round_mark_pct(row_weighted_pct)
                         new_scores.append(final_score)
-                        if row["hashed_id"]:
-                            new_student_scores[row["hashed_id"]] = final_score
                 else:
-                    new_student_scores = m.get('student_scores', {})
                     new_scores = m.get('scores', [])
 
                 stats = calculate_module_analytics(new_scores, level)
@@ -457,7 +436,6 @@ def analytics_confirm(request):
                     'level': level,
                     'credits': credits,
                     'detected_credits': credits,
-                    'student_scores': new_student_scores,
                     'scores': new_scores,
                     'mean': stats['mean'],
                     'median': stats['median'],
@@ -620,23 +598,9 @@ def analytics_dashboard(request):
         modules_at_level = [m for m in modules_list if m.get('level') == lvl]
         lvl_modules_count = len(modules_at_level)
         
-        student_module_marks = {}
-        for m in modules_at_level:
-            m_credits = m.get('credits', 20)
-            m_student_scores = m.get('student_scores', {})
-            if not m_student_scores and m.get('scores'):
-                m_student_scores = {f"dummy_{m['module_code']}_{i}": score for i, score in enumerate(m['scores'])}
-            for stud_hash, mark in m_student_scores.items():
-                if stud_hash not in student_module_marks:
-                    student_module_marks[stud_hash] = []
-                student_module_marks[stud_hash].append((mark, m_credits))
-                
         lvl_student_marks = []
-        for stud_hash, marks_credits in student_module_marks.items():
-            total_weighted_marks = sum(mark * cred for mark, cred in marks_credits)
-            total_credits = sum(cred for mark, cred in marks_credits)
-            if total_credits > 0:
-                lvl_student_marks.append(total_weighted_marks / total_credits)
+        for m in modules_at_level:
+            lvl_student_marks.extend(m.get('scores', []))
                 
         if lvl_student_marks:
             stats = calculate_module_analytics(lvl_student_marks, lvl)

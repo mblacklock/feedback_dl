@@ -48,15 +48,29 @@ A programme-level analytics app that aggregates data across multiple modules to 
 - [x] DRY template partial refactoring (`_overall_performance_card.html`, `_components_breakdown_partial.html`)
 - [x] Interactive mouseover SVG tooltips using post-processed Matplotlib links
 
-### 🔄 Phase 2: Student Trajectories (Anonymised)
-- [x] Hash student IDs at upload using SHA-256 with a server-side salt:
-  - `hashlib.sha256((ANALYTICS_SALT + student_id).encode()).hexdigest()`
-- [x] Store only the hashed ID (never raw student IDs or PII) to ensure GDPR compliance
-- [x] Store `ANALYTICS_SALT` securely in environment variables/settings
-- [ ] Calculate and display cross-module performance per anonymised student
-- [ ] Flag student underperformance and sudden drops relative to their own average
-
-### 📅 Phase 3: Year-on-Year Trends
+### 📅 Phase 2: Year-on-Year Trends
 - [x] Downloadable snapshot JSON containing module-level aggregates only (no student data)
 - [x] Allow uploading previous snapshots alongside new data to compare current cohort against historical trends
 - [x] Include programme and year identifiers in all data structures
+- [ ] Clean up `programme_analytics`: remove individual student ID hashing and `row_data_summary` caching since it only needs module aggregates.
+
+---
+
+## 🔄 Feature: Student Analytics Django App
+
+A student-level progression and support app that connects performance records across modules using anonymised hashes.
+
+### ⚙️ App Setup & Integration
+- [ ] Create app: `python manage.py startapp student_analytics`
+- [ ] Register `student_analytics` in `INSTALLED_APPS` and core `urls.py` at `/student-analytics/`
+- [ ] Add card to landing page linking to `/student-analytics/`
+
+### 🔒 Anonymisation & Upload
+- [ ] Hash student IDs at upload using SHA-256 with a server-side salt
+- [ ] Store only the hashed ID (never raw student IDs or PII) to ensure GDPR compliance
+- [ ] Store `ANALYTICS_SALT` securely in environment settings
+
+### 📉 Student Progression & Warnings
+- [ ] Calculate and display cross-module performance per anonymised student (credit-weighted average)
+- [ ] Flag student underperformance and sudden drops relative to their own average
+- [ ] Provide search/filter by hashed ID to allow lookup of flagged trajectories
