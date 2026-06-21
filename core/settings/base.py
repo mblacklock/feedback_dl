@@ -38,7 +38,8 @@ INSTALLED_APPS += [
     'marking_sheet_builder',
     'module_summary',
     'cohort_report',
-    'programme_analytics'
+    'programme_analytics',
+    'longitudinal_analytics'
 ]
 
 MIDDLEWARE = [

@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% load static_helpers %}
+
+{% block title %}Confirm Module Mapping{% endblock %}
+
+{% block extra_css %}
+<style>
+    {% inline_static "core/css/brand_design.css" %}
+    {% inline_static "programme_analytics/css/analytics.css" %}
+    {% inline_static "core/css/portal_pages.css" %}
+</style>
+{% if active_theme %}
+<style>
+    :root {
+        --brand-primary: {{ active_theme.brand_primary }};
+        --brand-primary-dark: {{ active_theme.brand_primary_dark }};
+        --brand-primary-light: {{ active_theme.brand_primary_light }};
+        --brand-accent: {{ active_theme.brand_accent }};
+    }
+</style>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="row py-5">
+    <div class="col-lg-12 mx-auto">
+        <div class="card main-card">
+            <div class="gradient-header text-center">
+                <h2 class="fw-bold mb-2">Confirm Module &amp; Year Mapping</h2>
+                <p class="mb-0 opacity-75">Verify parsed module details, select academic levels, confirm component weightings, and adjust the academic year for each file.</p>
+            </div>
+
+            <div class="card-body p-5">
+                <form method="POST">
+                    {% csrf_token %}
+
+                    {% if error %}
+                    <div class="alert alert-danger rounded-3 mb-4" role="alert">
+                        <span class="fw-bold">Validation Error:</span> {{ error }}
+                    </div>
+                    {% endif %}
+
+                    <!-- Section 1: Module Mapping Table -->
+                    <h4 class="fw-bold mb-4">Module Definitions, Years &amp; Levels</h4>
+                    <p class="text-muted mb-3 small">Review and adjust the code, title, academic year, and level for each uploaded spreadsheet.</p>
+
+                    {% if has_level_7_occurrences %}
+                    <div class="card bg-light border border-light-subtle rounded-3 mb-4">
+                        <div class="card-body p-4 d-flex align-items-center justify-content-between">
+                            <div>
+                                <h5 class="fw-bold text-slate-800 mb-1">Level 7 Occurrence Handling</h5>
+                                <p class="text-muted small mb-0">Choose how to treat delivery occurrences (e.g. BNN, FNN) for Level 7 modules across all files.</p>
+                            </div>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="form-check mb-0">
+                                    <input class="form-check-input" type="radio" name="occ_handle_bulk" id="occ_bulk_merge" value="merge" checked>
+                                    <label class="form-check-label small text-slate-700 fw-bold" for="occ_bulk_merge">
+                                        Merge Occurrences (Default)
+                                    </label>
+                                </div>
+                                <div class="form-check mb-0">
+                                    <input class="form-check-input" type="radio" name="occ_handle_bulk" id="occ_bulk_sep" value="separate">
+                                    <label class="form-check-label small text-slate-700 fw-bold" for="occ_bulk_sep">
+                                        Treat Occurrences Separately
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="table-responsive mb-5">
+                        <table class="table mapping-table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Source File</th>
+                                    <th>Module Code</th>
+                                    <th>Module Title</th>
+                                    <th style="width: 140px;">Academic Year</th>
+                                    <th style="width: 100px;">Credits</th>
+                                    <th style="width: 180px;">Academic Level</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for m in modules %}
+                                <tr class="table-light-header">
+                                    <td class="text-muted small">{{ m.filename }}</td>
+                                    <td>
+                                        <input type="text" name="code_{{ forloop.counter0 }}" class="form-control form-control-sm rounded-3"
+                                            value="{{ m.module_code }}" required>
+                                    </td>
+                                    <td>
+                                        <input type="text" name="title_{{ forloop.counter0 }}" class="form-control form-control-sm rounded-3"
+                                            value="{{ m.module_title }}" required>
+                                    </td>
+                                    <td>
+                                        <input type="text" name="year_{{ forloop.counter0 }}" class="form-control form-control-sm rounded-3"
+                                            value="{{ m.detected_year }}" placeholder="e.g. 2024/25" required>
+                                    </td>
+                                    <td>
+                                        <input type="number" name="credits_{{ forloop.counter0 }}" class="form-control form-control-sm rounded-3"
+                                            value="{{ m.detected_credits|default:20 }}" min="0" required>
+                                    </td>
+                                    <td>
+                                        <select name="level_{{ forloop.counter0 }}" class="form-select form-select-sm rounded-3" required>
+                                            <option value="3" {% if m.detected_level == 3 %}selected{% endif %}>Level 3 (Foundation)</option>
+                                            <option value="4" {% if m.detected_level == 4 %}selected{% endif %}>Level 4 (Undergraduate Year 1)</option>
+                                            <option value="5" {% if m.detected_level == 5 %}selected{% endif %}>Level 5 (Undergraduate Year 2)</option>
+                                            <option value="6" {% if m.detected_level == 6 %}selected{% endif %}>Level 6 (Undergraduate Year 3)</option>
+                                            <option value="7" {% if m.detected_level == 7 %}selected{% endif %}>Level 7 (Postgraduate)</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                {% if m.components %}
+                                <tr>
+                                    <td colspan="6" class="ps-4 py-3 bg-white" style="border-bottom: 2px solid #e2e8f0;">
+                                        <div class="p-3 rounded-3" style="background-color: #f8fafc; border: 1px solid #e2e8f0;">
+                                            {% if m.detected_occurrence %}
+                                            <div class="mb-3 pb-2 small text-muted" style="border-bottom: 1px dashed #cbd5e1;">
+                                                <span class="fw-bold text-slate-700">Detected Occurrence:</span>
+                                                <span class="badge badge-secondary-premium text-dark ms-1">{{ m.detected_occurrence }}</span>
+                                            </div>
+                                            {% endif %}
+
+                                            <div class="fw-bold text-slate-700 small mb-2">Assessment Component Mapping for {{ m.module_code }}:</div>
+                                            <div class="row g-3">
+                                                 {% for c in m.components %}
+                                                 <div class="col-md-6">
+                                                     <div class="d-flex align-items-center justify-content-between p-2 rounded bg-white border border-light-subtle">
+                                                         <span class="text-slate-600 small fw-semibold text-truncate me-2" style="max-width: 45%;" title="{{ c.column }}">{{ c.column }}</span>
+                                                         <div class="d-flex align-items-center gap-2">
+                                                             {% if m.is_mcrf %}
+                                                                 <span class="badge badge-secondary-premium px-2 py-1 rounded-pill small me-1">{{ c.weight }}%</span>
+                                                                 <input type="hidden" name="comp_weight_{{ forloop.parentloop.counter0 }}_{{ forloop.counter0 }}" value="{{ c.weight }}">
+                                                             {% else %}
+                                                                 <div class="input-group input-group-sm" style="width: 95px;">
+                                                                     <input type="number" name="comp_weight_{{ forloop.parentloop.counter0 }}_{{ forloop.counter0 }}" class="form-control text-center" value="{{ c.weight }}" min="0" max="100" required>
+                                                                     <span class="input-group-text px-1">%</span>
+                                                                 </div>
+                                                             {% endif %}
+                                                             <select name="comp_cat_{{ forloop.parentloop.counter0 }}_{{ forloop.counter0 }}" class="form-select form-select-sm rounded-pill px-2" style="width: 135px;" required>
+                                                                 <option value="Individual CW" {% if c.detected_category == "Individual CW" %}selected{% endif %}>Individual CW</option>
+                                                                 <option value="Exam" {% if c.detected_category == "Exam" %}selected{% endif %}>Exam</option>
+                                                                 <option value="Presentation" {% if c.detected_category == "Presentation" %}selected{% endif %}>Presentation</option>
+                                                                 <option value="Group CW" {% if c.detected_category == "Group CW" %}selected{% endif %}>Group CW</option>
+                                                                 <option value="Portfolio" {% if c.detected_category == "Portfolio" %}selected{% endif %}>Portfolio</option>
+                                                             </select>
+                                                         </div>
+                                                     </div>
+                                                 </div>
+                                                 {% endfor %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-premium btn-lg w-100">Confirm and View Dashboard</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

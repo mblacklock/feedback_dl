@@ -30,6 +30,12 @@ def portal_home(request):
             "cta": "Analyse programme",
         },
         {
+            "title": "Longitudinal Analytics",
+            "description": "Track student and cohort performance trajectories, correlations, progression, and entry routes across academic years and levels.",
+            "url_name": "longitudinal_upload",
+            "cta": "Analyse cohort trajectories",
+        },
+        {
             "title": "Rubric Generator",
             "description": "Build reusable marking templates, rubric bands, and feedback sheet layouts.",
             "url_name": "rubric_home",

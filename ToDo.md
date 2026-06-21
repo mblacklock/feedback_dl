@@ -19,58 +19,41 @@
 
 ---
 
-## 📊 Feature: Programme Analytics Django App
+## 🔄 Feature: cohort_report — Add Within-Module Component Correlations
+For modules with more than one assessment component, add a component correlation table to the module report showing the Pearson correlation coefficient between each pair of components. Helps validate whether components are measuring different things. No additional data needed — already available from the existing MCRF parse.
 
-A programme-level analytics app that aggregates data across multiple modules to reveal patterns invisible at the module level. Designed to be stateless (using Django sessions) and easily extendable to a persistent database later.
+## 🔄 Feature: longitudinal_analytics Django App [COMPLETED]
 
-### ⚙️ App Setup & Integration
-- [x] Create app: `python manage.py startapp programme_analytics`
-- [x] Register `programme_analytics` in `INSTALLED_APPS` and core `urls.py` at `/programme-analytics/`
-- [x] Add card to landing page linking to `/programme-analytics/`
-
-### 📥 Data Input & Parsing
-- [x] Accept multiple MCRF `.xls`/`.xlsx` files, a `.zip` archive, or a mix of both in the backend
-- [x] Parse uploaded files in memory using `core.mcrf_parser.py` (one file per module)
-
-### 🗺️ Module Mapping & Confirmation
-- [x] Show confirmation page listing each detected module:
-- [x] Display module code and source filename
-- [x] Auto-detect academic level from code prefix (e.g. KB4001 → Level 4, EE5034 → Level 5)
-- [x] Provide editable level field for corrections
-- [x] Provide Programme Name and Academic Year fields (saved in session)
-
-### 📈 Phase 1: Module Aggregates (Stateless)
-- [x] Compute per-module statistics: mean, median, std dev, cohort size
-- [x] Compute per-module grade distribution (% 1st, 2:1, 2:2, 3rd, fail)
-- [x] Side-by-side module comparison chart (mean marks & grade bands) using Matplotlib SVG rendering
-- [x] Outlier module flags (High Fail rate >20%, High 1st Class rate >20%) matching `cohort_report`
-- [x] Transition static histogram list to interactive inline report views (toggled via row click)
-- [x] DRY template partial refactoring (`_overall_performance_card.html`, `_components_breakdown_partial.html`)
-- [x] Interactive mouseover SVG tooltips using post-processed Matplotlib links
-
-### 📅 Phase 2: Year-on-Year Trends
-- [x] Downloadable snapshot JSON containing module-level aggregates only (no student data)
-- [x] Allow uploading previous snapshots alongside new data to compare current cohort against historical trends
-- [x] Include programme and year identifiers in all data structures
-- [ ] Clean up `programme_analytics`: remove individual student ID hashing and `row_data_summary` caching since it only needs module aggregates.
-
----
-
-## 🔄 Feature: Student Analytics Django App
-
-A student-level progression and support app that connects performance records across modules using anonymised hashes.
+A tutor-facing app that tracks cohort trajectories across years and modules, identifying correlations, progression patterns, and entry route effects. Students are linked by ID within the session only — output is always aggregate, no individual records persisted.
 
 ### ⚙️ App Setup & Integration
-- [ ] Create app: `python manage.py startapp student_analytics`
-- [ ] Register `student_analytics` in `INSTALLED_APPS` and core `urls.py` at `/student-analytics/`
-- [ ] Add card to landing page linking to `/student-analytics/`
+- [x] Create app: `python manage.py startapp longitudinal_analytics`
+- [x] Register `longitudinal_analytics` in `INSTALLED_APPS` and core `urls.py` at `/longitudinal-analytics/`
+- [x] Add card to landing page linking to `/longitudinal-analytics/`
 
-### 🔒 Anonymisation & Upload
-- [ ] Hash student IDs at upload using SHA-256 with a server-side salt
-- [ ] Store only the hashed ID (never raw student IDs or PII) to ensure GDPR compliance
-- [ ] Store `ANALYTICS_SALT` securely in environment settings
+### 📥 Data Input & Mapping Confirmation
+- [x] Accept batch upload of multiple MCRF files (drag-and-drop, zip, or mix)
+- [x] Use `core.mcrf_parser` to parse student ID (session-only), module code, year, component marks, and overall mark
+- [x] Show module/year mapping confirmation step (auto-detect module code & level, allow editing level/year per file)
 
-### 📉 Student Progression & Warnings
-- [ ] Calculate and display cross-module performance per anonymised student (credit-weighted average)
-- [ ] Flag student underperformance and sudden drops relative to their own average
-- [ ] Provide search/filter by hashed ID to allow lookup of flagged trajectories
+### 📊 Analysis Dashboard
+- [x] **Correlation Matrix**:
+  - [x] Calculate pairwise correlation between module marks across the dataset
+  - [x] Render correlation heatmap (modules as rows/columns, colored by correlation coefficient) using Chart.js
+  - [x] Support expanding scatter plot of two modules on clicking a cell with configurable/non-persisting non-submission threshold highlighting
+- [x] **Cohort Progression**:
+  - [x] Show mean mark per level (3, 4, 5, 6, 7) to track cohort movement
+  - [x] Show distribution of mark changes between levels (improving, declining, stable)
+  - [x] Identify level transitions where significant drops occur
+- [x] **Entry Route Analysis**:
+  - [x] Compare outcomes for students with Level 3 records vs direct entrants (no Level 3 records)
+  - [x] Infer entry route from presence/absence of Level 3 module marks in the dataset
+- [x] **Predictive Indicators**:
+  - [x] Identify early modules (Level 3/4) that strongly correlate with final year (Level 6/7) outcomes
+  - [x] Flag module combinations where poor performance is a strong predictor of later difficulty
+
+### 🔒 Key Constraints & Security
+- [x] Session-based tracking: student IDs used as join keys within session only, never persisted
+- [x] Output is always aggregate: no individual student records shown in the dashboard
+- [x] Reuse Chart.js for all visualisations
+- [x] Consistent styling with existing apps

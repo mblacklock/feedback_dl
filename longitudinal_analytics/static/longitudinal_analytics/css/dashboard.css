@@ -1,0 +1,88 @@
+.correlation-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 2px;
+}
+.correlation-table th, .correlation-table td {
+    padding: 6px 2px !important;
+    vertical-align: middle;
+    font-size: 0.75rem;
+    border: none !important;
+    border-radius: 4px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    text-align: center;
+    white-space: nowrap;
+}
+.correlation-table th:not(:first-child) {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    height: 75px;
+    padding: 8px 2px !important;
+    font-size: 0.7rem;
+    vertical-align: middle;
+}
+.correlation-table th:first-child,
+.correlation-table td:first-child {
+    width: 110px !important;
+    min-width: 110px !important;
+    text-align: right;
+    padding-right: 12px !important;
+    background-color: #ffffff !important;
+    color: #334155 !important;
+    font-weight: 600;
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+}
+.correlation-table th:first-child {
+    z-index: 6;
+}
+.heatmap-cell:hover {
+    transform: scale(1.12);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+    z-index: 10;
+    position: relative;
+}
+.diagonal-cell {
+    background-color: #e2e8f0;
+    color: #64748b;
+}
+.none-cell {
+    background-color: #f8fafc;
+    color: #94a3b8;
+}
+.chart-container-premium {
+    position: relative;
+    min-height: 320px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.5rem;
+}
+.metric-card-premium {
+    background: linear-gradient(135deg, var(--brand-primary-light, #1e293b) 0%, var(--brand-primary-dark, #0f172a) 100%);
+    color: #ffffff;
+    border-radius: 12px;
+    padding: 1.5rem;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+.metric-card-premium::before {
+    content: "";
+    position: absolute;
+    width: 150px;
+    height: 150px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 50%;
+    top: -50px;
+    right: -50px;
+}
+#scatterModal .modal-content {
+    border-radius: 12px !important;
+    overflow: hidden;
+}
+#scatterModal .modal-header {
+    border-radius: 0 !important;
+}
