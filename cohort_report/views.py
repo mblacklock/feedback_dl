@@ -13,6 +13,7 @@ from core.utils.marks import (
     round_mark_pct,
     build_module_cohort_weighted_finals
 )
+from core.utils.student_id import format_student_id
 
 def upload_cohort_data(request):
     """
@@ -400,6 +401,65 @@ def render_cohort_report(request):
     if not context:
         return redirect("cohort_report_upload")
         
+    uploaded_data = request.session.get("cohort_uploaded_data")
+    mappings = request.session.get("cohort_mappings")
+    headers = request.session.get("cohort_headers", [])
+    
+    if uploaded_data and mappings:
+        # Determine student ID column dynamically
+        student_id_col = None
+        for h in headers:
+            hl = h.lower()
+            if "id" in hl or "number" in hl or "no" in hl or "username" in hl:
+                student_id_col = h
+                break
+        if not student_id_col:
+            for h in headers:
+                if "student" in h.lower():
+                    student_id_col = h
+                    break
+            if not student_id_col and headers:
+                student_id_col = headers[0]
+                
+        components = mappings.get("components", [])
+        active_comps = [comp for comp in components if comp.get("weight", 0) > 0]
+        
+        # Build component headers
+        student_marks_headers = []
+        for comp in active_comps:
+            col_name = comp["column"]
+            label_short = col_name.split(" - ")[0] if " - " in col_name else col_name
+            student_marks_headers.append({
+                "column": col_name,
+                "label_short": label_short,
+                "weight": comp["weight"]
+            })
+            
+        cohort_weighted_finals = build_module_cohort_weighted_finals(uploaded_data, components)
+        
+        student_marks_rows = []
+        for idx, row in enumerate(uploaded_data):
+            raw_id = row.get(student_id_col) if student_id_col else f"Student {idx+1}"
+            formatted_id = format_student_id(raw_id)
+            
+            comp_marks = []
+            for comp in active_comps:
+                mark = round_mark_pct(component_percentage(row, comp))
+                comp_marks.append(mark)
+                
+            overall_score = cohort_weighted_finals[idx]
+            
+            student_marks_rows.append({
+                "student_id": formatted_id,
+                "comp_marks": comp_marks,
+                "overall_score": overall_score
+            })
+            
+        student_marks_rows.sort(key=lambda x: x["overall_score"], reverse=True)
+        
+        context["student_marks_headers"] = student_marks_headers
+        context["student_marks_rows"] = student_marks_rows
+
     context["base_template"] = "base.html"
     context["is_download"] = False
     context["show_download_button"] = True
@@ -415,6 +475,7 @@ def download_cohort_report(request):
     if not context:
         return redirect("cohort_report_upload")
 
+    context["is_download"] = True
     # Render the self-contained download template with embedded charts and CSS
     rendered_html = render_to_string("cohort_report/report_download.html", context, request=request)
 

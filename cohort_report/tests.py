@@ -410,4 +410,63 @@ class CohortReportTests(TestCase):
         self.assertIn("CW1 vs Exam", content)
         self.assertIn("0.96", content)
 
+    def test_student_marks_list_in_browser_view(self):
+        """Verify student marks list is populated in browser view and sorted descending by overall score"""
+        session = self.client.session
+        session["cohort_headers"] = self.sample_headers
+        session["cohort_uploaded_data"] = self.sample_uploaded_data
+        session["cohort_mappings"] = self.sample_mappings
+        session.save()
+
+        url = reverse("cohort_report_results")
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+
+        self.assertIn("student_marks_headers", resp.context)
+        self.assertIn("student_marks_rows", resp.context)
+
+        # Check sorting (descending)
+        rows = resp.context["student_marks_rows"]
+        self.assertTrue(len(rows) > 0)
+        
+        overall_scores = [r["overall_score"] for r in rows]
+        # It should be sorted descending
+        self.assertEqual(overall_scores, sorted(overall_scores, reverse=True))
+
+        # Check that identifying info contains only Student ID (no Student Name)
+        for r in rows:
+            self.assertIn("student_id", r)
+            self.assertNotIn("student_name", r)
+            self.assertNotIn("Student Name", r.values())
+            # Ensure name is not leaked
+            self.assertNotIn("Alice Smith", str(r))
+
+        # Check that browser HTML renders the student marks list tab and table
+        html = resp.content.decode("utf-8")
+        self.assertIn("Student Marks List", html)
+        self.assertIn("Student Marks Sorted List", html)
+        self.assertIn("studentMarksSearch", html)
+        
+    def test_student_marks_not_in_downloadable_report(self):
+        """Verify downloadable report does not contain student marks list context or table"""
+        session = self.client.session
+        session["cohort_headers"] = self.sample_headers
+        session["cohort_uploaded_data"] = self.sample_uploaded_data
+        session["cohort_mappings"] = self.sample_mappings
+        session.save()
+
+        url = reverse("cohort_report_download")
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+
+        # Download context shouldn't have these variables
+        self.assertNotIn("student_marks_headers", resp.context)
+        self.assertNotIn("student_marks_rows", resp.context)
+
+        # Download HTML shouldn't have the tab or student list table
+        html = resp.content.decode("utf-8")
+        self.assertNotIn("Student Marks List", html)
+        self.assertNotIn("Student Marks Sorted List", html)
+        self.assertNotIn("studentMarksSearch", html)
+
 

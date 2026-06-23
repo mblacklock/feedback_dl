@@ -242,3 +242,23 @@
     cursor: help;
 }
 
+/* ── Premium Navigation Tabs ── */
+#reportTabs .nav-link {
+    color: var(--brand-slate, #64748b) !important;
+    border-bottom: 3px solid transparent !important;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    opacity: 0.8;
+}
+
+#reportTabs .nav-link:hover {
+    color: var(--brand-primary-dark, #0f172a) !important;
+    opacity: 1;
+}
+
+#reportTabs .nav-link.active {
+    color: var(--brand-primary-dark, #0f172a) !important;
+    border-bottom: 3px solid var(--brand-accent, #c8a951) !important;
+    opacity: 1;
+}
+
