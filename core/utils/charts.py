@@ -327,7 +327,7 @@ def generate_module_comparison_chart(labels, student_percentages, average_percen
     ax.tick_params(axis='both', which='both', length=0, colors='#475569', labelsize=8.5)
     
     # Legend
-    plt.legend(loc='upper right', fontsize=8.5, frameon=True, facecolor='white', edgecolor='#e2e8f0')
+    ax.legend(loc='lower center', bbox_to_anchor=(0.5, 1.02), ncol=2, fontsize=8.5, frameon=False)
     
     buf = io.BytesIO()
     plt.savefig(buf, format='svg', bbox_inches='tight', transparent=True)
@@ -598,7 +598,9 @@ def generate_normalised_overlay_chart(modules_list):
         ylim=(-2, 105),
         grid_axis='y',
         grid_style='--',
-        legend_loc='upper right',
+        legend_loc='lower center',
+        legend_bbox_to_anchor=(0.5, 1.02),
+        legend_ncol=5,
         rotation=15,
         ha='right',
         fontsize_xticks=9.5,
@@ -654,7 +656,10 @@ def generate_level_cohort_chart(level_data):
     ax.set_ylabel('Percentage (%)', color='#475569', size=11, fontweight='semibold')
     ax.set_xticks(x)
     ax.set_xticklabels(levels, fontsize=10, fontweight='semibold')
-    ax.set_ylim(0, 105)
+    all_values = pct_fail + pct_3rd + pct_22 + pct_21 + pct_1st
+    max_val = max(all_values) if all_values else 0
+    ylim_max = min(100, max(10, max_val + 5))
+    ax.set_ylim(0, ylim_max)
 
     ax.grid(True, axis='y', color='#e2e8f0', linestyle='--', linewidth=0.8, zorder=0)
     ax.set_axisbelow(True)
@@ -668,7 +673,7 @@ def generate_level_cohort_chart(level_data):
     ax.tick_params(axis='both', which='both', length=0, colors='#475569', labelsize=10)
     ax.set_facecolor('white')
     fig.patch.set_facecolor('white')
-    ax.legend(loc='upper right', fontsize=9.5, frameon=True, facecolor='white', edgecolor='#e2e8f0')
+    ax.legend(loc='lower center', bbox_to_anchor=(0.5, 1.02), ncol=5, fontsize=9.5, frameon=False)
 
     buf = io.BytesIO()
     plt.savefig(buf, format='svg', bbox_inches='tight', transparent=False)

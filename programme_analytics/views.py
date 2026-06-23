@@ -665,9 +665,9 @@ def analytics_dashboard(request):
                 'val': mean_val
             })
 
-    # Group and aggregate stats by academic level (4, 5, 6, 7)
+    # Group and aggregate stats by academic level (3, 4, 5, 6, 7)
     level_aggregates = []
-    for lvl in [4, 5, 6, 7]:
+    for lvl in [3, 4, 5, 6, 7]:
         modules_at_level = [m for m in modules_list if m.get('level') == lvl]
         lvl_modules_count = len(modules_at_level)
         

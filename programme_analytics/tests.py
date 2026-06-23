@@ -363,6 +363,14 @@ class ProgrammeAnalyticsTests(TestCase):
                     'credits': 20,
                     'scores': [50, 50],
                     'components': []
+                },
+                {
+                    'module_code': 'COMP3001',
+                    'module_title': 'Foundation Maths',
+                    'level': 3,
+                    'credits': 20,
+                    'scores': [60, 70],
+                    'components': []
                 }
             ]
         }
@@ -379,6 +387,12 @@ class ProgrammeAnalyticsTests(TestCase):
         self.assertEqual(lvl5_agg["cohort_size"], 3)
         # Cohort mean: (80 + 50 + 50) / 3 = 60.0%
         self.assertAlmostEqual(lvl5_agg["mean"], 60.0)
+
+        lvl3_agg = next(item for item in level_aggregates if item["level"] == 3)
+        # Total scores at level 3: 2 grades
+        self.assertEqual(lvl3_agg["cohort_size"], 2)
+        # Cohort mean: (60 + 70) / 2 = 65.0%
+        self.assertAlmostEqual(lvl3_agg["mean"], 65.0)
 
     def test_normalize_snapshot(self):
         """Verify normalize_snapshot standardizes session modules and snapshot JSON formats."""
