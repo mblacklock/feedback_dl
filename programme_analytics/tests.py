@@ -342,7 +342,7 @@ class ProgrammeAnalyticsTests(TestCase):
         self.assertEqual(confirmed["modules"][0]["detected_credits"], 15)
 
     def test_level_aggregation(self):
-        """Verify level aggregates calculation correctly pools module scores at that level."""
+        """Verify level aggregates calculation correctly pools module scores at that level and counts unique student IDs."""
         session = self.client.session
         session["analytics_confirmed_data"] = {
             "programme_name": "BEng Computer Science",
@@ -354,6 +354,7 @@ class ProgrammeAnalyticsTests(TestCase):
                     'level': 5,
                     'credits': 10,
                     'scores': [80],
+                    'student_ids': ['S001'],
                     'components': []
                 },
                 {
@@ -362,6 +363,7 @@ class ProgrammeAnalyticsTests(TestCase):
                     'level': 5,
                     'credits': 20,
                     'scores': [50, 50],
+                    'student_ids': ['S001', 'S002'],
                     'components': []
                 },
                 {
@@ -370,6 +372,7 @@ class ProgrammeAnalyticsTests(TestCase):
                     'level': 3,
                     'credits': 20,
                     'scores': [60, 70],
+                    'student_ids': ['S003', 'S004'],
                     'components': []
                 }
             ]
@@ -383,13 +386,13 @@ class ProgrammeAnalyticsTests(TestCase):
         level_aggregates = resp.context["level_aggregates"]
         lvl5_agg = next(item for item in level_aggregates if item["level"] == 5)
         
-        # Total scores at level 5: 3 grades
-        self.assertEqual(lvl5_agg["cohort_size"], 3)
+        # Unique student IDs at level 5: 'S001', 'S002' -> cohort size 2
+        self.assertEqual(lvl5_agg["cohort_size"], 2)
         # Cohort mean: (80 + 50 + 50) / 3 = 60.0%
         self.assertAlmostEqual(lvl5_agg["mean"], 60.0)
 
         lvl3_agg = next(item for item in level_aggregates if item["level"] == 3)
-        # Total scores at level 3: 2 grades
+        # Unique student IDs at level 3: 'S003', 'S004' -> cohort size 2
         self.assertEqual(lvl3_agg["cohort_size"], 2)
         # Cohort mean: (60 + 70) / 2 = 65.0%
         self.assertAlmostEqual(lvl3_agg["mean"], 65.0)

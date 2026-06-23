@@ -296,6 +296,7 @@ def analytics_upload(request):
                         row_comp_scores[comp["column"]] = component_percentage(row, comp)
                     
                     row_data_summary.append({
+                        "student_id": extract_student_id(row),
                         "component_scores": row_comp_scores
                     })
             else:
@@ -415,6 +416,7 @@ def analytics_confirm(request):
 
                 # Recalculate module final scores using the new weights
                 new_scores = []
+                new_student_ids = []
                 row_summary = m.get('row_data_summary', [])
                 if row_summary:
                     for row in row_summary:
@@ -424,8 +426,10 @@ def analytics_confirm(request):
                             row_weighted_pct += (comp_pct * comp["weight"]) / 100
                         final_score = round_mark_pct(row_weighted_pct)
                         new_scores.append(final_score)
+                        new_student_ids.append(row.get("student_id"))
                 else:
                     new_scores = m.get('scores', [])
+                    new_student_ids = m.get('student_ids', [None] * len(new_scores))
 
                 stats = calculate_module_analytics(new_scores, level)
 
@@ -437,6 +441,7 @@ def analytics_confirm(request):
                     'credits': credits,
                     'detected_credits': credits,
                     'scores': new_scores,
+                    'student_ids': new_student_ids,
                     'mean': stats['mean'],
                     'median': stats['median'],
                     'std_dev': stats['std_dev'],
@@ -477,6 +482,11 @@ def analytics_confirm(request):
                         for g in group:
                             all_scores.extend(g['scores'])
 
+                        # Combine all student IDs
+                        all_student_ids = []
+                        for g in group:
+                            all_student_ids.extend(g.get('student_ids', [None] * len(g['scores'])))
+
                         # Recalculate statistics on the combined cohort
                         stats = calculate_module_analytics(all_scores, first['level'])
 
@@ -510,6 +520,7 @@ def analytics_confirm(request):
                             'credits': first['credits'],
                             'detected_credits': first['detected_credits'],
                             'scores': all_scores,
+                            'student_ids': all_student_ids,
                             'mean': stats['mean'],
                             'median': stats['median'],
                             'std_dev': stats['std_dev'],
@@ -672,8 +683,10 @@ def analytics_dashboard(request):
         lvl_modules_count = len(modules_at_level)
         
         lvl_student_marks = []
+        lvl_student_ids = []
         for m in modules_at_level:
             lvl_student_marks.extend(m.get('scores', []))
+            lvl_student_ids.extend(m.get('student_ids', [None] * len(m.get('scores', []))))
                 
         if lvl_student_marks:
             stats = calculate_module_analytics(lvl_student_marks, lvl)
@@ -688,10 +701,25 @@ def analytics_dashboard(request):
             p_21 = (sum(1 for x in lvl_student_marks if 60 <= x < 70) / n_students) * 100.0
             p_1st = (sum(1 for x in lvl_student_marks if x >= 70) / n_students) * 100.0
             
+            # Count unique student IDs to find actual cohort size, treating None as unique
+            seen_ids = set()
+            cohort_size = 0
+            for s_id in lvl_student_ids:
+                if s_id is not None:
+                    s_id_str = str(s_id).strip()
+                    if s_id_str:
+                        if s_id_str not in seen_ids:
+                            seen_ids.add(s_id_str)
+                            cohort_size += 1
+                    else:
+                        cohort_size += 1
+                else:
+                    cohort_size += 1
+
             level_aggregates.append({
                 'level': lvl,
                 'modules_count': lvl_modules_count,
-                'cohort_size': n_students,
+                'cohort_size': cohort_size,
                 'mean': stats['mean'],
                 'median': stats['median'],
                 'std_dev': stats['std_dev'],
