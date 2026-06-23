@@ -50,7 +50,13 @@
     </div>
     <div class="col-lg-6 text-center">
         <div class="chart-container" style="text-align: center; padding: 10px; background: white; border-radius: 12px; border: 1px solid #e2e8f0;">
-            {{ chart_svg|safe }}
+            {% if use_chartjs %}
+                <div style="position: relative; height: 260px; width: 100%;">
+                    <canvas id="histogram-{{ module_code }}"></canvas>
+                </div>
+            {% else %}
+                {{ chart_svg|safe }}
+            {% endif %}
         </div>
     </div>
 </div>

@@ -48,7 +48,13 @@
                 </div>
 
                 <div class="chart-container mt-3" style="text-align: center; padding: 8px; background: white; border-radius: 8px; border: 1px solid #e2e8f0;">
-                    {{ comp.chart_svg|safe }}
+                    {% if use_chartjs %}
+                        <div style="position: relative; height: 200px; width: 100%;">
+                            <canvas id="comp-chart-{{ module_code }}-{{ forloop.counter }}"></canvas>
+                        </div>
+                    {% else %}
+                        {{ comp.chart_svg|safe }}
+                    {% endif %}
                 </div>
             </div>
         </div>

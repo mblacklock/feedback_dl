@@ -12,15 +12,7 @@ from django.conf import settings
 from core.mcrf_parser import parse_mcrf_workbook, is_assessment_component_column
 from core.utils.marks import build_module_cohort_weighted_finals, component_percentage, round_mark_pct
 from core.utils.charts import (
-    generate_cohort_histogram,
-    inject_svg_tooltips,
-    clean_svg,
-    generate_programme_comparison_chart,
-    generate_normalised_overlay_chart,
-    generate_level_cohort_chart,
     generate_sparkline_svg,
-    generate_module_trend_chart,
-    generate_programme_trend_chart,
 )
 
 
@@ -629,8 +621,7 @@ def analytics_dashboard(request):
             has_outliers = True
         
         deg_level = 'MEng/MSc' if m['level'] >= 7 else 'BEng'
-        histogram_svg = generate_cohort_histogram(m['scores'], student_score=None, degree_level=deg_level)
-        m['chart_svg'] = clean_svg(histogram_svg)
+        # No server-side SVG generation needed; stats contains score_bins for client-side Chart.js
 
         # Process component statistics and SVGs
         components_stats = []
@@ -641,8 +632,7 @@ def analytics_dashboard(request):
             comp_scores = comp.get('scores', [])
             if comp_scores:
                 comp_stats = calculate_module_analytics(comp_scores, m['level'])
-                comp_chart_svg = generate_cohort_histogram(comp_scores, student_score=None, degree_level=deg_level)
-                comp_chart_svg_clean = clean_svg(comp_chart_svg)
+                # No server-side SVG generation needed; comp_stats contains score_bins for client-side Chart.js
                 
                 # Format component header using the helper from cohort_report views
                 from cohort_report.views import format_component_header
@@ -655,7 +645,6 @@ def analytics_dashboard(request):
                     "label_short": label_short,
                     "header_formatted": header_formatted,
                     "stats": comp_stats,
-                    "chart_svg": comp_chart_svg_clean,
                     "weight": comp["weight"],
                     "category": comp.get("category", "Individual CW")
                 })
@@ -807,15 +796,6 @@ def analytics_dashboard(request):
             overall_pct_21_list.append(weighted_21)
             overall_pct_fail_list.append(weighted_fail)
             
-        programme_trend_svg = generate_programme_trend_chart(
-            years_list,
-            overall_mean_list,
-            overall_std_dev_list,
-            overall_pct_1st_list,
-            overall_pct_21_list,
-            overall_pct_fail_list
-        )
-        
         # 2. Module trend table metrics
         all_module_codes = set()
         for snap in sorted_snapshots:
@@ -847,10 +827,6 @@ def analytics_dashboard(request):
             mean_vals = [history[yr]['mean'] if yr in history else None for yr in sorted_years]
             sparkline_svg = generate_sparkline_svg(mean_vals)
             
-            details_chart_svg = ""
-            if len(history) >= 2:
-                details_chart_svg = generate_module_trend_chart(code, sorted_years, history)
-                
             year_columns = []
             for yr in sorted_years:
                 if yr in history:
@@ -874,39 +850,26 @@ def analytics_dashboard(request):
                 'level': latest_level,
                 'year_columns': year_columns,
                 'sparkline_svg': sparkline_svg,
-                'details_chart_svg': details_chart_svg,
+                'history': history,
                 'has_history': len(history) >= 2
             })
             
         trends_data = {
             'years': sorted_years,
-            'programme_trend_svg': programme_trend_svg,
+            'overall_means': overall_mean_list,
+            'overall_std_devs': overall_std_dev_list,
+            'overall_pct_1st': overall_pct_1st_list,
+            'overall_pct_21': overall_pct_21_list,
+            'overall_pct_fail': overall_pct_fail_list,
             'module_trends': module_trends,
             'raw_snapshots_count': len(historical_snapshots),
             'colspan': len(sorted_years) * 3 + 3
         }
 
-    # Generate charts
-    means_chart_svg = generate_programme_comparison_chart(modules_list, 'mean')
-    std_dev_chart_svg = generate_programme_comparison_chart(modules_list, 'std_dev')
-    pct_1st_chart_svg = generate_programme_comparison_chart(modules_list, 'pct_1st')
-    pct_21_chart_svg = generate_programme_comparison_chart(modules_list, 'pct_21_above')
-    pct_fail_chart_svg = generate_programme_comparison_chart(modules_list, 'pct_fail')
-    
-    overlay_chart_svg = clean_svg(generate_normalised_overlay_chart(modules_list))
-    level_chart_svg = clean_svg(generate_level_cohort_chart(level_aggregates))
-
     return render(request, "programme_analytics/dashboard.html", {
         "programme_name": confirmed_data['programme_name'],
         "academic_year": confirmed_data['academic_year'],
         "modules": modules_list,
-        "means_chart_svg": means_chart_svg,
-        "std_dev_chart_svg": std_dev_chart_svg,
-        "pct_1st_chart_svg": pct_1st_chart_svg,
-        "pct_21_chart_svg": pct_21_chart_svg,
-        "pct_fail_chart_svg": pct_fail_chart_svg,
-        "overlay_chart_svg": overlay_chart_svg,
-        "level_chart_svg": level_chart_svg,
         "level_aggregates": level_aggregates,
         "component_categories": COMPONENT_CATEGORIES,
         "has_outliers": has_outliers,

@@ -190,13 +190,22 @@ class ProgrammeAnalyticsTests(TestCase):
         self.assertContains(resp, "Normalised Overlay")
         self.assertContains(resp, "Component Heatmap")
         self.assertContains(resp, "Level Benchmarking")
-        self.assertContains(resp, "<svg")
         
-        # Verify the new metric charts are in the context
-        self.assertIn("std_dev_chart_svg", resp.context)
-        self.assertIn("pct_1st_chart_svg", resp.context)
-        self.assertIn("pct_21_chart_svg", resp.context)
-        self.assertIn("pct_fail_chart_svg", resp.context)
+        # Verify that level_aggregates and modules are correctly populated
+        self.assertIn("level_aggregates", resp.context)
+        self.assertIn("modules", resp.context)
+        
+        lvl5_agg = next(item for item in resp.context["level_aggregates"] if item["level"] == 5)
+        self.assertEqual(lvl5_agg["modules_count"], 1)
+        self.assertEqual(lvl5_agg["cohort_size"], 3)
+        self.assertAlmostEqual(lvl5_agg["mean"], 53.33, places=2)
+        
+        modules = resp.context["modules"]
+        self.assertEqual(len(modules), 1)
+        self.assertEqual(modules[0]["module_code"], "COMP5034")
+        self.assertAlmostEqual(modules[0]["mean"], 53.33, places=2)
+        self.assertEqual(modules[0]["cohort_size"], 3)
+
 
     def test_download_snapshot(self):
         """GET /programme-analytics/download/ exports anonymised JSON snapshot."""
@@ -583,15 +592,30 @@ class ProgrammeAnalyticsTests(TestCase):
         self.assertEqual(trends_data['years'], ['2024/25', '2025/26'])
         self.assertEqual(len(trends_data['module_trends']), 1)
         
-        # Verify combined chart is present
-        self.assertIn('programme_trend_svg', trends_data)
-        
         # Check module CS101 trend values
         m_trend = trends_data['module_trends'][0]
         self.assertEqual(m_trend['code'], 'CS101')
         self.assertTrue(m_trend['has_history'])
         self.assertIn('<svg', m_trend['sparkline_svg'])
-        self.assertIn('<svg', m_trend['details_chart_svg'])
+        
+        # Verify year_columns details
+        year_cols = m_trend['year_columns']
+        self.assertEqual(len(year_cols), 2)
+        
+        self.assertEqual(year_cols[0]['year'], '2024/25')
+        self.assertEqual(year_cols[0]['mean'], 55.0)
+        self.assertEqual(year_cols[0]['pct_1st'], 20.0)
+        self.assertEqual(year_cols[0]['pct_fail'], 10.0)
+        self.assertEqual(year_cols[0]['n'], 10)
+        self.assertTrue(year_cols[0]['present'])
+        
+        self.assertEqual(year_cols[1]['year'], '2025/26')
+        self.assertEqual(year_cols[1]['mean'], 60.0)
+        self.assertEqual(year_cols[1]['pct_1st'], 50.0)
+        self.assertEqual(year_cols[1]['pct_fail'], 0.0)
+        self.assertEqual(year_cols[1]['n'], 2)
+        self.assertTrue(year_cols[1]['present'])
+
 
     def test_pass_fail_component_exclusion(self):
         """Verify that components with 0% weight are excluded from components_stats and heatmap_cells."""
