@@ -111,17 +111,18 @@ def parse_mcrf_pdf(file_file):
                 desc_clean = clean_component_title(desc)
                 weight_val = int(weight.replace("%", ""))
                 comp_names_map[code_norm] = desc_clean
-                components_list.append({
-                    "code": code_norm,
-                    "column": f"{code_norm} - {weight_val}% - Mark",
-                    "weight": weight_val
-                })
+                if not any(c["code"] == code_norm for c in components_list):
+                    components_list.append({
+                        "code": code_norm,
+                        "column": f"{code_norm} - {weight_val}% - Mark",
+                        "weight": weight_val
+                    })
             else:
                 if line_clean:
                     in_components = False
                     
         # 2. Metadata parsing
-        if line.startswith("Module "):
+        if line.startswith("Module ") and not module_lines and "Marks Record Form" not in line and "(MCRF)" not in line:
             tutor_idx = line.find("Tutor")
             if tutor_idx != -1:
                 module_lines.append(line[len("Module"):tutor_idx].strip())
@@ -133,7 +134,7 @@ def parse_mcrf_pdf(file_file):
                 module_lines.append(lines[j].strip())
                 j += 1
                 
-        if line.startswith("Year "):
+        if line.startswith("Year ") and not year:
             credits_idx = line.find("Credits")
             if credits_idx != -1:
                 year = line[len("Year"):credits_idx].strip()
@@ -145,7 +146,7 @@ def parse_mcrf_pdf(file_file):
             else:
                 year = line[len("Year"):].strip()
                 
-        if line.startswith("Period "):
+        if line.startswith("Period ") and not period:
             level_idx = line.find("Level")
             if level_idx != -1:
                 period = line[len("Period"):level_idx].strip()
@@ -157,7 +158,7 @@ def parse_mcrf_pdf(file_file):
             else:
                 period = line[len("Period"):].strip()
                 
-        if line.startswith("Occurrence "):
+        if line.startswith("Occurrence ") and not occurrence_lines:
             loc_idx = line.find("Location")
             if loc_idx != -1:
                 occurrence_lines.append(line[len("Occurrence"):loc_idx].strip())
@@ -187,6 +188,25 @@ def parse_mcrf_pdf(file_file):
         if len(parts) == 2 and len(parts[1]) == 1:
             year = f"{parts[0]}/2{parts[1]}"
             
+    # Detect dynamic offsets from the column header line
+    header_line = ""
+    for line in lines:
+        if "Student ID" in line and "Occ" in line:
+            header_line = line
+            break
+            
+    use_offsets = False
+    if header_line:
+        occ_idx = header_line.find("Occ")
+        period_idx = header_line.find("Period")
+        mark_indices = [m.start() for m in re.finditer(r'\bMark\b', header_line)]
+        grade_indices = [m.start() for m in re.finditer(r'\bGrade\b', header_line)]
+        if occ_idx != -1 and period_idx != -1 and len(mark_indices) > 0 and len(grade_indices) > 0:
+            use_offsets = True
+            first_mark = mark_indices[0]
+            period_end = period_idx + len("Period")
+            start_search_idx = max(period_end + 2, first_mark - 20)
+
     student_id_re = re.compile(r'^\s*(\d{8}(?:/\d+)?)\s+(.*)$')
     students_list = []
     current_student = None
@@ -195,12 +215,72 @@ def parse_mcrf_pdf(file_file):
         m = student_id_re.match(line)
         if m:
             stud_id = m.group(1)
-            rest = m.group(2)
-            parts = re.split(r'\s{2,}', rest.strip())
-            name_start = parts[0]
-            occ = parts[1]
-            period_val = parts[2]
-            scores_grades = parts[3:]
+            
+            if use_offsets:
+                # Slicing based on dynamic header offsets and splitting text columns
+                text_part = line[:start_search_idx].strip()
+                parts = re.split(r'\s{2,}', text_part)
+                
+                name_start = parts[1] if len(parts) > 1 else ""
+                occ = parts[2] if len(parts) > 2 else ""
+                period_val = parts[3] if len(parts) > 3 else ""
+                
+                # Tokenize remaining part of the line
+                tokens = []
+                for tok_m in re.finditer(r'\S+', line[start_search_idx:]):
+                    val = tok_m.group(0)
+                    pos = tok_m.start() + start_search_idx
+                    tokens.append((val, pos))
+                
+                col_targets = []
+                for i in range(len(mark_indices)):
+                    col_targets.append(mark_indices[i])
+                    col_targets.append(grade_indices[i])
+                
+                def is_numeric(v):
+                    try:
+                        float(v)
+                        return True
+                    except ValueError:
+                        return False
+                
+                # Search for the best shift from -15 to +15
+                best_shift = 0
+                min_error = float('inf')
+                for shift in range(-15, 16):
+                    error = 0
+                    for val, pos in tokens:
+                        col_idx = min(range(len(col_targets)), key=lambda idx: abs(pos - shift - col_targets[idx]))
+                        target_pos = col_targets[col_idx]
+                        dist = abs(pos - shift - target_pos)
+                        
+                        is_num = is_numeric(val)
+                        is_mark_col = (col_idx % 2 == 0)
+                        
+                        penalty = 0
+                        if is_num and not is_mark_col:
+                            penalty = 1000
+                        elif not is_num and is_mark_col:
+                            penalty = 1000
+                            
+                        error += dist + penalty
+                        
+                    if error < min_error:
+                        min_error = error
+                        best_shift = shift
+                        
+                scores_grades = [""] * (2 * len(mark_indices))
+                for val, pos in tokens:
+                    col_idx = min(range(len(col_targets)), key=lambda idx: abs(pos - best_shift - col_targets[idx]))
+                    if col_idx < len(scores_grades):
+                        scores_grades[col_idx] = val
+            else:
+                rest = m.group(2)
+                parts = re.split(r'\s{2,}', rest.strip())
+                name_start = parts[0]
+                occ = parts[1]
+                period_val = parts[2]
+                scores_grades = parts[3:]
             
             current_student = {
                 "Student ID": stud_id,

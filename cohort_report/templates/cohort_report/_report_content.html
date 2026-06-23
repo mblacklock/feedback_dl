@@ -53,6 +53,9 @@
     </div>
 </div>
 
+<!-- Assessment Components Section -->
+{% include "cohort_report/_components_breakdown_partial.html" with components_stats=components_stats %}
+
 {% if scatter_charts %}
 <!-- Assessment Component Correlations Section -->
 <div class="glass-card">
@@ -87,9 +90,6 @@
     </div>
 </div>
 {% endif %}
-
-<!-- Assessment Components Section -->
-{% include "cohort_report/_components_breakdown_partial.html" with components_stats=components_stats %}
 
 {% if not is_download %}
         </div>

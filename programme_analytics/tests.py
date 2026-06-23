@@ -634,8 +634,70 @@ class ProgrammeAnalyticsTests(TestCase):
         cw_cell = next(cell for cell in m['heatmap_cells'] if cell['category'] == 'Individual CW')
         self.assertIsNotNone(cw_cell['val'])
 
+    def test_pure_pass_fail_module_analytics(self):
+        """Verify that a pure pass/fail module with 0% assessments passes confirmation and dashboard rendering."""
+        session = self.client.session
+        session["analytics_uploaded_modules"] = [
+            {
+                'filename': 'PF101.xlsx',
+                'module_code': 'PF101',
+                'module_title': 'Pass Fail Module',
+                'detected_level': 4,
+                'scores': [0, 0],
+                'year': '2025/26',
+                'period': 'SEM1',
+                'occurrence': 'BNN',
+                'components': [
+                    {
+                        'column': 'PassFail',
+                        'weight': 0,
+                        'scores': [100, 100],
+                        'detected_category': 'Individual CW'
+                    }
+                ],
+                'row_data_summary': [
+                    {
+                        'component_scores': {'PassFail': 100.0}
+                    },
+                    {
+                        'component_scores': {'PassFail': 100.0}
+                    }
+                ]
+            }
+        ]
+        session.save()
+
+        # Try to confirm
+        url = reverse("analytics_confirm")
+        resp = self.client.post(url, {
+            "programme_name": "BEng Computer Science",
+            "academic_year": "2025/26",
+            "code_0": "PF101",
+            "title_0": "Pass Fail Module",
+            "level_0": "4",
+            "comp_weight_0_0": "0",
+            "comp_cat_0_0": "Individual CW"
+        })
+        # If it succeeds, it should redirect to dashboard
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(resp.url, reverse("analytics_dashboard"))
+        
+        # Follow the redirect to verify dashboard rendering doesn't crash
+        dashboard_resp = self.client.get(reverse("analytics_dashboard"))
+        self.assertEqual(dashboard_resp.status_code, 200)
+        
+        # Verify that the 0% pass/fail module is removed from stats (modules context list is empty)
+        self.assertEqual(len(dashboard_resp.context["modules"]), 0)
+        
+        # Verify that snapshot download also excludes the pass/fail module
+        snapshot_resp = self.client.get(reverse("download_snapshot"))
+        self.assertEqual(snapshot_resp.status_code, 200)
+        snapshot_data = json.loads(snapshot_resp.content)
+        self.assertEqual(len(snapshot_data["modules"]), 0)
+
     @patch('core.mcrf_parser.pypdf.PdfReader')
     def test_pdf_mcrf_upload_and_parse(self, mock_pdf_reader):
+
         """Verify that a PDF MCRF file can be uploaded and parsed successfully using mocked layout text."""
         from unittest.mock import MagicMock
         
@@ -855,3 +917,517 @@ class ProgrammeAnalyticsTests(TestCase):
         uploaded = self.client.session["analytics_uploaded_modules"]
         self.assertEqual(uploaded[0]["components"][0]["weight"], 40)
         self.assertEqual(uploaded[0]["components"][1]["weight"], 50)
+
+    def test_confirm_view_merges_duplicate_module_codes(self):
+        """Verify that confirmation page merges modules with the same confirmed module code and computes combined cohort statistics correctly."""
+        session = self.client.session
+        session["analytics_uploaded_modules"] = [
+            {
+                'filename': 'COMP7001_BNN.xlsx',
+                'module_code': 'COMP7001',
+                'module_title': 'Advanced Software Engineering',
+                'is_mcrf': True,
+                'detected_level': 7,
+                'detected_credits': 20,
+                'scores': [60, 80],
+                'year': '2025/26',
+                'period': 'SEM1',
+                'occurrence': 'BNN',
+                'components': [
+                    {
+                        'column': 'CW1 (100%)',
+                        'weight': 100,
+                        'scores': [60, 80],
+                        'detected_category': 'Individual CW'
+                    }
+                ],
+                'row_data_summary': [
+                    {'component_scores': {'CW1 (100%)': 60.0}},
+                    {'component_scores': {'CW1 (100%)': 80.0}}
+                ]
+            },
+            {
+                'filename': 'COMP7001_FNN.xlsx',
+                'module_code': 'COMP7001',
+                'module_title': 'Advanced Software Engineering',
+                'is_mcrf': True,
+                'detected_level': 7,
+                'detected_credits': 20,
+                'scores': [40, 50],
+                'year': '2025/26',
+                'period': 'SEM2',
+                'occurrence': 'FNN',
+                'components': [
+                    {
+                        'column': 'CW1 (100%)',
+                        'weight': 100,
+                        'scores': [40, 50],
+                        'detected_category': 'Individual CW'
+                    }
+                ],
+                'row_data_summary': [
+                    {'component_scores': {'CW1 (100%)': 40.0}},
+                    {'component_scores': {'CW1 (100%)': 50.0}}
+                ]
+            }
+        ]
+        session.save()
+
+        # Both occurrences are confirmed with the module code 'COMP7001'
+        url = reverse("analytics_confirm")
+        resp = self.client.post(url, {
+            "programme_name": "MSc Computer Science",
+            "academic_year": "2025/26",
+            "code_0": "COMP7001",
+            "title_0": "Advanced Software Engineering",
+            "level_0": "7",
+            "credits_0": "20",
+            "comp_weight_0_0": "100",
+            "comp_cat_0_0": "Individual CW",
+            "code_1": "COMP7001",
+            "title_1": "Advanced Software Engineering",
+            "level_1": "7",
+            "credits_1": "20",
+            "comp_weight_1_0": "100",
+            "comp_cat_1_0": "Individual CW"
+        })
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(resp.url, reverse("analytics_dashboard"))
+
+        # Verify combined results in the session
+        confirmed = self.client.session["analytics_confirmed_data"]
+        modules = confirmed["modules"]
+        
+        # There should be exactly 1 merged module for 'COMP7001'
+        self.assertEqual(len(modules), 1)
+        m = modules[0]
+        self.assertEqual(m["module_code"], "COMP7001")
+        self.assertEqual(m["level"], 7)
+        self.assertEqual(m["cohort_size"], 4)
+        
+        # Combined scores should be: [60, 80, 40, 50]
+        self.assertEqual(sorted(m["scores"]), [40, 50, 60, 80])
+        
+        # Recalculated stats check:
+        # Mean = (40+50+60+80)/4 = 230/4 = 57.5%
+        # Median = (50+60)/2 = 55.0%
+        # Fail threshold for level 7 is 50%. Fails: [40] -> 1/4 = 25% fail rate
+        # 1st-class threshold is >= 70%. 1st: [80] -> 1/4 = 25% 1st class rate
+        self.assertAlmostEqual(m["mean"], 57.5)
+        self.assertAlmostEqual(m["median"], 55.0)
+        self.assertAlmostEqual(m["pct_fail"], 25.0)
+        self.assertAlmostEqual(m["pct_1st"], 25.0)
+
+        # Combined components check
+        self.assertEqual(len(m["components"]), 1)
+        comp = m["components"][0]
+        self.assertEqual(comp["column"], "CW1 (100%)")
+        self.assertEqual(sorted(comp["scores"]), [40, 50, 60, 80])
+        
+        # Filename should list both source filenames
+        self.assertIn("COMP7001_BNN.xlsx", m["filename"])
+        self.assertIn("COMP7001_FNN.xlsx", m["filename"])
+
+    @patch('core.mcrf_parser.pypdf.PdfReader')
+    def test_pdf_mcrf_confirm_and_merge(self, mock_pdf_reader):
+        """Verify that two uploaded PDF files for the same module are successfully merged and their stats recalculated."""
+        from unittest.mock import MagicMock
+        
+        mock_layout_bnn = (
+            "Faculty of Science and Environment\n"
+            "Module Marks Record Form (MCRF)\n"
+            "Module           KB7071 - Wind Energy Systems\n"
+            "Year             2025/6\n"
+            "Period           SEM1\n"
+            "Occurrence       BNN: September start - Newcastle upon Tyne\n"
+            "Component                                                                                                                                       Weighting\n"
+            "001           Individual report (2,500 words or equivalent)                                                                                           30%\n"
+            "002           Individual report (3,500 words or equivalent)                                                                                           70%\n"
+            "Student ID                                              Occ       Period      Mark  Grade   Mark   Grade   Mark   Grade\n"
+            "11111111/1    SMITH, ALICE                              BNN       SEM1         60      P      80      P      74      P\n"
+        )
+        
+        mock_layout_fnn = (
+            "Faculty of Science and Environment\n"
+            "Module Marks Record Form (MCRF)\n"
+            "Module           KB7071 - Wind Energy Systems\n"
+            "Year             2025/6\n"
+            "Period           SEM1\n"
+            "Occurrence       FNN: January start - Newcastle upon Tyne\n"
+            "Component                                                                                                                                       Weighting\n"
+            "001           Individual report (2,500 words or equivalent)                                                                                           30%\n"
+            "002           Individual report (3,500 words or equivalent)                                                                                           70%\n"
+            "Student ID                                              Occ       Period      Mark  Grade   Mark   Grade   Mark   Grade\n"
+            "22222222/1    BROWN, ROBERT                             FNN       SEM1         40      P      50      P      47      P\n"
+        )
+        
+        # We want PdfReader call 1 to return BNN layout, call 2 to return FNN layout
+        mock_reader_bnn = MagicMock()
+        mock_page_bnn = MagicMock()
+        mock_page_bnn.extract_text.return_value = mock_layout_bnn
+        mock_reader_bnn.pages = [mock_page_bnn]
+        
+        mock_reader_fnn = MagicMock()
+        mock_page_fnn = MagicMock()
+        mock_page_fnn.extract_text.return_value = mock_layout_fnn
+        mock_reader_fnn.pages = [mock_page_fnn]
+        
+        mock_pdf_reader.side_effect = [mock_reader_bnn, mock_reader_fnn]
+        
+        uploaded_bnn = SimpleUploadedFile(
+            "KB7071_BNN.pdf",
+            b"%PDF-1.4\n%mocked bnn pdf",
+            content_type="application/pdf"
+        )
+        uploaded_fnn = SimpleUploadedFile(
+            "KB7071_FNN.pdf",
+            b"%PDF-1.4\n%mocked fnn pdf",
+            content_type="application/pdf"
+        )
+        
+        # 1. Upload both PDFs
+        url_upload = reverse("analytics_upload")
+        resp_upload = self.client.post(url_upload, {"files": [uploaded_bnn, uploaded_fnn]})
+        self.assertEqual(resp_upload.status_code, 302)
+        self.assertEqual(resp_upload.url, reverse("analytics_confirm"))
+        
+        # 2. Confirm both mapped to 'KB7071'
+        url_confirm = reverse("analytics_confirm")
+        resp_confirm = self.client.post(url_confirm, {
+            "programme_name": "MSc Computer Science",
+            "academic_year": "2025/26",
+            "code_0": "KB7071",
+            "title_0": "Wind Energy Systems",
+            "level_0": "7",
+            "credits_0": "20",
+            "comp_weight_0_0": "30",
+            "comp_cat_0_0": "Individual CW",
+            "comp_weight_0_1": "70",
+            "comp_cat_0_1": "Individual CW",
+            "code_1": "KB7071",
+            "title_1": "Wind Energy Systems",
+            "level_1": "7",
+            "credits_1": "20",
+            "comp_weight_1_0": "30",
+            "comp_cat_1_0": "Individual CW",
+            "comp_weight_1_1": "70",
+            "comp_cat_1_1": "Individual CW",
+        })
+        self.assertEqual(resp_confirm.status_code, 302)
+        self.assertEqual(resp_confirm.url, reverse("analytics_dashboard"))
+        
+        # 3. Check combined session data
+        confirmed = self.client.session["analytics_confirmed_data"]
+        modules = confirmed["modules"]
+        self.assertEqual(len(modules), 1)
+        m = modules[0]
+        self.assertEqual(m["module_code"], "KB7071")
+        self.assertEqual(m["cohort_size"], 2)
+        
+        # Recalculated marks:
+        # BNN student: 60 * 0.3 + 80 * 0.7 = 18 + 56 = 74
+        # FNN student: 40 * 0.3 + 50 * 0.7 = 12 + 35 = 47
+        self.assertEqual(sorted(m["scores"]), [47, 74])
+        self.assertAlmostEqual(m["mean"], 60.5)
+        self.assertAlmostEqual(m["pct_fail"], 50.0) # 47 is < 50 for level 7
+        self.assertAlmostEqual(m["pct_1st"], 50.0) # 74 is >= 70
+        
+        # Components should be combined
+        self.assertEqual(len(m["components"]), 2)
+        comp_001 = next(c for c in m["components"] if "001" in c["column"])
+        self.assertEqual(sorted(comp_001["scores"]), [40, 60])
+        comp_002 = next(c for c in m["components"] if "002" in c["column"])
+        self.assertEqual(sorted(comp_002["scores"]), [50, 80])
+
+    @patch('core.mcrf_parser.pypdf.PdfReader')
+    def test_pdf_mcrf_multipage_parsing(self, mock_pdf_reader):
+        """Verify that a multi-page PDF does not parse duplicate component columns and maps student marks correctly."""
+        from unittest.mock import MagicMock
+        
+        mock_layout_page1 = (
+            "Faculty of Science and Environment\n"
+            "Module Marks Record Form (MCRF)\n"
+            "Module           KB7071 - Wind Energy Systems\n"
+            "Year             2025/6\n"
+            "Period           SEM1\n"
+            "Occurrence       BNN: September start - Newcastle upon Tyne\n"
+            "Component                                                                                                                                       Weighting\n"
+            "001           Individual report (2,500 words or equivalent)                                                                                           30%\n"
+            "002           Individual report (3,500 words or equivalent)                                                                                           70%\n"
+            "Student ID                                              Occ       Period      Mark  Grade   Mark   Grade   Mark   Grade\n"
+            "11111111/1    SMITH, ALICE                              BNN       SEM1         60      P      80      P      74      P\n"
+        )
+        
+        mock_layout_page2 = (
+            "Faculty of Science and Environment\n"
+            "Module Marks Record Form (MCRF)\n"
+            "Module           KB7071 - Wind Energy Systems\n"
+            "Year             2025/6\n"
+            "Period           SEM1\n"
+            "Occurrence       BNN: September start - Newcastle upon Tyne\n"
+            "Component                                                                                                                                       Weighting\n"
+            "001           Individual report (2,500 words or equivalent)                                                                                           30%\n"
+            "002           Individual report (3,500 words or equivalent)                                                                                           70%\n"
+            "Student ID                                              Occ       Period      Mark  Grade   Mark   Grade   Mark   Grade\n"
+            "22222222/1    BROWN, ROBERT                             BNN       SEM1         40      P      50      P      47      P\n"
+        )
+        
+        mock_reader = MagicMock()
+        mock_page1 = MagicMock()
+        mock_page1.extract_text.return_value = mock_layout_page1
+        mock_page2 = MagicMock()
+        mock_page2.extract_text.return_value = mock_layout_page2
+        
+        mock_reader.pages = [mock_page1, mock_page2]
+        mock_pdf_reader.return_value = mock_reader
+        
+        uploaded_file = SimpleUploadedFile(
+            "KB7071_multipage.pdf",
+            b"%PDF-1.4\n%mocked multipage pdf",
+            content_type="application/pdf"
+        )
+        
+        url_upload = reverse("analytics_upload")
+        resp_upload = self.client.post(url_upload, {"files": [uploaded_file]})
+        self.assertEqual(resp_upload.status_code, 302)
+        
+        # Verify components in session uploaded modules list has NO duplicates (only 2 components)
+        uploaded = self.client.session["analytics_uploaded_modules"]
+        self.assertEqual(len(uploaded), 1)
+        m = uploaded[0]
+        self.assertEqual(len(m["components"]), 2)
+        self.assertEqual(m["components"][0]["column"], "001 - 30% - Mark")
+        self.assertEqual(m["components"][1]["column"], "002 - 70% - Mark")
+
+    @patch('core.mcrf_parser.pypdf.PdfReader')
+    def test_pdf_files_parse_and_merge_mocked(self, mock_pdf_reader):
+        """Verify that mocked BNN and FNN PDF files parse and merge correctly."""
+        from unittest.mock import MagicMock
+        
+        # Construct BNN layout (10 students)
+        bnn_student_lines = []
+        for i in range(10):
+            stud_id = f"23{i:06d}/1"
+            name = f"STUDENT_BNN, NAME {i}"
+            cw2 = 60 + i
+            cw3 = 70 + i
+            overall = int(round(cw2 * 0.8 + cw3 * 0.2))
+            
+            # Col Targets: [75, 81, 89, 95, 103, 109, 117, 124]
+            # prefix: 14 + 41 + 10 + 10 = 75
+            bnn_student_lines.append(
+                f"{stud_id:<14}{name:<41}{'BNN':<10}{'SEM1':<10}      GP      {cw2:<6}P       {cw3:<6}P       {overall:<7}P"
+            )
+            
+        mock_layout_bnn = (
+            "Faculty of Science and Environment\n"
+            "Module Marks Record Form (MCRF)\n"
+            "Module           KB7069 - Research Project\n"
+            "Year             2025/6\n"
+            "Period           SEM1\n"
+            "Occurrence       BNN: September start - Newcastle upon Tyne\n"
+            "Component                                                                                                                                       Weighting\n"
+            "CW1           Component 1                                                                                                                             0%\n"
+            "CW2           Component 2                                                                                                                            80%\n"
+            "CW3           Component 3                                                                                                                            20%\n"
+            "Student ID                                              Occ       Period      Mark  Grade   Mark   Grade   Mark   Grade   Mark   Grade\n"
+            + "\n".join(bnn_student_lines)
+        )
+        
+        # Construct FNN layout (16 students)
+        fnn_student_lines = []
+        for i in range(16):
+            stud_id = f"24{i:06d}/1"
+            name = f"STUDENT_FNN, NAME {i}"
+            cw2 = 50 + i
+            cw3 = 60 + i
+            overall = int(round(cw2 * 0.8 + cw3 * 0.2))
+            
+            # prefix: 14 + 41 + 10 + 10 = 75
+            fnn_student_lines.append(
+                f"{stud_id:<14}{name:<41}{'FNN':<10}{'SEM1':<10}      GP      {cw2:<6}P       {cw3:<6}P       {overall:<7}P"
+            )
+            
+        mock_layout_fnn = (
+            "Faculty of Science and Environment\n"
+            "Module Marks Record Form (MCRF)\n"
+            "Module           KB7069 - Research Project\n"
+            "Year             2025/6\n"
+            "Period           SEM1\n"
+            "Occurrence       FNN: January start - Newcastle upon Tyne\n"
+            "Component                                                                                                                                       Weighting\n"
+            "CW1           Component 1                                                                                                                             0%\n"
+            "CW2           Component 2                                                                                                                            80%\n"
+            "CW3           Component 3                                                                                                                            20%\n"
+            "Student ID                                              Occ       Period      Mark  Grade   Mark   Grade   Mark   Grade   Mark   Grade\n"
+            + "\n".join(fnn_student_lines)
+        )
+        
+        mock_reader_bnn = MagicMock()
+        mock_page_bnn = MagicMock()
+        mock_page_bnn.extract_text.return_value = mock_layout_bnn
+        mock_reader_bnn.pages = [mock_page_bnn]
+        
+        mock_reader_fnn = MagicMock()
+        mock_page_fnn = MagicMock()
+        mock_page_fnn.extract_text.return_value = mock_layout_fnn
+        mock_reader_fnn.pages = [mock_page_fnn]
+        
+        mock_pdf_reader.side_effect = [mock_reader_bnn, mock_reader_fnn]
+        
+        uploaded_bnn = SimpleUploadedFile("MCRF - Academics-BNN KB7069.pdf", b"%PDF-1.4\n%mocked bnn", content_type="application/pdf")
+        uploaded_fnn = SimpleUploadedFile("MCRF - Academics-FNN KB7069.pdf", b"%PDF-1.4\n%mocked fnn", content_type="application/pdf")
+            
+        url_upload = reverse("analytics_upload")
+        resp_upload = self.client.post(url_upload, {"files": [uploaded_bnn, uploaded_fnn]})
+        self.assertEqual(resp_upload.status_code, 302)
+        
+        # Verify uploaded modules session data
+        session = self.client.session
+        uploaded = session["analytics_uploaded_modules"]
+        self.assertEqual(len(uploaded), 2)
+        
+        # Check BNN KB7069 details
+        bnn_mod = next(m for m in uploaded if "BNN" in m["filename"])
+        self.assertEqual(bnn_mod["module_code"], "KB7069")
+        self.assertEqual(len(bnn_mod["scores"]), 10)
+        
+        # Post confirmation mapping
+        url_confirm = reverse("analytics_confirm")
+        resp_confirm = self.client.post(url_confirm, {
+            "programme_name": "MSc Computer Science",
+            "academic_year": "2025/26",
+            "code_0": "KB7069",
+            "title_0": "Research Project",
+            "level_0": "7",
+            "credits_0": "60",
+            "comp_weight_0_0": "0",
+            "comp_cat_0_0": "Individual CW",
+            "comp_weight_0_1": "80",
+            "comp_cat_0_1": "Individual CW",
+            "comp_weight_0_2": "20",
+            "comp_cat_0_2": "Presentation",
+            "code_1": "KB7069",
+            "title_1": "Research Project",
+            "level_1": "7",
+            "credits_1": "60",
+            "comp_weight_1_0": "0",
+            "comp_cat_1_0": "Individual CW",
+            "comp_weight_1_1": "80",
+            "comp_cat_1_1": "Individual CW",
+            "comp_weight_1_2": "20",
+            "comp_cat_1_2": "Presentation"
+        })
+        self.assertEqual(resp_confirm.status_code, 302)
+        
+        # Check combined results
+        confirmed = self.client.session["analytics_confirmed_data"]
+        modules = confirmed["modules"]
+        self.assertEqual(len(modules), 1)
+        m = modules[0]
+        self.assertEqual(m["module_code"], "KB7069")
+        self.assertEqual(m["cohort_size"], 26) # 10 BNN + 16 FNN = 26 total students
+
+    @patch('core.mcrf_parser.pypdf.PdfReader')
+    def test_kb6055_pdf_parse_and_stats_mocked(self, mock_pdf_reader):
+        """Verify that mocked KB6055 MCRF PDF parses correctly and calculates correct fail rate/statistics."""
+        from unittest.mock import MagicMock
+        
+        # Generate 98 mock student lines with varying spacing shifts
+        student_lines = []
+        for i in range(98):
+            stud_id = f"22{i:06d}/1"
+            name = f"STUDENT, NAME {i}"
+            # Fail threshold is 40% for level 6.
+            # Make 25 fail (overall < 40) and 73 pass (overall >= 40)
+            if i < 25:
+                cw1 = 30
+                exam = 35
+                overall = 34
+                grade = "R"
+            else:
+                cw1 = 60
+                exam = 65
+                overall = 64
+                grade = "P"
+                
+            # Col Targets: [75, 81, 89, 95, 103, 109]
+            # Vary spacing slightly to test dynamic shift optimizer:
+            if i % 3 == 0:
+                # Normal spacing (prefix length = 75)
+                student_lines.append(
+                    f"{stud_id:<14}{name:<41}{'BNN':<10}{'SEM1':<10}{cw1:<6}{grade:<8}{exam:<6}{grade:<8}{overall:<6}{grade}"
+                )
+            elif i % 3 == 1:
+                # Shifted left by 4 spaces (prefix length = 71)
+                student_lines.append(
+                    f"{stud_id:<14}{name:<41}{'BNN':<10}{'SEM1':<6}{cw1:<6}{grade:<8}{exam:<6}{grade:<8}{overall:<6}{grade}"
+                )
+            else:
+                # Shifted right by 4 spaces (prefix length = 79)
+                student_lines.append(
+                    f"{stud_id:<14}{name:<41}{'BNN':<10}{'SEM1':<14}{cw1:<6}{grade:<8}{exam:<6}{grade:<8}{overall:<6}{grade}"
+                )
+                
+        mock_layout_kb6055 = (
+            "Faculty of Science and Environment\n"
+            "Module Marks Record Form (MCRF)\n"
+            "Module           KB6055 - Some Title\n"
+            "Year             2025/6\n"
+            "Period           SEM1\n"
+            "Occurrence       BNN: September start - Newcastle upon Tyne\n"
+            "Component                                                                                                                                       Weighting\n"
+            "001           Component 1                                                                                                                             30%\n"
+            "002           Component 2                                                                                                                             70%\n"
+            "Student ID                                              Occ       Period      Mark  Grade   Mark   Grade   Mark   Grade\n"
+            + "\n".join(student_lines)
+        )
+        
+        mock_reader = MagicMock()
+        mock_page = MagicMock()
+        mock_page.extract_text.return_value = mock_layout_kb6055
+        mock_reader.pages = [mock_page]
+        mock_pdf_reader.return_value = mock_reader
+        
+        uploaded_kb6055 = SimpleUploadedFile("KB6055 MCRF.pdf", b"%PDF-1.4\n%mocked kb6055", content_type="application/pdf")
+            
+        url_upload = reverse("analytics_upload")
+        resp_upload = self.client.post(url_upload, {"files": [uploaded_kb6055]})
+        session = self.client.session
+        uploaded = session["analytics_uploaded_modules"]
+        self.assertEqual(len(uploaded), 1)
+        
+        kb_mod = uploaded[0]
+        self.assertEqual(kb_mod["module_code"], "KB6055")
+        self.assertEqual(len(kb_mod["scores"]), 98)
+        
+        # Post confirmation mapping
+        url_confirm = reverse("analytics_confirm")
+        resp_confirm = self.client.post(url_confirm, {
+            "programme_name": "BEng Computer Science",
+            "academic_year": "2025/26",
+            "code_0": "KB6055",
+            "title_0": "Some Title",
+            "level_0": "6",
+            "credits_0": "20",
+            "comp_weight_0_0": "30",
+            "comp_cat_0_0": "Individual CW",
+            "comp_weight_0_1": "70",
+            "comp_cat_0_1": "Exam",
+        })
+        self.assertEqual(resp_confirm.status_code, 302)
+        
+        # Check results in dashboard session data
+        confirmed = self.client.session["analytics_confirmed_data"]
+        modules = confirmed["modules"]
+        self.assertEqual(len(modules), 1)
+        m = modules[0]
+        self.assertEqual(m["module_code"], "KB6055")
+        self.assertEqual(m["cohort_size"], 98)
+        # Fail threshold is 40% for level 6.
+        # Verified fail count is 25 out of 98.
+        # Fail rate: 25 / 98 * 100 = 25.51%
+        self.assertAlmostEqual(m["pct_fail"], 25.510204, places=2)
+
+
+

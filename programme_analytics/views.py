@@ -408,9 +408,9 @@ def analytics_confirm(request):
                 m['detected_level'] = level
                 m['detected_credits'] = credits
 
-                # Validate total weight sums to 100%
-                if processed_components and total_weight != 100:
-                    error = f"Total component weight for module '{code}' must sum to exactly 100% (currently {total_weight}%)."
+                # Validate total weight sums to 100% or 0% (for pass/fail modules)
+                if processed_components and total_weight != 100 and total_weight != 0:
+                    error = f"Total component weight for module '{code}' must sum to exactly 100% or 0% (currently {total_weight}%)."
                     break
 
                 # Recalculate module final scores using the new weights
@@ -455,12 +455,80 @@ def analytics_confirm(request):
                 request.session['analytics_uploaded_modules'] = uploaded_modules
                 request.session.modified = True
             else:
+                # Group confirmed modules by module_code to merge duplicate occurrences
+                grouped = {}
+                for cm in confirmed_modules:
+                    c_code = cm['module_code']
+                    if c_code not in grouped:
+                        grouped[c_code] = []
+                    grouped[c_code].append(cm)
+
+                merged_confirmed_modules = []
+                for c_code, group in grouped.items():
+                    if len(group) == 1:
+                        merged_confirmed_modules.append(group[0])
+                    else:
+                        first = group[0]
+                        # Join source filenames with comma
+                        merged_filenames = ", ".join(dict.fromkeys(g['filename'] for g in group))
+
+                        # Combine all student scores
+                        all_scores = []
+                        for g in group:
+                            all_scores.extend(g['scores'])
+
+                        # Recalculate statistics on the combined cohort
+                        stats = calculate_module_analytics(all_scores, first['level'])
+
+                        # Combine components by matching column name
+                        components_by_col = {}
+                        for g in group:
+                            for comp in g.get('components', []):
+                                col = comp['column']
+                                if col not in components_by_col:
+                                    components_by_col[col] = {
+                                        "column": col,
+                                        "weight": comp["weight"],
+                                        "scores": list(comp.get("scores", [])),
+                                        "category": comp["category"]
+                                    }
+                                else:
+                                    components_by_col[col]["scores"].extend(comp.get("scores", []))
+
+                        merged_components = list(components_by_col.values())
+
+                        # Combine comp_names_map
+                        merged_comp_names_map = {}
+                        for g in group:
+                            merged_comp_names_map.update(g.get('comp_names_map', {}))
+
+                        merged_confirmed_modules.append({
+                            'filename': merged_filenames,
+                            'module_code': c_code,
+                            'module_title': first['module_title'],
+                            'level': first['level'],
+                            'credits': first['credits'],
+                            'detected_credits': first['detected_credits'],
+                            'scores': all_scores,
+                            'mean': stats['mean'],
+                            'median': stats['median'],
+                            'std_dev': stats['std_dev'],
+                            'max': stats['max'],
+                            'min': stats['min'],
+                            'pct_1st': stats['pct_1st'],
+                            'pct_21_above': stats['pct_21_above'],
+                            'pct_fail': stats['pct_fail'],
+                            'cohort_size': stats['cohort_size'],
+                            'components': merged_components,
+                            'comp_names_map': merged_comp_names_map,
+                        })
+
                 # Sort confirmed modules by module code in case the user edited the codes
-                confirmed_modules.sort(key=lambda x: x['module_code'])
+                merged_confirmed_modules.sort(key=lambda x: x['module_code'])
                 request.session['analytics_confirmed_data'] = {
                     'programme_name': programme_name,
                     'academic_year': academic_year,
-                    'modules': confirmed_modules
+                    'modules': merged_confirmed_modules
                 }
                 request.session.modified = True
                 return redirect("analytics_dashboard")
@@ -521,7 +589,12 @@ def analytics_dashboard(request):
     if not confirmed_data:
         return redirect("analytics_upload")
 
-    modules_list = confirmed_data['modules']
+    # Filter out 0% total component weight modules (pass/fail modules) from statistics.
+    # We only exclude if components are defined and their weights sum to 0.
+    modules_list = [
+        m for m in confirmed_data['modules']
+        if not (len(m.get('components', [])) > 0 and sum(c.get('weight', 0) for c in m.get('components', [])) == 0)
+    ]
     
     # Process outliers and histogram SVG for each module
     has_outliers = False
@@ -820,7 +893,12 @@ def download_snapshot(request):
     if not confirmed_data:
         return redirect("analytics_upload")
         
-    modules_list = confirmed_data['modules']
+    # Filter out 0% total component weight modules (pass/fail modules) from snapshot.
+    # We only exclude if components are defined and their weights sum to 0.
+    modules_list = [
+        m for m in confirmed_data['modules']
+        if not (len(m.get('components', [])) > 0 and sum(c.get('weight', 0) for c in m.get('components', [])) == 0)
+    ]
     
     snapshot = {
         'programme': confirmed_data['programme_name'],
