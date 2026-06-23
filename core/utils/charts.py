@@ -902,3 +902,116 @@ def generate_programme_trend_chart(years, means, std_devs, pct_1sts, pct_21s, pc
         fontsize_title=12,
         pad_title=35
     )
+
+
+def generate_scatter_plot(scores_x, scores_y, label_x, label_y, degree_level=None, r=None):
+    """
+    Generate a server-side SVG scatter plot comparing two assessment components' marks.
+    Includes a linear trendline and horizontal/vertical pass threshold lines.
+    """
+    if not scores_x or not scores_y or len(scores_x) != len(scores_y):
+        return ""
+
+    is_m_level = bool(
+        degree_level 
+        and isinstance(degree_level, str) 
+        and degree_level.strip().lower().startswith('m')
+    )
+    fail_threshold = 50 if is_m_level else 40
+
+    # Separate submissions (both > 0) from non-submissions (either is 0)
+    normal_x = []
+    normal_y = []
+    zero_x = []
+    zero_y = []
+    for x, y in zip(scores_x, scores_y):
+        if x > 0 and y > 0:
+            normal_x.append(x)
+            normal_y.append(y)
+        else:
+            zero_x.append(x)
+            zero_y.append(y)
+
+    fig, ax = plt.subplots(figsize=(5.0, 4.5))
+
+    # Scatter points - normal submissions in blue, non-submissions in red
+    ax.scatter(normal_x, normal_y, color='#3b82f6', alpha=0.6, edgecolors='none', s=45, zorder=3)
+    if zero_x:
+        ax.scatter(zero_x, zero_y, color='#ef4444', alpha=0.6, edgecolors='none', s=45, zorder=3)
+
+    # Plot trendline (Reduced Major Axis regression to align with the visual diagonal)
+    if len(normal_x) >= 3 and r is not None:
+        try:
+            mean_x = np.mean(normal_x)
+            mean_y = np.mean(normal_y)
+            std_x = np.std(normal_x)
+            std_y = np.std(normal_y)
+            
+            if std_x > 0 and std_y > 0:
+                m = (std_y / std_x) if r >= 0 else -(std_y / std_x)
+                c = mean_y - m * mean_x
+                
+                # Determine initial endpoints based on observed data range
+                x1, x2 = float(min(normal_x)), float(max(normal_x))
+                y1 = m * x1 + c
+                y2 = m * x2 + c
+                
+                # Clip line endpoints so they stay within [0, 100] grid boundaries
+                if y1 < 0:
+                    x1 = (0.0 - c) / m
+                    y1 = 0.0
+                elif y1 > 100:
+                    x1 = (100.0 - c) / m
+                    y1 = 100.0
+                    
+                if y2 < 0:
+                    x2 = (0.0 - c) / m
+                    y2 = 0.0
+                elif y2 > 100:
+                    x2 = (100.0 - c) / m
+                    y2 = 100.0
+                    
+                ax.plot([x1, x2], [y1, y2], color='#c8a951', linestyle='-', linewidth=2.0, zorder=4)
+        except Exception:
+            pass
+
+    # Draw vertical & horizontal fail threshold lines
+    ax.axvline(fail_threshold, color='#ef4444', linestyle='--', linewidth=1.2, alpha=0.7, zorder=2)
+    ax.axhline(fail_threshold, color='#ef4444', linestyle='--', linewidth=1.2, alpha=0.7, zorder=2)
+
+    # Label details inside chart
+    if r is not None:
+        ax.text(
+            0.05, 0.95, f"r = {r:.2f}",
+            transform=ax.transAxes,
+            fontsize=11,
+            fontweight='bold',
+            color='#1a1a2e',
+            va='top',
+            bbox=dict(boxstyle='round,pad=0.3', facecolor='#f8fafc', edgecolor='#cbd5e1', alpha=0.9)
+        )
+
+    # Set axis limits & labels
+    ax.set_xlim(-5, 105)
+    ax.set_ylim(-5, 105)
+    ax.set_xlabel(label_x, color='#475569', size=11, fontweight='semibold', fontfamily='DejaVu Sans')
+    ax.set_ylabel(label_y, color='#475569', size=11, fontweight='semibold', fontfamily='DejaVu Sans')
+
+    # Style grid and spines
+    ax.grid(True, color='#e2e8f0', linestyle=':', linewidth=0.8, zorder=1)
+    for spine in ['top', 'right']:
+        ax.spines[spine].set_visible(False)
+    for spine in ['left', 'bottom']:
+        ax.spines[spine].set_color('#cbd5e1')
+        ax.spines[spine].set_linewidth(1.0)
+
+    ax.tick_params(axis='both', which='both', length=3, colors='#475569', labelsize=10)
+    ax.set_facecolor('white')
+    fig.patch.set_facecolor('white')
+
+    buf = io.BytesIO()
+    plt.savefig(buf, format='svg', bbox_inches='tight', transparent=False)
+    plt.close(fig)
+
+    return clean_svg(buf.getvalue().decode('utf-8'))
+

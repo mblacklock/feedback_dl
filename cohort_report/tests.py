@@ -7,7 +7,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from unittest.mock import patch
 
 from core.mcrf_parser import parse_mcrf_workbook
-from cohort_report.views import compute_stats
+from cohort_report.views import compute_stats, pearson_correlation
 
 class CohortReportTests(TestCase):
     def setUp(self):
@@ -30,7 +30,9 @@ class CohortReportTests(TestCase):
         self.sample_uploaded_data = [
             {"Student ID": "w12345678", "Student Name": "Alice Smith", "CW1 - Mark": 75, "Exam - Mark": 85},
             {"Student ID": "12345679/2", "Student Name": "Bob Jones", "CW1 - Mark": 45, "Exam - Mark": 55},
-            {"Student ID": "w98765432", "Student Name": "Charlie Brown", "CW1 - Mark": 35, "Exam - Mark": 25}
+            {"Student ID": "w98765432", "Student Name": "Charlie Brown", "CW1 - Mark": 35, "Exam - Mark": 25},
+            {"Student ID": "w00000000", "Student Name": "No Show 1", "CW1 - Mark": 0, "Exam - Mark": 90},
+            {"Student ID": "w11111111", "Student Name": "No Show 2", "CW1 - Mark": 60, "Exam - Mark": 0}
         ]
         self.sample_headers = ["Student ID", "Student Name", "CW1 - Mark", "Exam - Mark"]
         self.sample_mappings = {
@@ -338,4 +340,74 @@ class CohortReportTests(TestCase):
         self.assertEqual(session["cohort_mappings"]["year"], "2025/26")
         self.assertEqual(session["cohort_mappings"]["period"], "SEM1")
         self.assertEqual(session["cohort_mappings"]["occurrence"], "BNN/FNN")
+
+    def test_pearson_correlation_calculation(self):
+        """Verify the pearson_correlation function behaves correctly under all conditions"""
+        # Strong positive correlation
+        x = [10, 20, 30, 40]
+        y = [15, 25, 35, 45]
+        self.assertAlmostEqual(pearson_correlation(x, y), 1.0)
+
+        # Strong negative correlation
+        x = [10, 20, 30, 40]
+        y = [45, 35, 25, 15]
+        self.assertAlmostEqual(pearson_correlation(x, y), -1.0)
+
+        # Less than 3 points
+        x = [10, 20]
+        y = [20, 30]
+        self.assertIsNone(pearson_correlation(x, y))
+
+        # Zero variance (standard deviation)
+        x = [50, 50, 50, 50]
+        y = [10, 20, 30, 40]
+        self.assertIsNone(pearson_correlation(x, y))
+
+    def test_component_correlation_rendering(self):
+        """Verify that within-module component correlation scatter plots are generated and rendered properly, excluding non-submissions (0% marks)"""
+        session = self.client.session
+        session["cohort_headers"] = self.sample_headers
+        session["cohort_uploaded_data"] = self.sample_uploaded_data
+        session["cohort_mappings"] = self.sample_mappings
+        session.save()
+
+        url = reverse("cohort_report_results")
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+
+        # Verify scatter context parameters
+        self.assertIn("scatter_charts", resp.context)
+        self.assertIn("fail_threshold", resp.context)
+        
+        # Check active components are paired
+        charts = resp.context["scatter_charts"]
+        self.assertEqual(len(charts), 1) # 1 pair for 2 active components
+        self.assertEqual(charts[0]["comp_x"], "CW1")
+        self.assertEqual(charts[0]["comp_y"], "Exam")
+        
+        # Check specific Pearson value for mock data:
+        # CW1 marks: [75, 45, 35], Exam marks: [85, 55, 25]
+        # Pearson correlation between [75, 45, 35] and [85, 55, 25] is approx 0.9607689
+        self.assertAlmostEqual(charts[0]["r"], 0.9607689, places=5)
+        self.assertIn("<svg", charts[0]["chart_svg"])
+        
+        # Verify both normal points (blue #3b82f6) and zero points (red #ef4444) exist in the SVG
+        self.assertIn("#3b82f6", charts[0]["chart_svg"])
+        self.assertIn("#ef4444", charts[0]["chart_svg"])
+
+        # Confirm the page renders the scatter plots section
+        self.assertContains(resp, "Assessment Component Correlations")
+        self.assertContains(resp, "CW1 vs Exam")
+        self.assertContains(resp, "0.96")
+
+        # Test download template as well
+        download_url = reverse("cohort_report_download")
+        download_resp = self.client.get(download_url)
+        self.assertEqual(download_resp.status_code, 200)
+        
+        content = download_resp.content.decode("utf-8")
+        self.assertIn("Assessment Component Correlations", content)
+        self.assertIn("CW1 vs Exam", content)
+        self.assertIn("0.96", content)
+
 

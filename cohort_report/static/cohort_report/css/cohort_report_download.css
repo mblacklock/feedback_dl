@@ -196,3 +196,36 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
+
+/* ── Component Correlation Matrix Table ── */
+.correlation-table {
+    border: 1px solid var(--brand-border-light);
+    border-collapse: collapse;
+    width: 100%;
+    overflow: hidden;
+}
+
+.correlation-table th,
+.correlation-table td {
+    padding: 12px;
+    border: 1px solid var(--brand-border-light);
+    text-align: center;
+    vertical-align: middle;
+}
+
+.correlation-table th {
+    background-color: var(--brand-bg);
+    color: var(--brand-slate);
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+
+.correlation-table td.correlation-cell {
+    transition: filter 0.2s ease, transform 0.1s ease;
+}
+
+.correlation-table td.correlation-cell:hover {
+    filter: brightness(0.92);
+    cursor: help;
+}
+

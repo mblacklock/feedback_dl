@@ -33,5 +33,40 @@
     </div>
 </div>
 
+{% if scatter_charts %}
+<!-- Assessment Component Correlations Section -->
+<div class="glass-card">
+    <div class="card-title-bar" style="min-height: auto; padding: 20px 24px;">
+        <h3 class="fw-bold mb-0 text-slate-800">Assessment Component Correlations</h3>
+    </div>
+    <div class="card-body-pad">
+        <p class="text-secondary mb-3" style="text-transform: none; font-size: 0.85rem; font-weight: normal; color: var(--brand-slate, #64748b);">
+            These scatter plots show individual student performance across pairs of active assessment components.
+            The gold line represents the line of best fit (Reduced Major Axis), and the red dashed lines show the pass/fail threshold ({{ fail_threshold }}%).
+        </p>
+        <ul style="font-size: 0.85rem; color: var(--brand-slate, #64748b); margin-bottom: 24px; padding-left: 20px; line-height: 1.5; text-align: left;">
+            <li><strong>Moderate correlation (0.40 - 0.70):</strong> Typical for module components, reflecting that general student capability and engagement influence performance on both assessments.</li>
+            <li><strong>Low correlation (r &lt; 0.40):</strong> Performance in one component is a weak predictor of the other, indicating that the components test highly distinct skill sets (or that one assessment has high marking variance).</li>
+            <li><strong>High correlation (r &ge; 0.70):</strong> Student performance is highly consistent across both components. This shows consistent engagement, but may prompt a review of whether the assessments are testing similar abilities.</li>
+        </ul>
+        
+        <div class="row g-4 justify-content-center">
+            {% for chart in scatter_charts %}
+            <div class="col-12 {% if scatter_charts|length > 1 %}col-lg-6{% else %}col-lg-8{% endif %} text-center mb-4">
+                <div class="chart-container" style="text-align: center; padding: 16px; background: white; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+                    <div style="font-family: var(--font-brand, sans-serif); font-weight: 700; font-size: 0.95rem; color: var(--brand-primary-dark, #1e293b); margin-bottom: 12px;">
+                        {{ chart.comp_x }} vs {{ chart.comp_y }} (Pearson r: {% if chart.r is not None %}{{ chart.r|floatformat:2 }}{% else %}N/A{% endif %})
+                    </div>
+                    <div style="width: 100%;">
+                        {{ chart.chart_svg|safe }}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Assessment Components Section -->
 {% include "cohort_report/_components_breakdown_partial.html" with components_stats=components_stats %}

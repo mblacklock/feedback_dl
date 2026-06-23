@@ -5,7 +5,7 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 
 from core.mcrf_parser import parse_mcrf_workbook, is_assessment_component_column
-from core.utils.charts import generate_cohort_histogram
+from core.utils.charts import generate_cohort_histogram, generate_scatter_plot
 from module_summary.views import parse_non_negative_int
 from core.utils.marks import (
     module_numeric_mark,
@@ -257,6 +257,25 @@ def format_component_header(column_name, comp_names_map=None):
         
     return column_name
 
+def pearson_correlation(x, y):
+    """
+    Computes the Pearson correlation coefficient between two lists of numbers.
+    Returns None if standard deviations are zero or length is less than 3.
+    """
+    n = len(x)
+    if n < 3:
+        return None
+    mean_x = sum(x) / n
+    mean_y = sum(y) / n
+    diff_x = [val - mean_x for val in x]
+    diff_y = [val - mean_y for val in y]
+    num = sum(dx * dy for dx, dy in zip(diff_x, diff_y))
+    den_x = sum(dx ** 2 for dx in diff_x)
+    den_y = sum(dy ** 2 for dy in diff_y)
+    if den_x == 0 or den_y == 0:
+        return None
+    return num / math.sqrt(den_x * den_y)
+
 def get_report_context(request):
     """
     Helper to compute statistics and generate SVG histogram charts.
@@ -298,11 +317,64 @@ def get_report_context(request):
             "weight": comp["weight"]
         })
         
+    # Calculate within-module component correlations (scatter plots)
+    scatter_charts = []
+    active_comps = [comp for comp in components if comp.get("weight", 0) > 0]
+    
+    if len(active_comps) > 1:
+        import itertools
+        comp_scores = {}
+        comp_labels = {}
+        for comp in active_comps:
+            col_name = comp["column"]
+            comp_scores[col_name] = [round_mark_pct(component_percentage(row, comp)) for row in uploaded_data]
+            comp_labels[col_name] = col_name.split(" - ")[0] if " - " in col_name else col_name
+            
+        for comp_i, comp_j in itertools.combinations(active_comps, 2):
+            col_i = comp_i["column"]
+            col_j = comp_j["column"]
+            label_i = comp_labels[col_i]
+            label_j = comp_labels[col_j]
+            
+            raw_x = comp_scores[col_i]
+            raw_y = comp_scores[col_j]
+            
+            # Exclude non-submissions (marks of 0%) in either component
+            filtered_xy = [(x, y) for x, y in zip(raw_x, raw_y) if x > 0 and y > 0]
+            if filtered_xy:
+                filtered_x, filtered_y = zip(*filtered_xy)
+                filtered_x = list(filtered_x)
+                filtered_y = list(filtered_y)
+            else:
+                filtered_x, filtered_y = [], []
+            
+            r = pearson_correlation(filtered_x, filtered_y)
+            
+            # Generate the scatter plot SVG using raw data (with 0% marks plotted in red)
+            chart_svg = generate_scatter_plot(
+                raw_x,
+                raw_y,
+                label_i,
+                label_j,
+                degree_level=degree_level,
+                r=r
+            )
+            
+            scatter_charts.append({
+                "comp_x": label_i,
+                "comp_y": label_j,
+                "r": r,
+                "chart_svg": clean_svg(chart_svg)
+            })
+
     # Calculate overall module stats & charts
     overall_stats = compute_stats(cohort_weighted_finals, degree_level=degree_level)
     overall_chart_svg = generate_cohort_histogram(cohort_weighted_finals, student_score=None, degree_level=degree_level)
     overall_chart_svg_clean = clean_svg(overall_chart_svg)
     
+    is_m = bool(degree_level and isinstance(degree_level, str) and degree_level.strip().lower().startswith('m'))
+    fail_threshold = 50 if is_m else 40
+
     return {
         "module_code": mappings.get("module_code", "COMP101"),
         "module_title": mappings.get("module_title", "Module Summary"),
@@ -313,8 +385,11 @@ def get_report_context(request):
         "overall_stats": overall_stats,
         "overall_chart_svg": overall_chart_svg_clean,
         "components_stats": components_stats,
+        "scatter_charts": scatter_charts,
+        "fail_threshold": fail_threshold,
         "cohort_size": len(uploaded_data)
     }
+
 
 def render_cohort_report(request):
     """

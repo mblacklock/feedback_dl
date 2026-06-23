@@ -21,6 +21,8 @@
 
 ## 🔄 Feature: cohort_report — Add Within-Module Component Correlations
 For modules with more than one assessment component, add a component correlation table to the module report showing the Pearson correlation coefficient between each pair of components. Helps validate whether components are measuring different things. No additional data needed — already available from the existing MCRF parse.
+- [x] Within-module correlations (scatter plots with trendlines)
+- [ ] Second tab with sorted list of student marks
 
 ## 🔄 Feature: longitudinal_analytics Django App [COMPLETED]
 
