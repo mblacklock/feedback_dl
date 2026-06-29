@@ -2,38 +2,42 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://mblacklock.github.io/feedback_dl/</loc>
-         <lastmod>2026-06-16</lastmod>
+         <lastmod>2026-06-29</lastmod>
     </url>
     <url>
          <loc>https://mblacklock.github.io/feedback_dl/assessment_feedback/</loc>
-         <lastmod>2026-06-16</lastmod>
+         <lastmod>2026-06-29</lastmod>
     </url>
     <url>
          <loc>https://mblacklock.github.io/feedback_dl/changelog/</loc>
-         <lastmod>2026-06-16</lastmod>
+         <lastmod>2026-06-29</lastmod>
     </url>
     <url>
          <loc>https://mblacklock.github.io/feedback_dl/cohort_report/</loc>
-         <lastmod>2026-06-16</lastmod>
+         <lastmod>2026-06-29</lastmod>
     </url>
     <url>
          <loc>https://mblacklock.github.io/feedback_dl/comments_generator/</loc>
-         <lastmod>2026-06-16</lastmod>
+         <lastmod>2026-06-29</lastmod>
     </url>
     <url>
          <loc>https://mblacklock.github.io/feedback_dl/marking_converters/</loc>
-         <lastmod>2026-06-16</lastmod>
+         <lastmod>2026-06-29</lastmod>
     </url>
     <url>
          <loc>https://mblacklock.github.io/feedback_dl/marking_sheet_builder/</loc>
-         <lastmod>2026-06-16</lastmod>
+         <lastmod>2026-06-29</lastmod>
     </url>
     <url>
          <loc>https://mblacklock.github.io/feedback_dl/module_summary/</loc>
-         <lastmod>2026-06-16</lastmod>
+         <lastmod>2026-06-29</lastmod>
+    </url>
+    <url>
+         <loc>https://mblacklock.github.io/feedback_dl/programme_analytics/</loc>
+         <lastmod>2026-06-29</lastmod>
     </url>
     <url>
          <loc>https://mblacklock.github.io/feedback_dl/rubric_generator/</loc>
-         <lastmod>2026-06-16</lastmod>
+         <lastmod>2026-06-29</lastmod>
     </url>
 </urlset>
