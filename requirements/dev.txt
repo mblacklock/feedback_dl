@@ -21,3 +21,8 @@ trio==0.32.0
 trio-websocket==0.12.2
 websocket-client==1.9.0
 wsproto==1.2.0
+
+# Testing with pytest
+pytest==8.2.2
+pytest-django==4.8.0
+

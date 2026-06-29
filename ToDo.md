@@ -14,8 +14,10 @@
 - [ ] **Comment Generator**: 
   - [ ] Allow option to upload pool comments.
   - [ ] Allow option to create categories.
+- [ ] **Testing**: Migrate existing unit and functional tests to native pytest style (converting classes to functions, and using native fixtures and assertions).
 - [x] Move row in layout.
 - [x] Half category on own row.
+
 
 ---
 
